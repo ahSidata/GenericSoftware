@@ -14,19 +14,27 @@ namespace EnergyAutomate
     {
         private ApiService ApiService { get; init; }
 
-        public ApiBackgroundService(ApiService apiService)
+        private ApiRealTimeMeasurementWatchdog ApiRealTimeMeasurementWatchdog { get; init; }
+
+        private IConfiguration Configuration { get; init; }
+
+        public ApiBackgroundService(ApiService apiService, IConfiguration configuration, ApiRealTimeMeasurementWatchdog apiRealTimeMeasurementWatchdog)
         {
             ApiService = apiService;
+            Configuration = configuration;
+            ApiRealTimeMeasurementWatchdog = apiRealTimeMeasurementWatchdog;
         }
 
         public async Task StartAsync(CancellationToken cancellationToken)
         {
+            await ApiRealTimeMeasurementWatchdog.StartAsync(CancellationTokenSource.CreateLinkedTokenSource(cancellationToken).Token);
             await ApiService.StartAsync(CancellationTokenSource.CreateLinkedTokenSource(cancellationToken).Token);
         }
 
         public async Task StopAsync(CancellationToken cancellationToken)
         {
             await ApiService.StopAsync(CancellationTokenSource.CreateLinkedTokenSource(cancellationToken).Token);
+            await ApiRealTimeMeasurementWatchdog.StopAsync(CancellationTokenSource.CreateLinkedTokenSource(cancellationToken).Token);
         }
 
         public void Dispose()

@@ -9,6 +9,7 @@ using Growatt.OSS;
 using Tibber.Sdk;
 using System.Net.Http.Headers;
 using static System.Runtime.InteropServices.JavaScript.JSType;
+using System.Diagnostics;
 
 namespace EnergyAutomate;
 
@@ -17,6 +18,18 @@ public class Program
     public static void Main(string[] args)
     {
         var builder = WebApplication.CreateBuilder(args);
+
+        // Logger-Konfiguration hinzufügen
+        builder.Logging.ClearProviders();
+        builder.Logging.AddConsole();
+        builder.Logging.AddDebug();
+
+        // Konfiguration laden
+        var configuration = builder.Configuration;
+        var TraceEnabled = configuration.GetSection("Trace").GetValue<bool>("TraceEnabled");
+
+        if(TraceEnabled)
+            Trace.Listeners.Add(new ConsoleTraceListener());        
 
         // Add services to the container.
         builder.Services.AddRazorComponents()
@@ -48,10 +61,9 @@ public class Program
             .AddDefaultTokenProviders();
 
         builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSender>();
-        builder.Services.AddSingleton<GrowattApiClient>(sp => new GrowattApiClient("https://openapi.growatt.com", builder?.Configuration["ApiSettings:GrowattApiToken"] ?? string.Empty));
-        builder.Services.AddSingleton<TibberApiClient>(sp => new TibberApiClient(builder?.Configuration["ApiSettings:TibberApiToken"] ?? string.Empty, new ProductInfoHeaderValue("EnergyAutomate", "1.0")));
         builder.Services.AddSingleton<ApiServiceInfo>();
         builder.Services.AddSingleton<ApiService>();
+        builder.Services.AddSingleton<ApiRealTimeMeasurementWatchdog>();
 
         // Registrieren des Hintergrunddienstes
         builder.Services.AddHostedService<ApiBackgroundService>();

@@ -2,16 +2,10 @@
 
 namespace EnergyAutomate
 {
-    public class ApiOutputValueChange
-    {
-        public DateTime TS { get; set; }
-
-        [JsonInclude]
-        public List<ApiOutputValueDeviceInfo> DeviceInfos { get; set; } = new List<ApiOutputValueDeviceInfo>();
-    }
-
     public class ApiOutputValueDeviceInfo
     {
+        public bool Force = false;
+
         public DateTime TS { get; set; }
 
         public string DeviceSn { get; set; } = string.Empty;

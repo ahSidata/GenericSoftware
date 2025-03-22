@@ -5,7 +5,9 @@ using Tibber.Sdk;
 
 public class ApiServiceInfo
 {
-    public bool AutoMode { get; set; }
+    public bool SettingAutoMode { get; set; }
+
+    public bool SettingAutoModeRestriction { get; set; } = false;
 
     public bool SettingLoadBalanced { get; set; } = false;
 
@@ -17,49 +19,57 @@ public class ApiServiceInfo
 
     public int SettingToleranceAvg { get; set; } = 50;
 
-    public int SettingMaxPower { get; set; } = 800;
+    public int SettingMaxPower { get; set; } = 840;
 
     public int AvgPowerLoad { get; set; }
 
-
-
     public int DeltaPowerValue { get; set; }
+
     public int DifferencePowerValue { get; set; }
+
     public int LastPowerValue { get; set; }
+
     public int NewPowerValue { get; set; }
   
-    public List<DateTime> DataReads { get; set; } = [];
+    public List<ApiCallLog> DataReads { get; set; } = [];
 
     #region Growatt
 
     #region OutputValueValueChange
 
-    public event EventHandler? AvgOutputValueChanged;
+    public event EventHandler? StateHasChanged;
 
-    public void InvokeAvgOutputValueChanged()
+    public void InvokeStateHasChanged()
     {
-        AvgOutputValueChanged?.Invoke(this, new EventArgs());
+        StateHasChanged?.Invoke(this, new EventArgs());
     }
 
-    public Queue<ApiOutputValueDeviceInfo> GrowattValueChangeQueue = new();
+    public Queue<ApiOutputValueDeviceInfo> GrowattSetPowerQueue = new();
 
-    public ObservableCollection<ApiOutputValueDeviceInfo> OutputValueValueChange { get; set; } = [];
 
-    public ApiOutputValueDeviceInfo? LastOutputValueValueChange => OutputValueValueChange.OrderByDescending(x => x.TS).FirstOrDefault();
+    public List<ApiOutputValueDeviceInfo> LastOutputValues => RealTimeMeasurement.OrderByDescending(x => x.Timestamp).FirstOrDefault()?.DeviceInfos ?? new List<ApiOutputValueDeviceInfo>();
 
-    public bool IsLastOutputValueEqual => OutputValueValueChange.All(x => x.Value == OutputValueValueChange.First().Value);
-
-    public int LastOutputValue => OutputValueValueChange.Sum(s => s.Value);
+    public int LastOutputValueSum => LastOutputValues?.Sum(s => s.Value) ?? 0;
 
     public int GetLastValuePerDevice(string deviceSn)
     {
         if (!string.IsNullOrWhiteSpace(deviceSn))
         {
-            var apiOutputValueDeviceInfo = OutputValueValueChange.FirstOrDefault(x => x.DeviceSn == deviceSn);
+            var apiOutputValueDeviceInfo = LastOutputValues?.FirstOrDefault(x => x.DeviceSn == deviceSn);
             var lastValueChange = apiOutputValueDeviceInfo?.Value ?? 0;
             return lastValueChange;
         }
         return 0;
+    }    
+    
+    public DeviceNoahLastData? GetNoahLastDataPerDevice(string deviceSn)
+    {
+        return DeviceNoahLastData.Where(x => x.deviceSn == deviceSn).OrderByDescending(x => x.time).FirstOrDefault();
+    }
+
+    public DeviceNoahInfo? GetNoahInfoPerDevice(string deviceSn)
+    {
+        return DeviceNoahInfo.FirstOrDefault(x => x.DeviceSn == deviceSn);
     }
 
     #endregion OutputValueValueChange
@@ -127,24 +137,43 @@ public class ApiServiceInfo
     
     public ObservableCollection<ApiPrice> Prices { get; set; } = [];
 
-    public (double?, double?, List<double?>, List<double?>) GetPriceDatas()
+    public List<double?> GetPriceTodayDatas()
     {
         var priceDates = Prices.GroupBy(x => x.StartsAt.Date).ToList();
         var result = priceDates.OrderByDescending(x => x.Key).Take(2);
         var today = result.OrderBy(x => x.Key).FirstOrDefault()?.Key;
-        var tomorrow = result.OrderBy(x => x.Key).LastOrDefault()?.Key;
         var dataToday = today.HasValue ? Prices.Where(x => x.StartsAt.Date == today.Value.Date).OrderBy(x => x.StartsAt).Select(x => (double?)x.Total).ToList() : new List<double?>();
-        var dataTomorrow = tomorrow.HasValue ? Prices.Where(x => x.StartsAt.Date == tomorrow.Value.Date).OrderBy(x => x.StartsAt).Select(x => (double?)x.Total).ToList() : new List<double?>();
-        var avgToday = dataToday.Any() ? dataToday.Average() : 0;
-        var avgTomorrow = dataTomorrow.Any() ? dataTomorrow.Average() : 0;
 
-        return (avgToday, avgTomorrow, dataToday, dataTomorrow);
+        return dataToday;
     }
 
-    public double? GetAvgPriceToday()
+    public List<double?> GetPriceTomorrowDatas()
     {
-        var (avgToday, _, _, _) = GetPriceDatas();
-        return avgToday;
+        var priceDates = Prices.GroupBy(x => x.StartsAt.Date).ToList();
+        var result = priceDates.OrderByDescending(x => x.Key).Take(2);
+        var tomorrow = result.OrderBy(x => x.Key).LastOrDefault()?.Key;
+        var dataTomorrow = tomorrow.HasValue ? Prices.Where(x => x.StartsAt.Date == tomorrow.Value.Date).OrderBy(x => x.StartsAt).Select(x => (double?)x.Total).ToList() : new List<double?>();
+
+        return dataTomorrow;
+    }
+
+    public int GetStartHoure()
+    {
+        var dataToday = GetPriceTodayDatas();
+        var avg = dataToday.OrderByDescending(price => price).Take(10).Average();
+        var firstValueGreaterThanAvg = Prices
+            .Where(x => (double?)x.Total > avg)
+            .OrderBy(x => x.StartsAt)
+            .FirstOrDefault();
+
+        return firstValueGreaterThanAvg != null ? firstValueGreaterThanAvg.StartsAt.Hour : 0;
+    }
+
+    public double? GetCurrentPrice()
+    {
+        //current Price is over the average price
+        var dataToday = Prices.Where(x => x.StartsAt.Date == DateTime.Now.Date).OrderBy(x => x.StartsAt).Select(x => new { x.StartsAt, x.Total }).ToList();
+        return (double?)dataToday.First(p => p.StartsAt.Hour == DateTime.Now.Hour).Total;
     }
 
     #endregion Tibber

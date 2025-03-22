@@ -32,45 +32,188 @@
                                         <CardBody>
                                             <CardTitle>
                                                 @device.DeviceType.ToUpper() <small Class="mb-2 text-muted">(@device.DeviceSn)</small>
-                                            </CardTitle>                                            
+                                            </CardTitle>
                                             <ul class="list-group list-group-flush">
                                                 <li class="list-group-item d-flex align-items-center">
-                                                    <Icon Name="IconName.Battery" Size="IconSize.x2" />
-                                                    <span class="px-3">
-                                                        @ApiServiceInfo.DeviceNoahLastData.Where(x => x.deviceSn == device.DeviceSn).OrderByDescending(x => x.time).FirstOrDefault()?.battery1Soc %
-                                                    </span>
+                                                    <div class="row w-100">
+                                                        <div class="col-md-4">
+                                                            <Icon Name="IconName.SunsetFill" Size="IconSize.None" />
+                                                            <span class="mx-3">
+                                                                @((int)(ApiServiceInfo.GetNoahLastDataPerDevice(device.DeviceSn)?.ppv ?? 0)) W
+                                                            </span>
+                                                        </div>
+                                                        <div class="col-md-4">
+                                                            <Icon Name="IconName.Sunset" Size="IconSize.None" />
+                                                            <span class="mx-3">
+                                                                @((int)(ApiServiceInfo.GetNoahLastDataPerDevice(device.DeviceSn)?.pv1Current ?? 0) * (int)(ApiServiceInfo.GetNoahLastDataPerDevice(device.DeviceSn)?.pv1Voltage ?? 0)) W
+                                                            </span>
+                                                        </div>
+                                                        <div class="col-md-4">
+                                                            <Icon Name="IconName.Sunset" Size="IconSize.None" />
+                                                            <span class="mx-3">
+                                                                @((int)(ApiServiceInfo.GetNoahLastDataPerDevice(device.DeviceSn)?.pv2Current ?? 0) * (int)(ApiServiceInfo.GetNoahLastDataPerDevice(device.DeviceSn)?.pv2Voltage ?? 0)) W
+                                                            </span>
+                                                        </div>
+                                                    </div>
                                                 </li>
                                                 <li class="list-group-item">
-                                                    Current OutPower: @ApiServiceInfo.GetLastValuePerDevice(device.DeviceSn) W
+                                                    <div class="row w-100">
+                                                        <div class="col-md-4">
+                                                            <Icon Name="IconName.Plugin" Size="IconSize.None" />
+                                                            <span class="mx-3">
+                                                                @((int)(ApiServiceInfo.GetNoahLastDataPerDevice(device.DeviceSn)?.pac ?? 0)) W
+                                                            </span>
+                                                        </div>
+                                                        <div class="col-md-4">
+                                                            <Icon Name="IconName.Plug" Size="IconSize.None" />
+                                                            <span class="mx-3">
+                                                                <strong>@ApiServiceInfo.GetLastValuePerDevice(device.DeviceSn) W</strong>
+                                                            </span>
+                                                        </div>
+                                                    </div>
                                                 </li>
+                                                <li class="list-group-item">
+                                                    <div class="row w-100">
+                                                        <div class="col-md-4">
+                                                            <Icon Name="IconName.BatteryCharging" Size="IconSize.None" />
+                                                            <span class="mx-3">
+                                                                @((int)(ApiServiceInfo.GetNoahLastDataPerDevice(device.DeviceSn)?.totalBatteryPackChargingPower ?? 0)) W
+                                                            </span>
+                                                        </div>
+                                                        <div class="col-md-4">
+                                                            <Icon Name="IconName.Battery" Size="IconSize.None" />
+                                                            <span class="mx-3">
+                                                                @((ApiServiceInfo.GetNoahLastDataPerDevice(device.DeviceSn)?.totalBatteryPackChargingStatus) switch
+                                                                {
+                                                                    0 => "Nothing",
+                                                                    1 => "Charging",
+                                                                    2 => "Discharging",
+                                                                    _ => "Unknown"
+                                                                })
+                                                            </span>
+                                                        </div>
+                                                        <div class="col-md-4">
+                                                            <Icon Name="IconName.BatteryHalf" Size="IconSize.None" />
+                                                            <span class="mx-3">
+                                                                @ApiServiceInfo.GetNoahLastDataPerDevice(device.DeviceSn)?.battery1Soc %
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                </li>
+                                                <li class="list-group-item d-flex align-items-center">
+                                                    <div class="row w-100">
+                                                        <div class="col-md-4">
+                                                            <Icon Name="IconName.Thermometer" Size="IconSize.None" />
+                                                            <span class="mx-3">
+                                                                @ApiServiceInfo.GetNoahLastDataPerDevice(device.DeviceSn)?.battery1Temp °C
+                                                            </span>
+                                                        </div>
+                                                        <div class="col-md-4">
+                                                            <Icon Name="IconName.Battery" Size="IconSize.None" />
+                                                            <span class="mx-3">
+                                                                @ApiServiceInfo.GetNoahLastDataPerDevice(device.DeviceSn)?.dischargeSocLimit %
+                                                            </span>
+                                                        </div>
+                                                        <div class="col-md-4">
+                                                            <Icon Name="IconName.BatteryFull" Size="IconSize.None" />
+                                                            <span class="mx-3">
+                                                                @ApiServiceInfo.GetNoahLastDataPerDevice(device.DeviceSn)?.chargeSocLimit %
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                </li>
+                                                @if (ApiServiceInfo.GetNoahInfoPerDevice(device.DeviceSn)!.TimeSegments.Where(x => x.Enable == "1").Any())
+                                                {
+                                                    <li class="list-group-item d-flex align-items-center">
+                                                        <div class="row w-100">
+                                                            <div class="col-md-2">
+                                                                Start
+                                                            </div>
+                                                            <div class="col-md-2">
+                                                                End
+                                                            </div>
+                                                            <div class="col-md-2">
+                                                                Power
+                                                            </div>
+                                                            <div class="col-md-2">
+                                                                Prio
+                                                            </div>
+                                                        </div>
+                                                    </li>
+                                                }
+                                                @foreach (var segment in ApiServiceInfo.GetNoahInfoPerDevice(device.DeviceSn)!.TimeSegments.Where(x => x.Enable == "1").OrderBy(x => x.StartTime))
+                                                {
+                                                    <li class="list-group-item d-flex align-items-center">
+                                                        <div class="row w-100">
+                                                            <div class="row w-100">
+                                                                <div class="col-md-2">
+                                                                    @segment.StartTime
+                                                                </div>
+                                                                <div class="col-md-2">
+                                                                    @segment.EndTime
+                                                                </div>
+                                                                <div class="col-md-2">
+                                                                    @segment.Mode == "0" ? "Load": "Batt" 
+                                                                </div>
+                                                                <div class="col-md-2">
+                                                                    @segment.Power W
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </li>
+                                                }
                                             </ul>
                                         </CardBody>
                                     </Card>
                                 }
                                 <Card Style="width:18rem;">
                                     <CardBody>
-                                        <CardTitle>Last Indicator Values</CardTitle>
+                                        <CardTitle>
+                                            Last Indicator Values
+                                            <Button Color="ButtonColor.Primary" @onclick="RefreshNoahLastData">Refresh</Button>
+                                        </CardTitle>
                                         <ul class="list-group list-group-flush">
                                             <li class="list-group-item">
-                                                AvgPowerLoad: @ApiServiceInfo.AvgPowerLoad
+                                                <div class="row w-100">
+                                                    <div class="col-md-6">
+                                                        AvgPowerLoad: @ApiServiceInfo.AvgPowerLoad
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        LastOutputValue: @ApiServiceInfo.LastOutputValueSum
+                                                    </div>
+                                                </div>
                                             </li>
                                             <li class="list-group-item">
-                                                DifferencePowerValue: @ApiServiceInfo.DifferencePowerValue
+                                                <div class="row w-100">
+                                                    <div class="col-md-6">
+                                                        DifferencePowerValue: @ApiServiceInfo.DifferencePowerValue
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        DeltaPowerValue: @ApiServiceInfo.DeltaPowerValue
+                                                    </div>
+                                                </div>
+
                                             </li>
                                             <li class="list-group-item">
-                                                DeltaPowerValue: @ApiServiceInfo.DeltaPowerValue
+                                                <div class="row w-100">
+                                                    <div class="col-md-6">
+                                                        NewPowerValue: @ApiServiceInfo.NewPowerValue
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        LastPowerValue: @ApiServiceInfo.LastPowerValue
+                                                    </div>
+                                                </div>
+
                                             </li>
                                             <li class="list-group-item">
-                                                LastPowerValue: @ApiServiceInfo.LastPowerValue
-                                            </li>
-                                            <li class="list-group-item">
-                                                NewPowerValue: @ApiServiceInfo.NewPowerValue
-                                            </li>
-                                            <li class="list-group-item">
-                                                GrowattQueueCount: @ApiServiceInfo.GrowattValueChangeQueue.Count
-                                            </li>
-                                            <li class="list-group-item">
-                                                LastOutputValue: @ApiServiceInfo.LastOutputValue
+                                                <div class="row w-100">
+                                                    <div class="col-md-6">
+                                                        GrowattQueueCount: @ApiServiceInfo.GrowattSetPowerQueue.Count
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                    </div>
+                                                </div>
+
                                             </li>
                                         </ul>
                                     </CardBody>
@@ -84,22 +227,25 @@
                     <Content>
                         <div class="mt-3 d-flex flex-column justify-content-center gap-3">
                             <div>
-                                <Switch @bind-Value="ApiServiceInfo.AutoMode" Label="AutoMode (zero injection on low soc)" />
+                                <Switch @bind-Value="ApiServiceInfo.SettingAutoMode" Label="AutoMode (zero injection on low soc)" />
+                            </div>
+                            <div>
+                                <Switch @bind-Value="ApiServiceInfo.SettingAutoModeRestriction" Label="AutoMode Restriction (only if current price is over avg price)" />
                             </div>
                             <div>
                                 <Switch @bind-Value="ApiServiceInfo.SettingLoadBalanced" Label="LoadBalanced (zero injection on low soc)" />
                             </div>
                             <div>
-                                AvgPowerLoadSeconds <RangeInput TValue="int" @bind-Value="ApiServiceInfo.SettingPowerLoadSeconds" Min="3" Max="60" TickMarks="AvgPowerLoadSecondsTickList" Step="3" />
+                                AvgPowerLoadSeconds <RangeInput TValue="int" @bind-Value="ApiServiceInfo.SettingPowerLoadSeconds" Min="3" Max="180" TickMarks="AvgPowerLoadSecondsTickList" Step="3" />
                             </div>
                             <div>
                                 ApiLockSeconds <RangeInput TValue="int" @bind-Value="ApiServiceInfo.SettingLockSeconds" Min="100" Max="1000" TickMarks="ApiLockSecondsTickList" Step="50" />
                             </div>
                             <div>
-                                ApiOffsetAvg <RangeInput TValue="int" @bind-Value="ApiServiceInfo.SettingOffsetAvg" Min="0" Max="100" TickMarks="ApiOffsetAvgTickList" Step="25" />
+                                ApiOffsetAvg <RangeInput TValue="int" @bind-Value="ApiServiceInfo.SettingOffsetAvg" Min="-100" Max="100" TickMarks="ApiOffsetAvgTickList" Step="25" />
                             </div>
                             <div>
-                                SettingToleranceAvg <RangeInput TValue="int" @bind-Value="ApiServiceInfo.SettingToleranceAvg" Min="0" Max="100" TickMarks="ApiOffsetAvgTickList" Step="5"/>
+                                SettingToleranceAvg <RangeInput TValue="int" @bind-Value="ApiServiceInfo.SettingToleranceAvg" Min="0" Max="100" TickMarks="ApiToleranceAvgTickList" Step="5" />
                             </div>
                             <div>
                                 SettingMaxPower <RangeInput TValue="int" @bind-Value="ApiServiceInfo.SettingMaxPower" Min="700" Max="900" TickMarks="ApiMaxPowerTickList" Step="10" />
