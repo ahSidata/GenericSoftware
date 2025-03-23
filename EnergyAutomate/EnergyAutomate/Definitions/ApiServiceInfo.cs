@@ -1,10 +1,22 @@
 using EnergyAutomate;
+using EnergyAutomate.Definitions;
+using EnergyAutomate.Watchdogs;
 using Growatt.OSS;
 using System.Collections.ObjectModel;
-using Tibber.Sdk;
 
 public class ApiServiceInfo
 {
+    private IServiceProvider ServiceProvider { get; init; }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="serviceProvider"></param>
+    public ApiServiceInfo(IServiceProvider serviceProvider)
+    {
+        ServiceProvider = serviceProvider;
+    }
+
     public bool SettingAutoMode { get; set; }
 
     public bool SettingAutoModeRestriction { get; set; } = false;
@@ -27,15 +39,17 @@ public class ApiServiceInfo
 
     public int DifferencePowerValue { get; set; }
 
-    public int LastPowerValue { get; set; }
+    public int? LastRequestedPowerValue => RealTimeMeasurement.Where(x => x.RequestedPowerValue != null).OrderByDescending(x => x.Timestamp).FirstOrDefault()?.RequestedPowerValue;
+
+    public int? LastCommitedPowerValue => RealTimeMeasurement.Where(x => x.RequestedPowerValue != null).OrderByDescending(x => x.Timestamp).FirstOrDefault()?.CommitedPowerValue;
 
     public int NewPowerValue { get; set; }
-  
+
     public List<ApiCallLog> DataReads { get; set; } = [];
 
     #region Growatt
 
-    #region OutputValueValueChange
+    #region OutputValue
 
     public event EventHandler? StateHasChanged;
 
@@ -44,23 +58,12 @@ public class ApiServiceInfo
         StateHasChanged?.Invoke(this, new EventArgs());
     }
 
-    public Queue<ApiOutputValueDeviceInfo> GrowattSetPowerQueue = new();
+    public ApiQueueWatchdog<DeviceNoahOutputValueQuery> DeviceNoahOutputValueQueueWatchdog => ServiceProvider.GetRequiredService<ApiQueueWatchdog<DeviceNoahOutputValueQuery>>();
 
+    public ApiQueueWatchdog<DeviceNoahTimeSegmentQuery> DeviceNoahTimeSegmentQueueWatchdog => ServiceProvider.GetRequiredService<ApiQueueWatchdog<DeviceNoahTimeSegmentQuery>>();
 
-    public List<ApiOutputValueDeviceInfo> LastOutputValues => RealTimeMeasurement.OrderByDescending(x => x.Timestamp).FirstOrDefault()?.DeviceInfos ?? new List<ApiOutputValueDeviceInfo>();
+    public ApiQueueWatchdog<DeviceNoahLastDataQuery> DeviceNoahLastDataQueueWatchdog => ServiceProvider.GetRequiredService<ApiQueueWatchdog<DeviceNoahLastDataQuery>>();
 
-    public int LastOutputValueSum => LastOutputValues?.Sum(s => s.Value) ?? 0;
-
-    public int GetLastValuePerDevice(string deviceSn)
-    {
-        if (!string.IsNullOrWhiteSpace(deviceSn))
-        {
-            var apiOutputValueDeviceInfo = LastOutputValues?.FirstOrDefault(x => x.DeviceSn == deviceSn);
-            var lastValueChange = apiOutputValueDeviceInfo?.Value ?? 0;
-            return lastValueChange;
-        }
-        return 0;
-    }    
     
     public DeviceNoahLastData? GetNoahLastDataPerDevice(string deviceSn)
     {
@@ -72,17 +75,19 @@ public class ApiServiceInfo
         return DeviceNoahInfo.FirstOrDefault(x => x.DeviceSn == deviceSn);
     }
 
-    #endregion OutputValueValueChange
+    #endregion OutputValue
 
     #region Device
 
     public ObservableCollection<Device> Devices { get; set; } = [];
-    
+
     public ObservableCollection<DeviceNoahInfo> DeviceNoahInfo { get; set; } = [];
-    
+
     public ObservableCollection<DeviceNoahLastData> DeviceNoahLastData { get; set; } = [];
 
     #endregion Device
+
+    #region Events
 
     public delegate Task RefreshDeviceListHandler(object sender, EventArgs e);
     public event RefreshDeviceListHandler? RefreshDeviceList;
@@ -128,13 +133,14 @@ public class ApiServiceInfo
         }
     }
 
+    #endregion Events
 
     #endregion Growatt
 
     #region Tibber
 
     public ObservableCollection<RealTimeMeasurementExtention> RealTimeMeasurement { get; set; } = [];
-    
+
     public ObservableCollection<ApiPrice> Prices { get; set; } = [];
 
     public List<double?> GetPriceTodayDatas()
@@ -157,23 +163,9 @@ public class ApiServiceInfo
         return dataTomorrow;
     }
 
-    public int GetStartHoure()
+    public bool GetCurrentAutoModeRestriction()
     {
-        var dataToday = GetPriceTodayDatas();
-        var avg = dataToday.OrderByDescending(price => price).Take(10).Average();
-        var firstValueGreaterThanAvg = Prices
-            .Where(x => (double?)x.Total > avg)
-            .OrderBy(x => x.StartsAt)
-            .FirstOrDefault();
-
-        return firstValueGreaterThanAvg != null ? firstValueGreaterThanAvg.StartsAt.Hour : 0;
-    }
-
-    public double? GetCurrentPrice()
-    {
-        //current Price is over the average price
-        var dataToday = Prices.Where(x => x.StartsAt.Date == DateTime.Now.Date).OrderBy(x => x.StartsAt).Select(x => new { x.StartsAt, x.Total }).ToList();
-        return (double?)dataToday.First(p => p.StartsAt.Hour == DateTime.Now.Hour).Total;
+        return Prices.FirstOrDefault(x => x.StartsAt.Date == DateTime.Now.Date)?.AutoModeRestriction ?? false;
     }
 
     #endregion Tibber

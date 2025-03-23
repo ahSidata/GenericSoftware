@@ -67,7 +67,7 @@
                                                         <div class="col-md-4">
                                                             <Icon Name="IconName.Plug" Size="IconSize.None" />
                                                             <span class="mx-3">
-                                                                <strong>@ApiServiceInfo.GetLastValuePerDevice(device.DeviceSn) W</strong>
+                                                                <strong>@((ApiServiceInfo.LastCommitedPowerValue ?? 0)/2) W</strong>
                                                             </span>
                                                         </div>
                                                     </div>
@@ -83,13 +83,15 @@
                                                         <div class="col-md-4">
                                                             <Icon Name="IconName.Battery" Size="IconSize.None" />
                                                             <span class="mx-3">
-                                                                @((ApiServiceInfo.GetNoahLastDataPerDevice(device.DeviceSn)?.totalBatteryPackChargingStatus) switch
-                                                                {
-                                                                    0 => "Nothing",
-                                                                    1 => "Charging",
-                                                                    2 => "Discharging",
-                                                                    _ => "Unknown"
-                                                                })
+                                                                <small>
+                                                                    @((ApiServiceInfo.GetNoahLastDataPerDevice(device.DeviceSn)?.totalBatteryPackChargingStatus) switch
+                                                                    {
+                                                                        0 => "Nothing",
+                                                                        1 => "Charging",
+                                                                        2 => "Discharging",
+                                                                        _ => "Unknown"
+                                                                    })
+                                                                </small> 
                                                             </span>
                                                         </div>
                                                         <div class="col-md-4">
@@ -179,7 +181,7 @@
                                                         AvgPowerLoad: @ApiServiceInfo.AvgPowerLoad
                                                     </div>
                                                     <div class="col-md-6">
-                                                        LastOutputValue: @ApiServiceInfo.LastOutputValueSum
+                                                        LastCommitedPowerValue: @ApiServiceInfo.LastCommitedPowerValue
                                                     </div>
                                                 </div>
                                             </li>
@@ -200,7 +202,7 @@
                                                         NewPowerValue: @ApiServiceInfo.NewPowerValue
                                                     </div>
                                                     <div class="col-md-6">
-                                                        LastPowerValue: @ApiServiceInfo.LastPowerValue
+                                                        LastPowerValue: @ApiServiceInfo.LastRequestedPowerValue
                                                     </div>
                                                 </div>
 
@@ -208,7 +210,26 @@
                                             <li class="list-group-item">
                                                 <div class="row w-100">
                                                     <div class="col-md-6">
-                                                        GrowattQueueCount: @ApiServiceInfo.GrowattSetPowerQueue.Count
+                                                        OutputValueQueueCount: @ApiServiceInfo.DeviceNoahOutputValueQueueWatchdog.Count
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                    </div>
+                                                </div>
+                                            </li>
+                                            <li class="list-group-item">
+                                                <div class="row w-100">
+                                                    <div class="col-md-6">
+                                                        TimeSegmentQueueCount: @ApiServiceInfo.DeviceNoahTimeSegmentQueueWatchdog.Count
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                    </div>
+                                                </div>
+
+                                            </li>
+                                            <li class="list-group-item">
+                                                <div class="row w-100">
+                                                    <div class="col-md-6">
+                                                        LastDataQueueCount: @ApiServiceInfo.DeviceNoahLastDataQueueWatchdog.Count
                                                     </div>
                                                     <div class="col-md-6">
                                                     </div>

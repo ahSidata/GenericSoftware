@@ -4,6 +4,7 @@ using EnergyAutomate.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace EnergyAutomate.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250323102923_ChangeTable10")]
+    partial class ChangeTable10
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -578,9 +581,6 @@ namespace EnergyAutomate.Migrations
                     b.Property<int>("AvgPowerLoad")
                         .HasColumnType("int");
 
-                    b.Property<int?>("CommitedPowerValue")
-                        .HasColumnType("int");
-
                     b.Property<string>("Currency")
                         .HasColumnType("nvarchar(max)");
 
@@ -592,6 +592,9 @@ namespace EnergyAutomate.Migrations
 
                     b.Property<decimal?>("CurrentPhase3")
                         .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("DeviceInfos")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<decimal?>("LastMeterConsumption")
                         .HasColumnType("decimal(18,2)");
@@ -625,9 +628,6 @@ namespace EnergyAutomate.Migrations
 
                     b.Property<decimal?>("PowerReactive")
                         .HasColumnType("decimal(18,2)");
-
-                    b.Property<int?>("RequestedPowerValue")
-                        .HasColumnType("int");
 
                     b.Property<int>("SettingLockSeconds")
                         .HasColumnType("int");
@@ -671,9 +671,6 @@ namespace EnergyAutomate.Migrations
 
                     b.Property<string>("DeviceType")
                         .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime?>("IsOfflineSince")
-                        .HasColumnType("datetime2");
 
                     b.HasKey("DeviceSn");
 

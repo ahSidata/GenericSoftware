@@ -1,14 +1,6 @@
-﻿using EnergyAutomate.Components.Pages;
-using Growatt.OSS;
-using Microsoft.Extensions.Hosting;
-using System;
-using System.Collections.Generic;
-using System.Net.Http.Headers;
-using System.Text;
-using System.Threading;
-using Tibber.Sdk;
+﻿using EnergyAutomate.Watchdogs;
 
-namespace EnergyAutomate
+namespace EnergyAutomate.Services
 {
     public class ApiBackgroundService : IHostedService, IDisposable
     {

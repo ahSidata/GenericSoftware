@@ -1,4 +1,4 @@
-﻿namespace EnergyAutomate
+﻿namespace EnergyAutomate.Definitions
 {
     public class ApiCallLog
     {

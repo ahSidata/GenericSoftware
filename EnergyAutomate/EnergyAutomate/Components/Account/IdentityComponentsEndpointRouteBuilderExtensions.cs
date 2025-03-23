@@ -1,14 +1,14 @@
-using System.Security.Claims;
-using System.Text.Json;
+using EnergyAutomate.Components.Account.Pages;
+using EnergyAutomate.Components.Account.Pages.Manage;
+using EnergyAutomate.Data;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Primitives;
-using EnergyAutomate.Components.Account.Pages;
-using EnergyAutomate.Components.Account.Pages.Manage;
-using EnergyAutomate.Data;
+using System.Security.Claims;
+using System.Text.Json;
 
 namespace EnergyAutomate.Components.Account;
 

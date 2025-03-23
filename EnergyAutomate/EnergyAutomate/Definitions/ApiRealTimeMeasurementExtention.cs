@@ -1,8 +1,9 @@
-﻿using System.ComponentModel.DataAnnotations.Schema;
+﻿using Newtonsoft.Json.Linq;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json.Serialization;
 using Tibber.Sdk;
 
-namespace EnergyAutomate
+namespace EnergyAutomate.Definitions
 {
     public class RealTimeMeasurementExtention : RealTimeMeasurement
     {
@@ -11,6 +12,7 @@ namespace EnergyAutomate
         public RealTimeMeasurementExtention(RealTimeMeasurement measurement)
         {
             Timestamp = measurement.Timestamp;
+            TS = measurement.Timestamp.DateTime;
             Power = measurement.Power;
             LastMeterConsumption = measurement.LastMeterConsumption;
             AccumulatedConsumption = measurement.AccumulatedConsumption;
@@ -50,12 +52,12 @@ namespace EnergyAutomate
         [NotMapped]
         public int TotalPower => Power > 0 ? (int)Power : -(int)(PowerProduction ?? 0);
 
-        public int TotalOutputValue => DeviceInfos?.Sum(sum => sum.Value) ?? 0;
-
         public int AvgPowerLoad { get; set; }
 
         [JsonInclude]
-        public List<ApiOutputValueDeviceInfo>? DeviceInfos { get; set; } = new List<ApiOutputValueDeviceInfo>();
+        public int? RequestedPowerValue { get; set; } 
+
+        public int? CommitedPowerValue { get; set; } 
 
         public DateTime TS { get; set; }
     }

@@ -1,14 +1,9 @@
 ﻿using BlazorBootstrap;
 using EnergyAutomate.Components.Layout;
-using Growatt.OSS;
 using Microsoft.AspNetCore.Components;
-using Mono.TextTemplating;
-using Newtonsoft.Json.Linq;
 using System.Collections.Specialized;
 using System.Diagnostics;
-using System.Drawing;
-using System.Linq;
-using static ApiServiceInfo;
+using Tibber.Sdk;
 
 namespace EnergyAutomate.Components.Pages
 {
@@ -22,7 +17,7 @@ namespace EnergyAutomate.Components.Pages
             ApiServiceInfo.RealTimeMeasurement.CollectionChanged += RealTimeMeasurement_CollectionChanged;
             ApiServiceInfo.Prices.CollectionChanged += Price_CollectionChanged;
             ApiServiceInfo.Devices.CollectionChanged += ApiServiceInfo_StateHasChanged;
-            ApiServiceInfo.DeviceNoahLastData.CollectionChanged += ApiServiceInfo_StateHasChanged;            
+            ApiServiceInfo.DeviceNoahLastData.CollectionChanged += ApiServiceInfo_StateHasChanged;
             ApiServiceInfo.StateHasChanged += ApiServiceInfo_StateHasChanged;
         }
 
@@ -53,7 +48,7 @@ namespace EnergyAutomate.Components.Pages
 
         private readonly IEnumerable<TickMark> AvgPowerLoadSecondsTickList = GenerateTickTickMarks(3, 180, 3);
 
-        private readonly IEnumerable<TickMark> ApiLockSecondsTickList = GenerateTickTickMarks(100, 1000, 50); 
+        private readonly IEnumerable<TickMark> ApiLockSecondsTickList = GenerateTickTickMarks(100, 1000, 50);
 
         private readonly IEnumerable<TickMark> ApiOffsetAvgTickList = GenerateTickTickMarks(-100, 100, 25);
 
@@ -214,7 +209,7 @@ namespace EnergyAutomate.Components.Pages
 
         private void GetPriceData()
         {
-            var hours = new [] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23 };
+            var hours = new[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23 };
             List<double?> dataToday = ApiServiceInfo.GetPriceTodayDatas();
             List<double?> dataTomorrow = ApiServiceInfo.GetPriceTomorrowDatas();
             double? avgToday = dataToday.Any() ? dataToday.Average() : 0;
@@ -223,7 +218,7 @@ namespace EnergyAutomate.Components.Pages
             List<string> months = new List<string> { "Today", "Tomorrow" };
             var dataPoints = dataToday.Concat(dataTomorrow).ToList();
 
-            var dataCurrentHour = dataPoints.Select(point => dataPoints.IndexOf(point) < 24 && (hours[dataPoints.IndexOf(point)] == DateTime.Now.Hour + 1 || hours[dataPoints.IndexOf(point) +1] == DateTime.Now.Hour + 1) ? point : null).ToList();
+            var dataCurrentHour = dataPoints.Select(point => dataPoints.IndexOf(point) < 24 && (hours[dataPoints.IndexOf(point)] == DateTime.Now.Hour + 1 || hours[dataPoints.IndexOf(point) + 1] == DateTime.Now.Hour + 1) ? point : null).ToList();
 
             var dataAvgTodayPoints = dataToday.Select(point => point > avgToday ? avgToday : point).ToList();
             var dataAvgTomorrowPoints = dataTomorrow.Select(point => point > avgTomorrow ? avgTomorrow : point).ToList();
@@ -233,19 +228,12 @@ namespace EnergyAutomate.Components.Pages
             var dataAvgLineTomorrowPoints = dataTomorrow.Select(point => avgTomorrow).ToList();
             var dataAvgLinePoints = dataAvgLineTodayPoints.Concat(dataAvgLineTomorrowPoints).ToList();
 
-            var topPricesToday = dataToday.OrderByDescending(price => price).Take(10);
-            var averageTopPriceToday = topPricesToday.Average();
-            var highPricePointsToday = dataToday.Select(point => point > averageTopPriceToday ? averageTopPriceToday : null).ToList();
+            var avghighPrices = ApiServiceInfo.Prices.OrderBy(x => x.StartsAt)
+                .Where(w => (w.AutoModeRestriction ?? false && w.Total.HasValue) == true)
+                .GroupBy(g => g.StartsAt.Date)
+                .Select(s=> new { Key = s.Key.Date, Value = s.Average(a => a.Total) }).ToDictionary(d => d.Key, x => (double?)x.Value);
 
-            var topPricesTomorrow = dataTomorrow.OrderByDescending(price => price).Take(10);
-            var averageTopPriceTomorrow = topPricesTomorrow.Average();
-            var highPricePointsTomorrow = dataTomorrow.Select(point => point > averageTopPriceTomorrow ? averageTopPriceTomorrow : null).ToList();
-
-            var highPricePoints = highPricePointsToday.Concat(highPricePointsTomorrow).ToList();
-
-            var avgHighPriceTodayPoints = dataToday.Select(point => averageTopPriceToday).ToList();
-            var avgHighPriceTomorrowPoints = dataTomorrow.Select(point => averageTopPriceTomorrow).ToList();
-            var avgHighPricePoints = avgHighPriceTodayPoints.Concat(avgHighPriceTomorrowPoints).ToList();
+            var avgHighPricePoints = ApiServiceInfo.Prices.OrderBy(x => x.StartsAt).Select(x => x.AutoModeRestriction ?? false ? avghighPrices[x.StartsAt.Date] : null).ToList();
 
             priceData = new ChartData
             {
@@ -280,19 +268,8 @@ namespace EnergyAutomate.Components.Pages
                     },
                     new LineChartDataset()
                     {
-                        Label = "high price",
-                        Data = avgHighPricePoints,
-                        BackgroundColor = "rgb(0, 128, 255)",
-                        BorderColor = "rgb(0, 128, 255)",
-                        BorderWidth = 2,
-                        PointRadius = new List<double>() { 0.0 },
-                        Stepped = true,
-                        Order = 4 // Vordergrund
-                    },
-                    new LineChartDataset()
-                    {
                         Label = "Avg high price",
-                        Data = highPricePoints,
+                        Data = avgHighPricePoints,
                         BackgroundColor = "rgb(0, 128, 255)",
                         BorderColor = "rgb(0, 128, 255)",
                         BorderWidth = 2,
@@ -340,7 +317,7 @@ namespace EnergyAutomate.Components.Pages
                     new LineChartDataset()
                     {
                         Label = "AvgOutputValue",
-                        Data = dataSource.Select(x => (double?)x.TotalOutputValue).ToList(),
+                        Data = dataSource.Select(x => (double?)x.CommitedPowerValue).ToList(),
                         BackgroundColor = "rgb(0, 255, 0)",
                         BorderColor = "rgb(0, 255, 0)",
                         BorderWidth = 2,

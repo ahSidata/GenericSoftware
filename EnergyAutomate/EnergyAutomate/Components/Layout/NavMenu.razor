@@ -4,29 +4,70 @@
 
 <div class="top-row ps-3 navbar navbar-dark">
     <div class="container-fluid">
-        <a class="navbar-brand" href="">EnergyAutomate</a>
+        <a class="navbar-brand" href="">
+            <span id="navbar-brand-text">EnergyAutomate</span>
+        </a>
     </div>
 </div>
 
 <input type="checkbox" title="Navigation menu" class="navbar-toggler" />
 
+<script>
+    
+    let originalWidth;
+
+    document.querySelector('.navbar-toggler').addEventListener('change', function() {
+        if (window.innerWidth >= 641) {
+            // Aktionen für Bildschirme ab 641px
+            console.log("Bildschirm ist mindestens 641px breit");
+      
+            const linkTexts = document.querySelectorAll('#navbar-brand-text');
+            linkTexts.forEach(text => {
+                text.style.display = this.checked ? 'none' : '';
+            });
+
+            const sidebar = document.querySelector('.sidebar');
+            if (this.checked) {
+                // Sidebar verkleinern
+                originalWidth = sidebar.style.width;
+                sidebar.style.width = '100px'; // Beispielwert für reduzierte Breite
+            } else {
+                // Sidebar auf ursprüngliche Breite zurücksetzen
+                sidebar.style.width = originalWidth;
+            }
+        }
+    });
+
+
+</script>
+
 <div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
     <nav class="nav flex-column">
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-                <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Home
+                <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span>
+                <span class="link-text">Home</span>
             </NavLink>
         </div>
 
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="realtimemeasurement">
-                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> RealTime Measurement
+                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> 
+                <span class="link-text">RealTime Measurement</span>
+            </NavLink>
+        </div>
+
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="editor">
+                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> 
+                <span class="link-text">Editor</span>
             </NavLink>
         </div>
 
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="auth">
-                <span class="bi bi-lock-nav-menu" aria-hidden="true"></span> Auth Required
+                <span class="bi bi-lock-nav-menu" aria-hidden="true"></span> 
+                <span class="link-text">Auth Required</span>
             </NavLink>
         </div>
 
@@ -34,7 +75,8 @@
             <Authorized>
                 <div class="nav-item px-3">
                     <NavLink class="nav-link" href="Account/Manage">
-                        <span class="bi bi-person-fill-nav-menu" aria-hidden="true"></span> @context.User.Identity?.Name
+                        <span class="bi bi-person-fill-nav-menu" aria-hidden="true"></span>
+                        <span class="link-text">@context.User.Identity?.Name</span>
                     </NavLink>
                 </div>
                 <div class="nav-item px-3">
@@ -42,7 +84,8 @@
                         <AntiforgeryToken />
                         <input type="hidden" name="ReturnUrl" value="@currentUrl" />
                         <button type="submit" class="nav-link">
-                            <span class="bi bi-arrow-bar-left-nav-menu" aria-hidden="true"></span> Logout
+                            <span class="bi bi-arrow-bar-left-nav-menu" aria-hidden="true"></span>
+                            <span class="link-text">Logout</span>
                         </button>
                     </form>
                 </div>
@@ -50,12 +93,14 @@
             <NotAuthorized>
                 <div class="nav-item px-3">
                     <NavLink class="nav-link" href="Account/Register">
-                        <span class="bi bi-person-nav-menu" aria-hidden="true"></span> Register
+                        <span class="bi bi-person-nav-menu" aria-hidden="true"></span>
+                        <span class="link-text">Register</span>
                     </NavLink>
                 </div>
                 <div class="nav-item px-3">
                     <NavLink class="nav-link" href="Account/Login">
-                        <span class="bi bi-person-badge-nav-menu" aria-hidden="true"></span> Login
+                        <span class="bi bi-person-badge-nav-menu" aria-hidden="true"></span>
+                        <span class="link-text">Login</span>
                     </NavLink>
                 </div>
             </NotAuthorized>

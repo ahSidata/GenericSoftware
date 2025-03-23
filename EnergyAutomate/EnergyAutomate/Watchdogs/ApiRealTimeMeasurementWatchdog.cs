@@ -3,17 +3,15 @@ using System.Diagnostics;
 using System.Net.Http.Headers;
 using Tibber.Sdk;
 
-namespace EnergyAutomate
+namespace EnergyAutomate.Watchdogs
 {
     public class ApiRealTimeMeasurementWatchdog
     {
         private IServiceProvider ServiceProvider { get; init; }
 
-        private IConfiguration Configuration => ServiceProvider.GetRequiredService<IConfiguration>();
-
         private ApiService ApiService => ServiceProvider.GetRequiredService<ApiService>();
 
-        public TibberApiClient? TibberApiClient { get; set; } 
+        public TibberApiClient? TibberApiClient { get; set; }
 
         private Guid? TibberHomeId { get; set; }
 
@@ -25,17 +23,13 @@ namespace EnergyAutomate
         {
             ServiceProvider = serviceProvider;
 
-            Trace.WriteLine("Create new TibberApiClient ...");
-            TibberApiClient = NewTibberApiClient();
-        }
-
-        private TibberApiClient NewTibberApiClient()
-        {
-            return new TibberApiClient(Configuration["ApiSettings:TibberApiToken"] ?? string.Empty, new ProductInfoHeaderValue("EnergyAutomate", "1.0"));
+            Trace.WriteLine("Create new TibberApiClient for watchdog ...");            
         }
 
         public async Task StartAsync(CancellationToken cancellationToken)
         {
+            TibberApiClient = GetNewTibberClient();
+
             if (TibberApiClient != null)
             {
                 var basicData = await TibberApiClient.GetBasicData(cancellationToken);
@@ -43,6 +37,12 @@ namespace EnergyAutomate
 
                 await StartListener(cancellationToken);
             }
+        }
+
+        private TibberApiClient GetNewTibberClient()
+        {
+            var configuration = ServiceProvider.GetRequiredService<IConfiguration>();
+            return new TibberApiClient(configuration["ApiSettings:TibberApiToken"] ?? string.Empty, new ProductInfoHeaderValue("EnergyAutomate", "1.0"));
         }
 
         public async Task StopAsync(CancellationToken cancellationToken)
@@ -106,7 +106,7 @@ namespace EnergyAutomate
                 {
                     Trace.WriteLine("Create new TibberApiClient ...");
 
-                    TibberApiClient = NewTibberApiClient();
+                    TibberApiClient = GetNewTibberClient();
 
                     Trace.WriteLine("StartRealTimeMeasurementListener calling ...");
 

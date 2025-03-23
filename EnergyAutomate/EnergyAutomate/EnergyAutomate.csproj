@@ -18,6 +18,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<ProjectReference Include="..\..\BlazorMonaco\BlazorMonaco.csproj" />
 		<ProjectReference Include="..\..\Growatt.Sdk\Growatt.Sdk.csproj" />
 		<ProjectReference Include="..\..\Tibber.Sdk\Tibber.Sdk.csproj" />
 		<ProjectReference Include="..\EnergyAutomate.Client\EnergyAutomate.Client.csproj" />

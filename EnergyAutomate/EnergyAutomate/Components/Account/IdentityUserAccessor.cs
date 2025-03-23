@@ -1,5 +1,5 @@
-using Microsoft.AspNetCore.Identity;
 using EnergyAutomate.Data;
+using Microsoft.AspNetCore.Identity;
 
 namespace EnergyAutomate.Components.Account;
 

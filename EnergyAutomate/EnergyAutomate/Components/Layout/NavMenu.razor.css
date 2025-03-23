@@ -110,9 +110,9 @@
 }
 
 @media (min-width: 641px) {
-    .navbar-toggler {
+/*    .navbar-toggler {
         display: none;
-    }
+    }*/
 
     .nav-scrollable {
         /* Never collapse the sidebar for wide screens */
@@ -122,4 +122,10 @@
         height: calc(100vh - 3.5rem);
         overflow-y: auto;
     }
+
+    /* Menütexte ausblenden, wenn Toggle-Button aktiviert ist */
+    .navbar-toggler:checked ~ .nav-scrollable .nav-item .nav-link .link-text {
+        display: none;
+    }
+
 }

@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Growatt.Sdk;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using System.Net.Http.Headers;
 
@@ -33,15 +34,15 @@ namespace Growatt.OSS
             response.EnsureSuccessStatusCode();
 
             var responseString = await response.Content.ReadAsStringAsync();
-            var deviceListResponse = JsonConvert.DeserializeObject<DeviceListResponse>(responseString);
+            var result = JsonConvert.DeserializeObject<DeviceListResponse>(responseString);
 
-            if (deviceListResponse.Code == 0)
+            if (result.Code == 0)
             {
-                return deviceListResponse.Data.Devices;
+                return result.Data.Devices;
             }
             else
             {
-                throw new Exception($"API error: {deviceListResponse.Message}");
+                throw new ApiException($"API error: {result.Message}", result.Code);
             }
         }
 
@@ -58,15 +59,15 @@ namespace Growatt.OSS
             response.EnsureSuccessStatusCode();
 
             var responseString = await response.Content.ReadAsStringAsync();
-            var deviceInfoResponse = JsonConvert.DeserializeObject<DeviceInfoResponse>(responseString);
+            var result = JsonConvert.DeserializeObject<DeviceInfoResponse>(responseString);
 
-            if (deviceInfoResponse?.Code == 0)
+            if (result?.Code == 0)
             {
-                return deviceInfoResponse.Data.Noah;
+                return result.Data.Noah;
             }
             else
             {
-                throw new Exception($"API error: {deviceInfoResponse?.Message}");
+                throw new ApiException($"API error: {result.Message}", result.Code);
             }
         }
 
@@ -83,15 +84,15 @@ namespace Growatt.OSS
             response.EnsureSuccessStatusCode();
 
             var responseString = await response.Content.ReadAsStringAsync();
-            var deviceLastDataResponse = JsonConvert.DeserializeObject<DeviceNoahLastDataResponse>(responseString);
+            var result = JsonConvert.DeserializeObject<DeviceNoahLastDataResponse>(responseString);
 
-            if (deviceLastDataResponse.Code == 0)
+            if (result.Code == 0)
             {
-                return deviceLastDataResponse.Data.Noah;
+                return result.Data.Noah;
             }
             else
             {
-                throw new Exception($"API error: {deviceLastDataResponse.Message}");
+                throw new ApiException($"API error: {result.Message}", result.Code);
             }
         }
 
@@ -109,19 +110,19 @@ namespace Growatt.OSS
             response.EnsureSuccessStatusCode();
 
             var responseString = await response.Content.ReadAsStringAsync();
-            var historicalDataResponse = JsonConvert.DeserializeObject<HistoricalDataResponse>(responseString);
+            var result = JsonConvert.DeserializeObject<HistoricalDataResponse>(responseString);
 
-            if (historicalDataResponse.Code == 0)
+            if (result.Code == 0)
             {
-                return historicalDataResponse.Data.Datas;
+                return result.Data.Datas;
             }
             else
             {
-                throw new Exception($"API error: {historicalDataResponse.Message}");
+                throw new ApiException($"API error: {result.Message}", result.Code);
             }
         }
 
-        public async Task SetTimeSegmentAsync(DeviceTimeSegment deviceNoahTimeSegment)
+        public async Task SetTimeSegmentAsync(DeviceNoahTimeSegmentQuery deviceNoahTimeSegment)
         {
             var endpoint = "/v4/new-api/setTimeSegment";
             var content = deviceNoahTimeSegment.ToFormUrlEncodedContent();
@@ -134,7 +135,7 @@ namespace Growatt.OSS
 
             if (result.Code != 0)
             {
-                throw new Exception($"API error: {result.Message}");
+                throw new ApiException($"API error: {result.Message}", result.Code);
             }
         }
 
@@ -143,9 +144,9 @@ namespace Growatt.OSS
             var endpoint = "/v4/new-api/setPower";
             var content = new FormUrlEncodedContent(new[]
             {
-            new KeyValuePair<string, string>("deviceSn", deviceSn),
-            new KeyValuePair<string, string>("deviceType", deviceType),
-            new KeyValuePair<string, string>("value", value.ToString())
+                new KeyValuePair<string, string>("deviceSn", deviceSn),
+                new KeyValuePair<string, string>("deviceType", deviceType),
+                new KeyValuePair<string, string>("value", value.ToString())
             });
 
             var response = await _httpClient.PostAsync(endpoint, content);
@@ -156,7 +157,7 @@ namespace Growatt.OSS
 
             if (result.Code != 0)
             {
-                throw new Exception($"API error: {result.Message}");
+                throw new ApiException($"API error: {result.Message}", result.Code);
             }
         }
     }

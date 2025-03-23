@@ -1,10 +1,12 @@
-﻿using System.Text.Json.Serialization;
+﻿using Growatt.Sdk;
+using Newtonsoft.Json;
 
-namespace EnergyAutomate
+namespace EnergyAutomate.Definitions
 {
-    public class ApiOutputValueDeviceInfo
+    public class DeviceNoahOutputValueQuery : IDevice
     {
-        public bool Force = false;
+        [JsonIgnore]
+        public bool Force { get; set; } = false;
 
         public DateTime TS { get; set; }
 

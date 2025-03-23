@@ -5,25 +5,24 @@
 namespace EnergyAutomate.Migrations
 {
     /// <inheritdoc />
-    public partial class ChangeTable7 : Migration
+    public partial class ChangeTable10 : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.AddColumn<DateTime>(
-                name: "TS",
-                table: "RealTimeMeasurements",
-                type: "datetime2",
-                nullable: false,
-                defaultValue: new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified));
+            migrationBuilder.AddColumn<bool>(
+                name: "AutoModeRestriction",
+                table: "Prices",
+                type: "bit",
+                nullable: true);
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropColumn(
-                name: "TS",
-                table: "RealTimeMeasurements");
+                name: "AutoModeRestriction",
+                table: "Prices");
         }
     }
 }

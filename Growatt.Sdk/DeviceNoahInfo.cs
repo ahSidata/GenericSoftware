@@ -184,11 +184,11 @@ public class DeviceNoahInfo
     public string LastUpdateTimeText { get; set; }
 
     [JsonIgnore]
-    public List<DeviceTimeSegment> TimeSegments
+    public List<DeviceNoahTimeSegmentQuery> TimeSegments
     {
         get
         {
-            var result = new List<DeviceTimeSegment>();
+            var result = new List<DeviceNoahTimeSegmentQuery>();
 
             for (int i = 1; i <= 9; i++)
             {
@@ -200,7 +200,7 @@ public class DeviceNoahInfo
 
                 if (startTime != null && endTime != null && mode != null && power != null && enable != null)
                 {
-                    result.Add(new DeviceTimeSegment
+                    result.Add(new DeviceNoahTimeSegmentQuery
                     {
                         DeviceType = "noah",
                         DeviceSn = DeviceSn,

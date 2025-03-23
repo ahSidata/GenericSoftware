@@ -5,5 +5,7 @@
         public string DeviceType { get; set; }
         public string DeviceSn { get; set; }
         public DateTime CreateDate { get; set; }
+
+        public DateTime? IsOfflineSince { get; set; }
     }
 }

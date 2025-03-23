@@ -1,15 +1,17 @@
-using Microsoft.AspNetCore.Components.Authorization;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
-using EnergyAutomate.Client.Pages;
+using BlazorMonaco;
 using EnergyAutomate.Components;
 using EnergyAutomate.Components.Account;
 using EnergyAutomate.Data;
+using EnergyAutomate.Definitions;
+using EnergyAutomate.Services;
+using EnergyAutomate.Watchdogs;
 using Growatt.OSS;
-using Tibber.Sdk;
-using System.Net.Http.Headers;
-using static System.Runtime.InteropServices.JavaScript.JSType;
+using Microsoft.AspNetCore.Components.Authorization;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using System.Diagnostics;
+using System.Net.Http.Headers;
+using Tibber.Sdk;
 
 namespace EnergyAutomate;
 
@@ -28,8 +30,8 @@ public class Program
         var configuration = builder.Configuration;
         var TraceEnabled = configuration.GetSection("Trace").GetValue<bool>("TraceEnabled");
 
-        if(TraceEnabled)
-            Trace.Listeners.Add(new ConsoleTraceListener());        
+        if (TraceEnabled)
+            Trace.Listeners.Add(new ConsoleTraceListener());
 
         // Add services to the container.
         builder.Services.AddRazorComponents()
@@ -61,9 +63,15 @@ public class Program
             .AddDefaultTokenProviders();
 
         builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSender>();
+
+        builder.Services.AddTransient(sp => new GrowattApiClient("https://openapi.growatt.com", builder.Configuration["ApiSettings:GrowattApiToken"] ?? string.Empty));
+        builder.Services.AddTransient(sp => new TibberApiClient(builder.Configuration["ApiSettings:TibberApiToken"] ?? string.Empty, new ProductInfoHeaderValue("EnergyAutomate", "1.0")));
         builder.Services.AddSingleton<ApiServiceInfo>();
         builder.Services.AddSingleton<ApiService>();
         builder.Services.AddSingleton<ApiRealTimeMeasurementWatchdog>();
+        builder.Services.AddSingleton<ApiQueueWatchdog<DeviceNoahOutputValueQuery>>();
+        builder.Services.AddSingleton<ApiQueueWatchdog<DeviceNoahTimeSegmentQuery>>();
+        builder.Services.AddSingleton<ApiQueueWatchdog<DeviceNoahLastDataQuery>>();
 
         // Registrieren des Hintergrunddienstes
         builder.Services.AddHostedService<ApiBackgroundService>();
