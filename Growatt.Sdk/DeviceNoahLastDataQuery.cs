@@ -11,5 +11,7 @@ namespace EnergyAutomate.Definitions
         public string DeviceSn { get; set; } = string.Empty;
 
         public string DeviceType { get; set; } = string.Empty;
+
+        public string QueryType { get; set; } = string.Empty;
     }
 }

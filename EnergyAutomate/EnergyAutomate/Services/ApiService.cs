@@ -48,109 +48,97 @@ public partial class ApiService : IObserver<RealTimeMeasurement>, IDisposable
 
         if (timerIsOffline)
         {
-            await LoadDeviceLastData();
+            LoadLastData();
             CheckOfflineCondition();
             return;
         }
 
         timmerIsRunning = true;
 
-        var ApiServiceInfo = ServiceProvider.GetRequiredService<ApiServiceInfo>();
-
-        var configuration = ServiceProvider.GetRequiredService<IConfiguration>();
-        var client = new GrowattApiClient("https://openapi.growatt.com", configuration["ApiSettings:GrowattApiToken"] ?? string.Empty);
-
-        var lastRequestedPowerValueItem = ApiServiceInfo.RealTimeMeasurement.Where(x => x.RequestedPowerValue != null && x.CommitedPowerValue == null).OrderByDescending(x => x.Timestamp).FirstOrDefault();
-        var lastCommitedPowerValueItem = ApiServiceInfo.RealTimeMeasurement.Where(x => x.RequestedPowerValue != null && x.CommitedPowerValue != null).OrderByDescending(x => x.Timestamp).FirstOrDefault();
-
-        if
-        (
-            (lastCommitedPowerValueItem == null && lastRequestedPowerValueItem != null) ||
-            (lastCommitedPowerValueItem != null && lastRequestedPowerValueItem != null && lastCommitedPowerValueItem.TS < lastRequestedPowerValueItem.TS)
-        )
+        try
         {
-            if (lastRequestedPowerValueItem.RequestedPowerValue.HasValue && !lastRequestedPowerValueItem.CommitedPowerValue.HasValue)
+            var ApiServiceInfo = ServiceProvider.GetRequiredService<ApiServiceInfo>();
+            var client = ServiceProvider.GetRequiredService<GrowattApiClient>();
+
+            var lastRequestedPowerValueItem = ApiServiceInfo.RealTimeMeasurement.Where(x => x.RequestedPowerValue != null && x.CommitedPowerValue == null).OrderByDescending(x => x.Timestamp).FirstOrDefault();
+            var lastCommitedPowerValueItem = ApiServiceInfo.RealTimeMeasurement.Where(x => x.RequestedPowerValue != null && x.CommitedPowerValue != null).OrderByDescending(x => x.Timestamp).FirstOrDefault();
+
+            if
+            (
+                (lastCommitedPowerValueItem == null && lastRequestedPowerValueItem != null) ||
+                (lastCommitedPowerValueItem != null && lastRequestedPowerValueItem != null && lastCommitedPowerValueItem.TS < lastRequestedPowerValueItem.TS)
+            )
             {
-                var dbContext = ServiceProvider.CreateScope().ServiceProvider.GetRequiredService<ApplicationDbContext>();
-
-                var lastRequestedPowerValue = lastRequestedPowerValueItem.RequestedPowerValue.Value;
-
-                bool exitLoops = false;
-                foreach (IDevice device in ApiServiceInfo.Devices)
+                if (lastRequestedPowerValueItem.RequestedPowerValue.HasValue && !lastRequestedPowerValueItem.CommitedPowerValue.HasValue)
                 {
-                    bool isCommited = false;
-                    while (!isCommited)
+                    var dbContext = ServiceProvider.CreateScope().ServiceProvider.GetRequiredService<ApplicationDbContext>();
+
+                    var lastRequestedPowerValue = lastRequestedPowerValueItem.RequestedPowerValue.Value;
+
+                    bool exitLoops = false;
+                    foreach (var device in ApiServiceInfo.Devices)
                     {
-                        try
+                        bool isCommited = false;
+                        while (!isCommited)
                         {
-                            await client.SetPowerAsync(device.DeviceSn, "noah", lastRequestedPowerValue);
-
-                            await SetDeviceIsOfflineSince(device, null);
-
-                            Logger.LogDebug($"Sended {device.DeviceSn}, {lastRequestedPowerValue} W");
-                            isCommited = true;
-
-                            if (timerPenalty >= 100) timerPenalty -= 100;
-                        }
-                        catch (ApiException ex)
-                        {
-                            if (ex.ErrorCode == 5)
+                            try
                             {
-                                await SetDeviceIsOfflineSince(device, DateTime.Now);
+                                await client.SetPowerAsync(device.DeviceSn, "noah", lastRequestedPowerValue);
 
-                                Logger.LogError($"Device {device.DeviceSn} is offline");
+                                Logger.LogDebug($"Sended {device.DeviceSn}, {lastRequestedPowerValue} W");
                                 isCommited = true;
-                                exitLoops = true;
-                                break;
+
+                                if (timerPenalty >= 100) timerPenalty -= 100;
                             }
-                            else
+                            catch (ApiException ex)
                             {
-                                Logger.LogError(ex, ex.Message);
-                                timerPenalty += 100;
+                                if (ex.ErrorCode == 5)
+                                {
+                                    GetDeviceNoahInfo();
+
+                                    Logger.LogError($"Device {device.DeviceSn} is offline");
+                                    isCommited = true;
+                                    exitLoops = true;
+                                    break;
+                                }
+                                else
+                                {
+                                    Logger.LogError(ex, ex.Message);
+                                    timerPenalty += 100;
+                                }
                             }
+                            await Task.Delay(ApiServiceInfo.SettingLockSeconds);
                         }
-                        await Task.Delay(ApiServiceInfo.SettingLockSeconds);
+                        if (exitLoops) break;
                     }
-                    if (exitLoops) break;
+
+
+                    var data = dbContext.RealTimeMeasurements.FirstOrDefault(x => x.TS == lastRequestedPowerValueItem.TS);
+                    if (data != null)
+                    {
+                        data.CommitedPowerValue = lastRequestedPowerValue;
+                        await dbContext.SaveChangesAsync();
+                    }
                 }
 
 
-                var data = dbContext.RealTimeMeasurements.FirstOrDefault(x => x.TS == lastRequestedPowerValueItem.TS);
-                if (data != null)
-                {
-                    data.CommitedPowerValue = lastRequestedPowerValue;
-                    await dbContext.SaveChangesAsync();
-                }
             }
+        }
+        catch (Exception)
+        {
+
+            throw;
         }
 
         timmerIsRunning = false;
     }
 
-    public async Task SetDeviceIsOfflineSince(IDevice device, DateTime? isOfflineSince)
+    private bool IsOfflineNull(List<Device> devices)
     {
-        var isOfflineNull = IsOfflineNull([device]);
-
-        if (isOfflineNull && isOfflineSince != null) return;
-
-        var dbContext = GetDbContext();
-
-        var itemDbContextDevices = dbContext.Devices.FirstOrDefault(x => x.DeviceSn == device.DeviceSn);
-        var itemApiServiceInfoDevices = ApiServiceInfo.Devices.FirstOrDefault(x => x.DeviceSn == device.DeviceSn);
-        if (itemDbContextDevices != null && itemApiServiceInfoDevices != null)
-        {
-            itemApiServiceInfoDevices.IsOfflineSince = isOfflineSince;
-            itemDbContextDevices.IsOfflineSince = isOfflineSince;
-            await dbContext.SaveChangesAsync();
-        }
-    }
-
-    private bool IsOfflineNull(List<IDevice> devices)
-    {
-        foreach(var device in devices)
+        foreach (var device in devices)
         {
             var itemApiServiceInfoDevices = ApiServiceInfo.Devices.FirstOrDefault(x => x.DeviceSn == device.DeviceSn);
-            if(itemApiServiceInfoDevices?.IsOfflineSince != null) return false;
+            if (itemApiServiceInfoDevices?.IsOfflineSince != null) return false;
         }
         return true;
     }
@@ -221,38 +209,8 @@ public partial class ApiService : IObserver<RealTimeMeasurement>, IDisposable
         ApiServiceInfo.RefreshNoahs += RefreshDeviceNoahs;
         ApiServiceInfo.RefreshNoahLastData += RefreshDeviceNoahLastData;
         ApiServiceInfo.ClearDeviceNoahTimeSegments += ClearDeviceNoahTimeSegments;
-
-        DeviceNoahTimeSegmentQueueWatchdog.OnItemDequeued += async (item, client) =>
-        {
-            try
-            {
-                await client.SetTimeSegmentAsync(item);
-                await SetDeviceIsOfflineSince(item, DateTime.Now);
-                return default; // Operation erfolgreich
-            }
-            catch (ApiException ex)
-            {
-
-                return ex; // Operation fehlgeschlagen
-            }
-        };
-
-        DeviceNoahLastDataQueueWatchdog.OnItemDequeued += async (item, client) =>
-        {
-            try
-            {
-                var deviceNoahLastDatas = await client.GetDeviceLastDataAsync(item.DeviceType, item.DeviceSn);
-                if (deviceNoahLastDatas != null)
-                {
-                    await SaveDeviceNoahLastData(deviceNoahLastDatas);
-                }
-                return default; // Operation erfolgreich
-            }
-            catch (ApiException ex)
-            {
-                return ex; // Operation fehlgeschlagen
-            }
-        };
+        DeviceNoahTimeSegmentQueueWatchdog.OnItemDequeued += DeviceNoahTimeSegmentQueueWatchdog_OnItemDequeued;
+        DeviceNoahLastDataQueueWatchdog.OnItemDequeued += DeviceNoahLastDataQueueWatchdog_OnItemDequeued;
     }
 
     private bool isDisposed = false;
@@ -276,17 +234,19 @@ public partial class ApiService : IObserver<RealTimeMeasurement>, IDisposable
         await RefreshDeviceNoahs(sender, e);
     }
 
-    private async Task RefreshDeviceNoahs(object sender, EventArgs e)
+    private Task RefreshDeviceNoahs(object sender, EventArgs e)
     {
-        var deviceSnList = string.Join(",", ApiServiceInfo.Devices.Where(x => x.DeviceType == "noah").Select(x => x.DeviceSn).ToList());
-        await GetDeviceNoahInfo("noah", deviceSnList);
-        GetDeviceNoahLastData("noah", deviceSnList);
+        GetDeviceNoahInfo();
+        GetDeviceNoahLastData();
+
+        return Task.CompletedTask;
     }
 
-    private async Task RefreshDeviceNoahLastData(object sender, EventArgs e)
+    private Task RefreshDeviceNoahLastData(object sender, EventArgs e)
     {
-        var deviceSnList = string.Join(",", ApiServiceInfo.Devices.Where(x => x.DeviceType == "noah").Select(x => x.DeviceSn).ToList());
-        GetDeviceNoahLastData("noah", deviceSnList);
+        GetDeviceNoahLastData();
+
+        return Task.CompletedTask;
     }
 
     private async Task ClearDeviceNoahTimeSegments(object sender, EventArgs e)
@@ -325,10 +285,8 @@ public partial class ApiService : IObserver<RealTimeMeasurement>, IDisposable
 
     public async Task StartAsync(CancellationToken cancellationToken)
     {
-        var configuration = ServiceProvider.GetRequiredService<IConfiguration>();
-        GrowattApiClient = new GrowattApiClient("https://openapi.growatt.com", configuration["ApiSettings:GrowattApiToken"] ?? string.Empty);
-
-        var tibberClient = new TibberApiClient(configuration["ApiSettings:TibberApiToken"] ?? string.Empty, new ProductInfoHeaderValue("EnergyAutomate", "1.0"));
+        var client = ServiceProvider.GetRequiredService<GrowattApiClient>();
+        var tibberClient = ServiceProvider.GetRequiredService<TibberApiClient>();
 
         var basicData = await tibberClient.GetBasicData(cancellationToken);
         TibberHomeId = basicData.Data.Viewer.Homes.FirstOrDefault()?.Id;
@@ -679,11 +637,11 @@ public partial class ApiService : IObserver<RealTimeMeasurement>, IDisposable
         DeviceNoahTimeSegmentQueueWatchdog.Enqueue(DeviceTimeSegmentQueue);
     }
 
-    private async Task ClearDeviceNoahTimeSegments(Queue<DeviceNoahTimeSegmentQuery> DeviceTimeSegmentQueue)
+    private Task ClearDeviceNoahTimeSegments(Queue<DeviceNoahTimeSegmentQuery> DeviceTimeSegmentQueue)
     {
         var deviceSnList = ApiServiceInfo.Devices.Where(x => x.DeviceType == "noah").Select(x => x.DeviceSn).ToList();
 
-        await GetDeviceNoahInfo("noah", string.Join(",", deviceSnList));
+        GetDeviceNoahInfo();
 
         foreach (var deviceSn in deviceSnList)
         {
@@ -711,46 +669,118 @@ public partial class ApiService : IObserver<RealTimeMeasurement>, IDisposable
                 }
             }
         }
+
+        return Task.CompletedTask;
     }
 
-
-
     #endregion
+
+    #region Functions
+
+    private async Task<ApiException?> DeviceNoahTimeSegmentQueueWatchdog_OnItemDequeued(DeviceNoahTimeSegmentQuery item, GrowattApiClient client)
+    {
+        try
+        {
+            await client.SetTimeSegmentAsync(item);
+            return default; // Operation erfolgreich
+        }
+        catch (ApiException ex)
+        {
+
+            return ex; // Operation fehlgeschlagen
+        }
+    }
+
+    private async Task<ApiException?> DeviceNoahLastDataQueueWatchdog_OnItemDequeued(DeviceNoahLastDataQuery item, GrowattApiClient client)
+    {
+        try
+        {
+            var entry = new ApiCallLog()
+            {
+                MethodeName = item.QueryType,
+                TimeStamp = DateTime.Now,
+                RaisedError = false
+            };
+
+            switch (item.QueryType)
+            {
+                case "DeviceNoahLastData":
+                    var deviceNoahLastDatas = await client.GetDeviceLastDataAsync(item.DeviceType, item.DeviceSn);
+                    if (deviceNoahLastDatas != null)
+                    {
+                        await SaveDeviceNoahLastData(deviceNoahLastDatas);
+                    }
+                    break;
+                case "DeviceNoahInfo":
+                    var deviceNoahInfos = await client.GetDeviceInfoAsync(item.DeviceType, item.DeviceSn);
+                    if (deviceNoahInfos != null)
+                    {
+                        await SaveDeviceNoahInfo(deviceNoahInfos);
+                    }
+                    break;
+                default:
+                    break;
+            }
+
+            ApiServiceInfo.DataReads.Add(entry);
+
+            return default; // Operation erfolgreich
+        }
+        catch (ApiException ex)
+        {
+            return ex; // Operation fehlgeschlagen
+        }
+    }
+
+    #endregion Functions
 
     #region Basics
 
     private GrowattApiClient GrowattApiClient { get; set; }
 
-    private async Task LoadDeviceLastData()
+    private void LoadLastData()
     {
         if (ApiServiceInfo.DataReads.Any(x => x.MethodeName == "GetDeviceLastDataAsync" && x.TimeStamp > DateTime.Now.AddMinutes(-1)))
         {
-            var entry = new ApiCallLog()
-            {
-                MethodeName = "GetDeviceLastDataAsync",
-                TimeStamp = DateTime.Now,
-                RaisedError = false
-            };
-
-            var devices = ApiServiceInfo.Devices.Where(x => x.DeviceType == "noah").Cast<IDevice>().ToList();
-
-            if (IsOfflineNull(devices))
-            {
-                var deviceSnList = string.Join(",", ApiServiceInfo.Devices.Where(x => x.DeviceType == "noah").Select(x => x.DeviceSn).ToList());
-
-                DeviceNoahLastDataQueueWatchdog.Enqueue(new DeviceNoahLastDataQuery()
-                {
-                    DeviceType = "noah",
-                    DeviceSn = deviceSnList
-                });
-
-                ApiServiceInfo.DataReads.Add(entry);
-
-            }
+            GetDeviceNoahLastData();
         }
     }
 
-    private async Task GetDevice()
+    public void GetDeviceNoahLastData()
+    {
+        var devices = ApiServiceInfo.Devices.Where(x => x.DeviceType == "noah").ToList();
+
+        if (IsOfflineNull(devices))
+        {
+            var deviceSnList = string.Join(",", devices.Select(x => x.DeviceSn).ToList());
+
+            DeviceNoahLastDataQueueWatchdog.Enqueue(new DeviceNoahLastDataQuery()
+            {
+                QueryType = "DeviceNoahLastData",
+                DeviceType = "noah",
+                DeviceSn = deviceSnList,
+            });
+        }
+    }
+
+    public void GetDeviceNoahInfo()
+    {
+        var devices = ApiServiceInfo.Devices.Where(x => x.DeviceType == "noah").ToList();
+
+        if (IsOfflineNull(devices))
+        {
+            var deviceSnList = string.Join(",", devices.Select(x => x.DeviceSn).ToList());
+
+            DeviceNoahLastDataQueueWatchdog.Enqueue(new DeviceNoahLastDataQuery()
+            {
+                QueryType = "DeviceNoahInfo",
+                DeviceType = "noah",
+                DeviceSn = deviceSnList,
+            });
+        }
+    }
+
+    public async Task GetDevice()
     {
         var dbContext = GetDbContext();
 
@@ -790,62 +820,14 @@ public partial class ApiService : IObserver<RealTimeMeasurement>, IDisposable
         }
     }
 
-    private async Task GetDeviceNoahInfo(string deviceType, string deviceSn)
-    {
-        var dbContext = GetDbContext();
-
-        List<DeviceNoahInfo>? deviceNoahInfos = null;
-
-        while (deviceNoahInfos == null)
-        {
-            try
-            {
-                deviceNoahInfos = await GrowattApiClient.GetDeviceInfoAsync(deviceType, deviceSn);
-            }
-            catch (Exception ex)
-            {
-                Logger.LogError(ex, ex.Message);
-            }
-            await Task.Delay(ApiServiceInfo.SettingLockSeconds);
-        }
-
-        if (deviceNoahInfos != null)
-        {
-
-            foreach (var item in deviceNoahInfos)
-            {
-                ApiServiceInfo.DeviceNoahInfo.Add(item);
-
-                var existingDeviceNoahInfo = await dbContext.DeviceNoahInfo.FindAsync(item.DeviceSn);
-                if (existingDeviceNoahInfo != null)
-                {
-                    dbContext.Entry(existingDeviceNoahInfo).CurrentValues.SetValues(item);
-                }
-                else
-                {
-                    dbContext.DeviceNoahInfo.Add(item);
-                }
-            }
-
-            await dbContext.SaveChangesAsync();
-        }
-    }
-
-    private void GetDeviceNoahLastData(string deviceType, string deviceSn)
-    {
-        DeviceNoahLastDataQueueWatchdog.Enqueue(new DeviceNoahLastDataQuery()
-        {
-            DeviceType = deviceType,
-            DeviceSn = deviceSn
-        });
-    }
-
     private async Task SaveDeviceNoahLastData(List<DeviceNoahLastData> deviceNoahLastDatas)
     {
         var dbContext = GetDbContext();
 
         foreach (var item in deviceNoahLastDatas)
         {
+
+
             ApiServiceInfo.DeviceNoahLastData.Add(item);
 
             var existingDeviceNoahLastData = await dbContext.DeviceNoahLastData.FindAsync(item.deviceSn, item.time);
@@ -856,6 +838,41 @@ public partial class ApiService : IObserver<RealTimeMeasurement>, IDisposable
             else
             {
                 dbContext.DeviceNoahLastData.Add(item);
+            }
+        }
+
+        await dbContext.SaveChangesAsync();
+    }
+
+    private async Task SaveDeviceNoahInfo(List<DeviceNoahInfo> deviceNoahInfos)
+    {
+        var dbContext = GetDbContext();
+
+        foreach (var deviceNoahInfo in deviceNoahInfos)
+        {
+            var deviceApiServiceInfo = ApiServiceInfo.Devices.FirstOrDefault(x => x.DeviceType == "noah" && x.DeviceSn == deviceNoahInfo.DeviceSn);
+            var deviceDbContext = dbContext.Devices.FirstOrDefault(x => x.DeviceType == "noah" && x.DeviceSn == deviceNoahInfo.DeviceSn);
+
+            if (deviceDbContext != null)
+            {
+                deviceDbContext.IsOfflineSince = deviceNoahInfo.Lost ? new DateTime(deviceNoahInfo.LastUpdateTime) : null;
+            }
+
+            if (deviceApiServiceInfo != null)
+            {
+                deviceApiServiceInfo.IsOfflineSince = deviceNoahInfo.Lost ? new DateTime(deviceNoahInfo.LastUpdateTime) : null;
+            }
+
+            ApiServiceInfo.DeviceNoahInfo.Add(deviceNoahInfo);
+
+            var existingDeviceNoahInfo = await dbContext.DeviceNoahInfo.FindAsync(deviceNoahInfo.DeviceSn);
+            if (existingDeviceNoahInfo != null)
+            {
+                dbContext.Entry(existingDeviceNoahInfo).CurrentValues.SetValues(deviceNoahInfo);
+            }
+            else
+            {
+                dbContext.DeviceNoahInfo.Add(deviceNoahInfo);
             }
         }
 

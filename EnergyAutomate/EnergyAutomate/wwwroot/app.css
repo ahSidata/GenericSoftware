@@ -64,6 +64,11 @@ h1:focus {
     width: calc(50vw -250);
 }
 
+.nav-center {
+    justify-content: center; /* Zentriert die child divs horizontal */
+    align-items: center;
+}
+
 .monaco-editor-container {
     height: 500px;
     border: 1px solid gray;

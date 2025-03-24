@@ -31,7 +31,9 @@
                                     <Card Style="width:18rem;">
                                         <CardBody>
                                             <CardTitle>
-                                                @device.DeviceType.ToUpper() <small Class="mb-2 text-muted">(@device.DeviceSn)</small>
+                                                @device.DeviceType.ToUpper() 
+                                                <small Class="mb-2 text-muted">(@device.DeviceSn)</small>
+                                                <small Class="mb-2 text-muted">@(device.IsOfflineSince.HasValue ? $"Offline since {device.IsOfflineSince}" : "Online")</small>
                                             </CardTitle>
                                             <ul class="list-group list-group-flush">
                                                 <li class="list-group-item d-flex align-items-center">

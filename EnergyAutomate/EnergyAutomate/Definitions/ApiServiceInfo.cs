@@ -2,6 +2,7 @@ using EnergyAutomate;
 using EnergyAutomate.Definitions;
 using EnergyAutomate.Watchdogs;
 using Growatt.OSS;
+using System.Collections.Concurrent;
 using System.Collections.ObjectModel;
 
 public class ApiServiceInfo
@@ -79,11 +80,11 @@ public class ApiServiceInfo
 
     #region Device
 
-    public ObservableCollection<Device> Devices { get; set; } = [];
+    public ThreadSafeObservableCollection<Device> Devices { get; set; } = [];
 
-    public ObservableCollection<DeviceNoahInfo> DeviceNoahInfo { get; set; } = [];
+    public ThreadSafeObservableCollection<DeviceNoahInfo> DeviceNoahInfo { get; set; } = [];
 
-    public ObservableCollection<DeviceNoahLastData> DeviceNoahLastData { get; set; } = [];
+    public ThreadSafeObservableCollection<DeviceNoahLastData> DeviceNoahLastData { get; set; } = [];
 
     #endregion Device
 
@@ -139,9 +140,9 @@ public class ApiServiceInfo
 
     #region Tibber
 
-    public ObservableCollection<RealTimeMeasurementExtention> RealTimeMeasurement { get; set; } = [];
+    public ThreadSafeObservableCollection<RealTimeMeasurementExtention> RealTimeMeasurement { get; set; } = [];
 
-    public ObservableCollection<ApiPrice> Prices { get; set; } = [];
+    public ThreadSafeObservableCollection<ApiPrice> Prices { get; set; } = [];
 
     public List<double?> GetPriceTodayDatas()
     {

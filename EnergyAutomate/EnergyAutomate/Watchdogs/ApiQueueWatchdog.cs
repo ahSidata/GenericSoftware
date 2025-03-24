@@ -93,10 +93,6 @@ namespace EnergyAutomate.Watchdogs
                         {
                             throw result;
                         }
-                        if (item != null)
-                        {
-                            await ServiceProvider.GetRequiredService<ApiService>().SetDeviceIsOfflineSince(item, null);
-                        }
                     }
 
                     if (penaltyFrequentlyAccess >= 100)
@@ -106,13 +102,7 @@ namespace EnergyAutomate.Watchdogs
                 }
                 catch (ApiException ex)
                 {
-                    if (ex.ErrorCode == 5)
-                    {
-                        if (item != null)
-                        {
-                            await ServiceProvider.GetRequiredService<ApiService>().SetDeviceIsOfflineSince(item, DateTime.Now);
-                        }
-                    }
+                    if (ex.ErrorCode == 5) ServiceProvider.GetRequiredService<ApiService>().GetDeviceNoahInfo();
 
                     if (item != null && !item.Force)
                         item = null;
