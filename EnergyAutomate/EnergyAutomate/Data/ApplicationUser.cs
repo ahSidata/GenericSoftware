@@ -6,4 +6,3 @@ namespace EnergyAutomate.Data;
 public class ApplicationUser : IdentityUser
 {
 }
-

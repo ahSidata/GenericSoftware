@@ -4,10 +4,25 @@
 
 namespace EnergyAutomate.Migrations
 {
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public partial class ChangeTables4 : Migration
     {
-        /// <inheritdoc />
+        #region Protected Methods
+
+        /// <inheritdoc/>
+        protected override void Down(MigrationBuilder migrationBuilder)
+        {
+            migrationBuilder.DropColumn(
+                name: "AvgPowerLoadValue",
+                table: "RealTimeMeasurements");
+
+            migrationBuilder.RenameColumn(
+                name: "AvgPowerValue",
+                table: "RealTimeMeasurements",
+                newName: "AvgPowerLoad");
+        }
+
+        /// <inheritdoc/>
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.RenameColumn(
@@ -23,17 +38,6 @@ namespace EnergyAutomate.Migrations
                 defaultValue: 0);
         }
 
-        /// <inheritdoc />
-        protected override void Down(MigrationBuilder migrationBuilder)
-        {
-            migrationBuilder.DropColumn(
-                name: "AvgPowerLoadValue",
-                table: "RealTimeMeasurements");
-
-            migrationBuilder.RenameColumn(
-                name: "AvgPowerValue",
-                table: "RealTimeMeasurements",
-                newName: "AvgPowerLoad");
-        }
+        #endregion Protected Methods
     }
 }

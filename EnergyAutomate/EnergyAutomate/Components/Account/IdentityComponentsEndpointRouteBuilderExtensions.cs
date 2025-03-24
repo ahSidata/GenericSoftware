@@ -14,7 +14,10 @@ namespace EnergyAutomate.Components.Account;
 
 internal static class IdentityComponentsEndpointRouteBuilderExtensions
 {
-    // These endpoints are required by the Identity Razor components defined in the /Components/Account/Pages directory of this project.
+    #region Public Methods
+
+    // These endpoints are required by the Identity Razor components defined in the
+    // /Components/Account/Pages directory of this project.
     public static IEndpointConventionBuilder MapAdditionalIdentityEndpoints(this IEndpointRouteBuilder endpoints)
     {
         ArgumentNullException.ThrowIfNull(endpoints);
@@ -109,4 +112,6 @@ internal static class IdentityComponentsEndpointRouteBuilderExtensions
 
         return accountGroup;
     }
+
+    #endregion Public Methods
 }

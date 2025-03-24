@@ -5,15 +5,16 @@ namespace EnergyAutomate.Definitions
 {
     public class DeviceNoahOutputValueQuery : IDevice
     {
+        #region Properties
+
+        public string DeviceSn { get; set; } = string.Empty;
+        public string DeviceType { get; set; } = string.Empty;
         [JsonIgnore]
         public bool Force { get; set; } = false;
 
         public DateTime TS { get; set; }
-
-        public string DeviceSn { get; set; } = string.Empty;
-
-        public string DeviceType { get; set; } = string.Empty;
-
         public int Value { get; set; }
+
+        #endregion Properties
     }
 }

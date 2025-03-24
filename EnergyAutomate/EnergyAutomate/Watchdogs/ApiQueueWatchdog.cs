@@ -1,13 +1,61 @@
 ﻿using Growatt.OSS;
 using Growatt.Sdk;
 using System.Collections.ObjectModel;
-using System.Net.Http.Headers;
-using Tibber.Sdk;
 
 namespace EnergyAutomate.Watchdogs
 {
     public class ApiQueueWatchdog<T> where T : class, IDevice
     {
+        #region Fields
+
+        private int penaltyFrequentlyAccess = 0;
+
+        #endregion Fields
+
+        #region Public Constructors
+
+        public ApiQueueWatchdog(IServiceProvider serviceProvider)
+        {
+            ServiceProvider = serviceProvider;
+            Collection.CollectionChanged += async (sender, e) => await ProceedingAsync();
+        }
+
+        #endregion Public Constructors
+
+        #region Events
+
+        //Action delegate T item
+        public event Func<T, GrowattApiClient, Task<ApiException?>>? OnItemDequeued;
+
+        #endregion Events
+
+        #region Properties
+
+        public ObservableCollection<T> Collection { get; set; } = new();
+
+        public int Count => Collection.Count;
+
+        private bool IsProceeding { get; set; }
+
+        private ILogger<ApiQueueWatchdog<T>> Logger => ServiceProvider.GetRequiredService<ILogger<ApiQueueWatchdog<T>>>();
+
+        private IServiceProvider ServiceProvider { get; init; }
+
+        private int TotalDelay => ServiceProvider.GetRequiredService<ApiServiceInfo>().SettingLockSeconds + penaltyFrequentlyAccess;
+
+        #endregion Properties
+
+        #region Public Methods
+
+        public T Dequeue()
+        {
+            if (Collection.Count == 0)
+                throw new InvalidOperationException("Die Warteschlange ist leer.");
+
+            var item = Collection[0];
+            Collection.RemoveAt(0);
+            return item;
+        }
 
         public void Enqueue(T item)
         {
@@ -22,16 +70,6 @@ namespace EnergyAutomate.Watchdogs
             }
         }
 
-        public T Dequeue()
-        {
-            if (Collection.Count == 0)
-                throw new InvalidOperationException("Die Warteschlange ist leer.");
-
-            var item = Collection[0];
-            Collection.RemoveAt(0);
-            return item;
-        }
-
         public T Peek()
         {
             if (Collection.Count == 0)
@@ -40,29 +78,9 @@ namespace EnergyAutomate.Watchdogs
             return Collection[0];
         }
 
-        public int Count => Collection.Count;
+        #endregion Public Methods
 
-        public ApiQueueWatchdog(IServiceProvider serviceProvider)
-        {
-            ServiceProvider = serviceProvider;
-            Collection.CollectionChanged += async (sender, e) => await ProceedingAsync();                    
-        }
-
-        private int penaltyFrequentlyAccess = 0;
-
-        private int TotalDelay => ServiceProvider.GetRequiredService<ApiServiceInfo>().SettingLockSeconds + penaltyFrequentlyAccess;
-
-
-        private IServiceProvider ServiceProvider { get; init; }
-
-        private ILogger<ApiQueueWatchdog<T>> Logger => ServiceProvider.GetRequiredService<ILogger<ApiQueueWatchdog<T>>>();
-
-        public ObservableCollection<T> Collection { get; set; } = new();
-
-        //Action delegate T item
-        public event Func<T, GrowattApiClient, Task<ApiException?>>? OnItemDequeued;
-
-        private bool IsProceeding { get; set; }
+        #region Private Methods
 
         private async Task ProceedingAsync()
         {
@@ -115,6 +133,7 @@ namespace EnergyAutomate.Watchdogs
 
             IsProceeding = false;
         }
-    }
 
+        #endregion Private Methods
+    }
 }

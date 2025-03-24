@@ -1,16 +1,20 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace Growatt.Sdk
+﻿namespace Growatt.Sdk
 {
     public class ApiException : Exception
     {
-        public int ErrorCode { get; }
+        #region Public Constructors
 
         public ApiException(string message, int errorCode) : base(message)
         {
             ErrorCode = errorCode;
         }
+
+        #endregion Public Constructors
+
+        #region Properties
+
+        public int ErrorCode { get; }
+
+        #endregion Properties
     }
 }

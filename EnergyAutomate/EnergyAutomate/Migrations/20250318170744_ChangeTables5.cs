@@ -4,10 +4,40 @@
 
 namespace EnergyAutomate.Migrations
 {
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public partial class ChangeTables5 : Migration
     {
-        /// <inheritdoc />
+        #region Protected Methods
+
+        /// <inheritdoc/>
+        protected override void Down(MigrationBuilder migrationBuilder)
+        {
+            migrationBuilder.DropColumn(
+                name: "AvgOutputValue",
+                table: "RealTimeMeasurements");
+
+            migrationBuilder.RenameColumn(
+                name: "SettingPowerLoadSeconds",
+                table: "RealTimeMeasurements",
+                newName: "AvgTotalValue");
+
+            migrationBuilder.RenameColumn(
+                name: "SettingOffSetAvg",
+                table: "RealTimeMeasurements",
+                newName: "AvgPowerLoadValue");
+
+            migrationBuilder.RenameColumn(
+                name: "SettingLockSeconds",
+                table: "RealTimeMeasurements",
+                newName: "AvgOffSet");
+
+            migrationBuilder.RenameColumn(
+                name: "AvgPowerLoad",
+                table: "RealTimeMeasurements",
+                newName: "AvgLastPowerValue");
+        }
+
+        /// <inheritdoc/>
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.RenameColumn(
@@ -38,32 +68,6 @@ namespace EnergyAutomate.Migrations
                 defaultValue: 0);
         }
 
-        /// <inheritdoc />
-        protected override void Down(MigrationBuilder migrationBuilder)
-        {
-            migrationBuilder.DropColumn(
-                name: "AvgOutputValue",
-                table: "RealTimeMeasurements");
-
-            migrationBuilder.RenameColumn(
-                name: "SettingPowerLoadSeconds",
-                table: "RealTimeMeasurements",
-                newName: "AvgTotalValue");
-
-            migrationBuilder.RenameColumn(
-                name: "SettingOffSetAvg",
-                table: "RealTimeMeasurements",
-                newName: "AvgPowerLoadValue");
-
-            migrationBuilder.RenameColumn(
-                name: "SettingLockSeconds",
-                table: "RealTimeMeasurements",
-                newName: "AvgOffSet");
-
-            migrationBuilder.RenameColumn(
-                name: "AvgPowerLoad",
-                table: "RealTimeMeasurements",
-                newName: "AvgLastPowerValue");
-        }
+        #endregion Protected Methods
     }
 }

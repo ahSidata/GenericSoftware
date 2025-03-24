@@ -2,9 +2,11 @@ using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 
 namespace EnergyAutomate.Client;
 
-class Program
+internal class Program
 {
-    static async Task Main(string[] args)
+    #region Private Methods
+
+    private static async Task Main(string[] args)
     {
         var builder = WebAssemblyHostBuilder.CreateDefault(args);
 
@@ -16,4 +18,6 @@ class Program
 
         await builder.Build().RunAsync();
     }
+
+    #endregion Private Methods
 }

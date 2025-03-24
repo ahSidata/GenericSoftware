@@ -4,17 +4,29 @@ namespace EnergyAutomate.Services
 {
     public class ApiBackgroundService : IHostedService, IDisposable
     {
-        private ApiService ApiService { get; init; }
-
-        private ApiRealTimeMeasurementWatchdog ApiRealTimeMeasurementWatchdog { get; init; }
-
-        private IConfiguration Configuration { get; init; }
+        #region Public Constructors
 
         public ApiBackgroundService(ApiService apiService, IConfiguration configuration, ApiRealTimeMeasurementWatchdog apiRealTimeMeasurementWatchdog)
         {
             ApiService = apiService;
             Configuration = configuration;
             ApiRealTimeMeasurementWatchdog = apiRealTimeMeasurementWatchdog;
+        }
+
+        #endregion Public Constructors
+
+        #region Properties
+
+        private ApiRealTimeMeasurementWatchdog ApiRealTimeMeasurementWatchdog { get; init; }
+        private ApiService ApiService { get; init; }
+        private IConfiguration Configuration { get; init; }
+
+        #endregion Properties
+
+        #region Public Methods
+
+        public void Dispose()
+        {
         }
 
         public async Task StartAsync(CancellationToken cancellationToken)
@@ -29,8 +41,6 @@ namespace EnergyAutomate.Services
             await ApiRealTimeMeasurementWatchdog.StopAsync(CancellationTokenSource.CreateLinkedTokenSource(cancellationToken).Token);
         }
 
-        public void Dispose()
-        {
-        }
+        #endregion Public Methods
     }
 }

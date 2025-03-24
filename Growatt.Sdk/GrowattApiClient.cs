@@ -1,13 +1,17 @@
 ﻿using Growatt.Sdk;
-using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
-using System.Net.Http.Headers;
 
 namespace Growatt.OSS
 {
     public class GrowattApiClient
     {
+        #region Fields
+
         private readonly HttpClient _httpClient;
+
+        #endregion Fields
+
+        #region Public Constructors
 
         public GrowattApiClient(string baseAddress, string token)
         {
@@ -15,35 +19,15 @@ namespace Growatt.OSS
             _httpClient.DefaultRequestHeaders.Add("token", token);
         }
 
+        #endregion Public Constructors
+
+        #region Public Methods
+
         public async Task<string> GetDataAsync(string endpoint)
         {
             var response = await _httpClient.GetAsync(endpoint);
             response.EnsureSuccessStatusCode();
             return await response.Content.ReadAsStringAsync();
-        }
-
-        public async Task<List<Device>> GetDeviceListAsync(int page = 1)
-        {
-            var endpoint = "/v4/new-api/queryDeviceList";
-            var content = new FormUrlEncodedContent(new[]
-            {
-                new KeyValuePair<string, string>("page", page.ToString())
-            });
-
-            var response = await _httpClient.PostAsync(endpoint, content);
-            response.EnsureSuccessStatusCode();
-
-            var responseString = await response.Content.ReadAsStringAsync();
-            var result = JsonConvert.DeserializeObject<DeviceListResponse>(responseString);
-
-            if (result.Code == 0)
-            {
-                return result.Data.Devices;
-            }
-            else
-            {
-                throw new ApiException($"API error: {result.Message}", result.Code);
-            }
         }
 
         public async Task<List<DeviceNoahInfo>> GetDeviceInfoAsync(string deviceType, string deviceSn)
@@ -96,6 +80,30 @@ namespace Growatt.OSS
             }
         }
 
+        public async Task<List<Device>> GetDeviceListAsync(int page = 1)
+        {
+            var endpoint = "/v4/new-api/queryDeviceList";
+            var content = new FormUrlEncodedContent(new[]
+            {
+                new KeyValuePair<string, string>("page", page.ToString())
+            });
+
+            var response = await _httpClient.PostAsync(endpoint, content);
+            response.EnsureSuccessStatusCode();
+
+            var responseString = await response.Content.ReadAsStringAsync();
+            var result = JsonConvert.DeserializeObject<DeviceListResponse>(responseString);
+
+            if (result.Code == 0)
+            {
+                return result.Data.Devices;
+            }
+            else
+            {
+                throw new ApiException($"API error: {result.Message}", result.Code);
+            }
+        }
+
         public async Task<List<DeviceNoahHistoricalData>> GetDevicesHistoricalDataAsync(string deviceSn, string deviceType, string date)
         {
             var endpoint = "/v4/new-api/queryDevicesHistoricalData";
@@ -122,23 +130,6 @@ namespace Growatt.OSS
             }
         }
 
-        public async Task SetTimeSegmentAsync(DeviceNoahTimeSegmentQuery deviceNoahTimeSegment)
-        {
-            var endpoint = "/v4/new-api/setTimeSegment";
-            var content = deviceNoahTimeSegment.ToFormUrlEncodedContent();
-
-            var response = await _httpClient.PostAsync(endpoint, content);
-            response.EnsureSuccessStatusCode();
-
-            var responseString = await response.Content.ReadAsStringAsync();
-            var result = JsonConvert.DeserializeObject<ApiResponse>(responseString);
-
-            if (result.Code != 0)
-            {
-                throw new ApiException($"API error: {result.Message}", result.Code);
-            }
-        }
-
         public async Task SetPowerAsync(string deviceSn, string deviceType, int value)
         {
             var endpoint = "/v4/new-api/setPower";
@@ -160,5 +151,24 @@ namespace Growatt.OSS
                 throw new ApiException($"API error: {result.Message}", result.Code);
             }
         }
+
+        public async Task SetTimeSegmentAsync(DeviceNoahTimeSegmentQuery deviceNoahTimeSegment)
+        {
+            var endpoint = "/v4/new-api/setTimeSegment";
+            var content = deviceNoahTimeSegment.ToFormUrlEncodedContent();
+
+            var response = await _httpClient.PostAsync(endpoint, content);
+            response.EnsureSuccessStatusCode();
+
+            var responseString = await response.Content.ReadAsStringAsync();
+            var result = JsonConvert.DeserializeObject<ApiResponse>(responseString);
+
+            if (result.Code != 0)
+            {
+                throw new ApiException($"API error: {result.Message}", result.Code);
+            }
+        }
+
+        #endregion Public Methods
     }
 }

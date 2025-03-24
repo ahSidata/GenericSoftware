@@ -8,21 +8,31 @@ namespace EnergyAutomate.Data;
 
 public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
 {
+    #region Fields
+
     private static readonly JsonSerializerOptions _jsonSerializerOptions = new JsonSerializerOptions();
+
+    #endregion Fields
+
+    #region Public Constructors
 
     public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options)
     {
     }
 
-    public DbSet<Device> Devices { get; set; }
+    #endregion Public Constructors
+
+    #region Properties
 
     public DbSet<DeviceNoahInfo> DeviceNoahInfo { get; set; }
-
     public DbSet<DeviceNoahLastData> DeviceNoahLastData { get; set; }
-
+    public DbSet<Device> Devices { get; set; }
+    public DbSet<ApiPrice> Prices { get; set; }
     public DbSet<RealTimeMeasurementExtention> RealTimeMeasurements { get; set; }
 
-    public DbSet<ApiPrice> Prices { get; set; }
+    #endregion Properties
+
+    #region Protected Methods
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -52,4 +62,6 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
 
         // other configurations
     }
+
+    #endregion Protected Methods
 }

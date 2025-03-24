@@ -7,15 +7,21 @@ using System.Security.Claims;
 
 namespace EnergyAutomate.Components.Account;
 
-// This is a server-side AuthenticationStateProvider that revalidates the security stamp for the connected user
-// every 30 minutes an interactive circuit is connected.
+// This is a server-side AuthenticationStateProvider that revalidates the security stamp for the
+// connected user every 30 minutes an interactive circuit is connected.
 internal sealed class IdentityRevalidatingAuthenticationStateProvider(
         ILoggerFactory loggerFactory,
         IServiceScopeFactory scopeFactory,
         IOptions<IdentityOptions> options)
     : RevalidatingServerAuthenticationStateProvider(loggerFactory)
 {
+    #region Properties
+
     protected override TimeSpan RevalidationInterval => TimeSpan.FromMinutes(30);
+
+    #endregion Properties
+
+    #region Protected Methods
 
     protected override async Task<bool> ValidateAuthenticationStateAsync(
         AuthenticationState authenticationState, CancellationToken cancellationToken)
@@ -25,6 +31,10 @@ internal sealed class IdentityRevalidatingAuthenticationStateProvider(
         var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
         return await ValidateSecurityStampAsync(userManager, authenticationState.User);
     }
+
+    #endregion Protected Methods
+
+    #region Private Methods
 
     private async Task<bool> ValidateSecurityStampAsync(UserManager<ApplicationUser> userManager, ClaimsPrincipal principal)
     {
@@ -44,4 +54,6 @@ internal sealed class IdentityRevalidatingAuthenticationStateProvider(
             return principalStamp == userStamp;
         }
     }
+
+    #endregion Private Methods
 }

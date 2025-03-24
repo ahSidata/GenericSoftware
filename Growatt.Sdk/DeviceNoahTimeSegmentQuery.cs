@@ -5,48 +5,30 @@ namespace Growatt.OSS
 {
     public class DeviceNoahTimeSegmentQuery : IDevice
     {
+        #region Properties
+
+        /// <summary>device SN, example: xxxxxxx</summary>
+        public string DeviceSn { get; set; }
+        /// <summary>device type, example: noah</summary>
+        public string DeviceType { get; set; }
+        /// <summary>time period switch (0: off, 1: on), example: 0</summary>
+        public string Enable { get; set; }
+        /// <summary>end time (hours:minutes), Example: 02:05</summary>
+        public string EndTime { get; set; }
         [JsonIgnore]
         public bool Force { get; set; } = false;
-
-        /// <summary>
-        /// device SN, example: xxxxxxx
-        /// </summary>
-        public string DeviceSn { get; set; }
-
-        /// <summary>
-        /// device type, example: noah
-        /// </summary>
-        public string DeviceType { get; set; }
-
-        /// <summary>
-        /// time period (1~9), example: 1
-        /// </summary>
+        /// <summary>machine mode (0: load priority, 1: battery priority), example: 0</summary>
+        public string Mode { get; set; }
+        /// <summary>output power (range 0-800 in w), example: 150</summary>
+        public string Power { get; set; }
+        /// <summary>start time (hours:minutes), Example: 01:06</summary>
+        public string StartTime { get; set; }
+        /// <summary>time period (1~9), example: 1</summary>
         public string Type { get; set; }
 
-        /// <summary>
-        /// start time (hours:minutes), Example: 01:06
-        /// </summary>
-        public string StartTime { get; set; }
+        #endregion Properties
 
-        /// <summary>
-        /// end time (hours:minutes), Example: 02:05
-        /// </summary>
-        public string EndTime { get; set; }
-
-        /// <summary>
-        /// machine mode (0: load priority, 1: battery priority), example: 0
-        /// </summary>
-        public string Mode { get; set; }
-
-        /// <summary>
-        /// output power (range 0-800 in w), example: 150
-        /// </summary>
-        public string Power { get; set; }
-
-        /// <summary>
-        /// time period switch (0: off, 1: on), example: 0
-        /// </summary>
-        public string Enable { get; set; }
+        #region Public Methods
 
         public FormUrlEncodedContent ToFormUrlEncodedContent()
         {
@@ -64,5 +46,7 @@ namespace Growatt.OSS
 
             return new FormUrlEncodedContent(keyValuePairs);
         }
+
+        #endregion Public Methods
     }
 }

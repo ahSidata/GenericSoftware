@@ -1,5 +1,4 @@
-﻿using Newtonsoft.Json.Linq;
-using System.ComponentModel.DataAnnotations.Schema;
+﻿using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json.Serialization;
 using Tibber.Sdk;
 
@@ -7,7 +6,10 @@ namespace EnergyAutomate.Definitions
 {
     public class RealTimeMeasurementExtention : RealTimeMeasurement
     {
-        public RealTimeMeasurementExtention() { }
+        #region Public Constructors
+
+        public RealTimeMeasurementExtention()
+        { }
 
         public RealTimeMeasurementExtention(RealTimeMeasurement measurement)
         {
@@ -41,24 +43,23 @@ namespace EnergyAutomate.Definitions
             SignalStrength = measurement.SignalStrength;
         }
 
-        public int SettingPowerLoadSeconds { get; set; }
+        #endregion Public Constructors
 
+        #region Properties
+
+        public int AvgPowerLoad { get; set; }
+        public int? CommitedPowerValue { get; set; }
+        [JsonInclude]
+        public int? RequestedPowerValue { get; set; }
         public int SettingLockSeconds { get; set; }
-
         public int SettingOffSetAvg { get; set; }
-
+        public int SettingPowerLoadSeconds { get; set; }
         public int SettingToleranceAvg { get; set; }
 
         [NotMapped]
         public int TotalPower => Power > 0 ? (int)Power : -(int)(PowerProduction ?? 0);
-
-        public int AvgPowerLoad { get; set; }
-
-        [JsonInclude]
-        public int? RequestedPowerValue { get; set; } 
-
-        public int? CommitedPowerValue { get; set; } 
-
         public DateTime TS { get; set; }
+
+        #endregion Properties
     }
 }

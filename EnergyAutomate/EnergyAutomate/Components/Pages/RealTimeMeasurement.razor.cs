@@ -3,28 +3,30 @@ using EnergyAutomate.Components.Layout;
 using Microsoft.AspNetCore.Components;
 using System.Collections.Specialized;
 using System.Diagnostics;
-using Tibber.Sdk;
 
 namespace EnergyAutomate.Components.Pages
 {
     public partial class RealTimeMeasurement : IDisposable
     {
+        #region Fields
+
+        private readonly IEnumerable<TickMark> ApiLockSecondsTickList = GenerateTickTickMarks(100, 1000, 50);
+        private readonly IEnumerable<TickMark> ApiMaxPowerTickList = GenerateTickTickMarks(700, 900, 10);
+        private readonly IEnumerable<TickMark> ApiOffsetAvgTickList = GenerateTickTickMarks(-100, 100, 25);
+        private readonly IEnumerable<TickMark> ApiToleranceAvgTickList = GenerateTickTickMarks(0, 100, 25);
+        private readonly IEnumerable<TickMark> AvgPowerLoadSecondsTickList = GenerateTickTickMarks(3, 180, 3);
+        private Tabs tabsMainRef = default!;
+
+        #endregion Fields
+
+        #region Properties
+
         [CascadingParameter]
         private MainLayout? MainLayout { get; set; }
 
-        protected override void OnInitialized()
-        {
-            ApiServiceInfo.RealTimeMeasurement.CollectionChanged += RealTimeMeasurement_CollectionChanged;
-            ApiServiceInfo.Prices.CollectionChanged += Price_CollectionChanged;
-            ApiServiceInfo.Devices.CollectionChanged += ApiServiceInfo_StateHasChanged;
-            ApiServiceInfo.DeviceNoahLastData.CollectionChanged += ApiServiceInfo_StateHasChanged;
-            ApiServiceInfo.StateHasChanged += ApiServiceInfo_StateHasChanged;
-        }
+        #endregion Properties
 
-        private async void ApiServiceInfo_StateHasChanged(object? sender, EventArgs e)
-        {
-            await InvokeAsync(StateHasChanged);
-        }
+        #region Public Methods
 
         public void Dispose()
         {
@@ -34,6 +36,10 @@ namespace EnergyAutomate.Components.Pages
             ApiServiceInfo.DeviceNoahLastData.CollectionChanged -= ApiServiceInfo_StateHasChanged;
             ApiServiceInfo.StateHasChanged -= ApiServiceInfo_StateHasChanged;
         }
+
+        #endregion Public Methods
+
+        #region Protected Methods
 
         protected override async Task OnAfterRenderAsync(bool firstRender)
         {
@@ -46,15 +52,18 @@ namespace EnergyAutomate.Components.Pages
             await base.OnAfterRenderAsync(firstRender);
         }
 
-        private readonly IEnumerable<TickMark> AvgPowerLoadSecondsTickList = GenerateTickTickMarks(3, 180, 3);
+        protected override void OnInitialized()
+        {
+            ApiServiceInfo.RealTimeMeasurement.CollectionChanged += RealTimeMeasurement_CollectionChanged;
+            ApiServiceInfo.Prices.CollectionChanged += Price_CollectionChanged;
+            ApiServiceInfo.Devices.CollectionChanged += ApiServiceInfo_StateHasChanged;
+            ApiServiceInfo.DeviceNoahLastData.CollectionChanged += ApiServiceInfo_StateHasChanged;
+            ApiServiceInfo.StateHasChanged += ApiServiceInfo_StateHasChanged;
+        }
 
-        private readonly IEnumerable<TickMark> ApiLockSecondsTickList = GenerateTickTickMarks(100, 1000, 50);
+        #endregion Protected Methods
 
-        private readonly IEnumerable<TickMark> ApiOffsetAvgTickList = GenerateTickTickMarks(-100, 100, 25);
-
-        private readonly IEnumerable<TickMark> ApiToleranceAvgTickList = GenerateTickTickMarks(0, 100, 25);
-
-        private readonly IEnumerable<TickMark> ApiMaxPowerTickList = GenerateTickTickMarks(700, 900, 10);
+        #region Private Methods
 
         private static IEnumerable<TickMark> GenerateTickTickMarks(int start, int end, int step)
         {
@@ -66,63 +75,146 @@ namespace EnergyAutomate.Components.Pages
             return tickMarks;
         }
 
-        Tabs tabsMainRef = default!;
-
-        #region Tibber
-
-        Tabs tabsTibberRef = default!;
-
-        private LineChart realTimeMeasurementChart = default!;
-        private ChartData realTimeMeasurementData = default!;
-        private bool isRealTimeMeasurementChartInitialized;
-
-        private async void RealTimeMeasurement_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+        private async void ApiServiceInfo_StateHasChanged(object? sender, EventArgs e)
         {
-            try
-            {
-                if (isRealTimeMeasurementChartInitialized && realTimeMeasurementChart != null)
-                {
-                    GetRealTimeMeasurementData();
-                    if (realTimeMeasurementData != null)
-                    {
-                        await realTimeMeasurementChart.UpdateValuesAsync(realTimeMeasurementData);
-                    }
-                }
-                if (isDeviceChartInitialized && deviceChart != null)
-                {
-                    GetDeviceData();
-                    if (deviceData != null)
-                    {
-                        await deviceChart.UpdateValuesAsync(deviceData);
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"Error in RealTimeMeasurement_CollectionChanged: {ex.Message}");
-            }
+            await InvokeAsync(StateHasChanged);
         }
 
-        private LineChart priceChart = default!;
-        private ChartData priceData = default!;
-        private bool isPriceChartInitialized;
+        #endregion Private Methods
+
+        #region Tibber
 
         private LineChart deviceChart = default!;
         private ChartData deviceData = default!;
         private bool isDeviceChartInitialized;
-
+        private bool isPriceChartInitialized;
+        private bool isRealTimeMeasurementChartInitialized;
+        private LineChart priceChart = default!;
+        private ChartData priceData = default!;
+        private LineChart realTimeMeasurementChart = default!;
+        private ChartData realTimeMeasurementData = default!;
+        private Tabs tabsTibberRef = default!;
         private List<string>? PriceBackgroundColors { get; set; }
 
-        private async void Price_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+        private void GetDeviceData()
         {
-            if (isPriceChartInitialized && priceChart != null)
+            var dataSource = ApiServiceInfo.RealTimeMeasurement.OrderByDescending(x => x.Timestamp).Take(61).Reverse().ToList();
+
+            deviceData = new ChartData
             {
-                GetRealTimeMeasurementData();
-                if (priceData != null)
+                Labels = dataSource.Select((x, index) => index % 5 == 0 ? x.Timestamp.TimeOfDay.ToString() : string.Empty).ToList(),
+                Datasets = new List<IChartDataset>()
                 {
-                    await priceChart.UpdateValuesAsync(priceData);
+                    new LineChartDataset()
+                    {
+                        Label = "AvgOutputValue",
+                        Data = dataSource.Select(x => (double?)x.CommitedPowerValue).ToList(),
+                        BackgroundColor = "rgb(0, 255, 0)",
+                        BorderColor = "rgb(0, 255, 0)",
+                        BorderWidth = 2,
+                        PointRadius = new List<double>() { 0 },
+                        Order = 3
+                    }
+                },
+            };
+        }
+
+        private void GetPriceData()
+        {
+            var hours = new[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23 };
+            List<double?> dataToday = ApiServiceInfo.GetPriceTodayDatas();
+            List<double?> dataTomorrow = ApiServiceInfo.GetPriceTomorrowDatas();
+            double? avgToday = dataToday.Any() ? dataToday.Average() : 0;
+            double? avgTomorrow = dataTomorrow.Any() ? dataTomorrow.Average() : 0;
+
+            List<string> months = new List<string> { "Today", "Tomorrow" };
+            var dataPoints = dataToday.Concat(dataTomorrow).ToList();
+
+            var dataCurrentHour = dataPoints.Select(point => dataPoints.IndexOf(point) < 24 && (hours[dataPoints.IndexOf(point)] == DateTime.Now.Hour + 1 || hours[dataPoints.IndexOf(point) + 1] == DateTime.Now.Hour + 1) ? point : null).ToList();
+
+            var dataAvgTodayPoints = dataToday.Select(point => point > avgToday ? avgToday : point).ToList();
+            var dataAvgTomorrowPoints = dataTomorrow.Select(point => point > avgTomorrow ? avgTomorrow : point).ToList();
+            var dataAvgPoints = dataAvgTodayPoints.Concat(dataAvgTomorrowPoints).ToList();
+
+            var dataAvgLineTodayPoints = dataToday.Select(point => avgToday).ToList();
+            var dataAvgLineTomorrowPoints = dataTomorrow.Select(point => avgTomorrow).ToList();
+            var dataAvgLinePoints = dataAvgLineTodayPoints.Concat(dataAvgLineTomorrowPoints).ToList();
+
+            var avghighPrices = ApiServiceInfo.Prices.OrderBy(x => x.StartsAt)
+                .Where(w => (w.AutoModeRestriction ?? false && w.Total.HasValue) == true)
+                .GroupBy(g => g.StartsAt.Date)
+                .Select(s => new { Key = s.Key.Date, Value = s.Average(a => a.Total) }).ToDictionary(d => d.Key, x => (double?)x.Value);
+
+            var avgHighPricePoints = ApiServiceInfo.Prices.OrderBy(x => x.StartsAt).Select(x => x.AutoModeRestriction ?? false ? avghighPrices[x.StartsAt.Date] : null).ToList();
+
+            priceData = new ChartData
+            {
+                Labels = hours.Select(x => x.ToString()).ToList(),
+                Datasets = new List<IChartDataset>()
+                {
+                    new LineChartDataset()
+                    {
+                        Label = "Price",
+                        Data = dataPoints,
+                        BackgroundColor = "rgb(255, 166, 0)",
+                        BorderColor = "rgb(255, 166, 0)",
+                        BorderWidth = 2,
+                        PointRadius = new List<double>() { 0.0 },
+                        HoverBorderWidth = 4,
+                        Fill = true,
+                        Stepped = true,
+                        Order = 6 // Hintergrund
+                    },
+                    new LineChartDataset()
+                    {
+                        Label = "Avg",
+                        Data = dataAvgPoints,
+                        BackgroundColor = "rgb(88, 80, 141)",
+
+                        BorderWidth = 1,
+                        PointRadius = new List<double>() { 1 },
+                        HoverBorderWidth = 4,
+                        Fill = true,
+                        Stepped = true,
+                        Order = 5
+                    },
+                    new LineChartDataset()
+                    {
+                        Label = "Avg high price",
+                        Data = avgHighPricePoints,
+                        BackgroundColor = "rgb(0, 128, 255)",
+                        BorderColor = "rgb(0, 128, 255)",
+                        BorderWidth = 2,
+                        PointRadius = new List<double>() { 0.0 },
+                        Stepped = true,
+                        Fill = true,
+                        Order = 3 // Vordergrund
+                    },
+                    new LineChartDataset()
+                    {
+                        Label = "AvgLine",
+                        Data = dataAvgLinePoints,
+                        BackgroundColor = "rgb(0, 0, 0)",
+                        BorderColor = "rgb(0, 0, 0)",
+                        BorderWidth = 2,
+                        PointRadius = new List<double>() { 0.0 },
+                        Stepped = true,
+                        Order = 2 // Vordergrund
+                    },
+                    new LineChartDataset()
+                    {
+                        Label = "Current Hour",
+                        Data = dataCurrentHour,
+                        BackgroundColor = "rgb(255, 0, 0)",
+                        BorderColor = "rgb(255, 0, 0)",
+                        BorderWidth = 2,
+                        PointRadius = new List<double>() { 0 },
+                        Fill = true,
+                        Stepped = true,
+                        Order = 1 // Vordergrund
+                    }
                 }
-            }
+            };
         }
 
         private void GetRealTimeMeasurementData()
@@ -207,125 +299,43 @@ namespace EnergyAutomate.Components.Pages
             };
         }
 
-        private void GetPriceData()
+        private async void Price_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
         {
-            var hours = new[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23 };
-            List<double?> dataToday = ApiServiceInfo.GetPriceTodayDatas();
-            List<double?> dataTomorrow = ApiServiceInfo.GetPriceTomorrowDatas();
-            double? avgToday = dataToday.Any() ? dataToday.Average() : 0;
-            double? avgTomorrow = dataTomorrow.Any() ? dataTomorrow.Average() : 0;
-
-            List<string> months = new List<string> { "Today", "Tomorrow" };
-            var dataPoints = dataToday.Concat(dataTomorrow).ToList();
-
-            var dataCurrentHour = dataPoints.Select(point => dataPoints.IndexOf(point) < 24 && (hours[dataPoints.IndexOf(point)] == DateTime.Now.Hour + 1 || hours[dataPoints.IndexOf(point) + 1] == DateTime.Now.Hour + 1) ? point : null).ToList();
-
-            var dataAvgTodayPoints = dataToday.Select(point => point > avgToday ? avgToday : point).ToList();
-            var dataAvgTomorrowPoints = dataTomorrow.Select(point => point > avgTomorrow ? avgTomorrow : point).ToList();
-            var dataAvgPoints = dataAvgTodayPoints.Concat(dataAvgTomorrowPoints).ToList();
-
-            var dataAvgLineTodayPoints = dataToday.Select(point => avgToday).ToList();
-            var dataAvgLineTomorrowPoints = dataTomorrow.Select(point => avgTomorrow).ToList();
-            var dataAvgLinePoints = dataAvgLineTodayPoints.Concat(dataAvgLineTomorrowPoints).ToList();
-
-            var avghighPrices = ApiServiceInfo.Prices.OrderBy(x => x.StartsAt)
-                .Where(w => (w.AutoModeRestriction ?? false && w.Total.HasValue) == true)
-                .GroupBy(g => g.StartsAt.Date)
-                .Select(s=> new { Key = s.Key.Date, Value = s.Average(a => a.Total) }).ToDictionary(d => d.Key, x => (double?)x.Value);
-
-            var avgHighPricePoints = ApiServiceInfo.Prices.OrderBy(x => x.StartsAt).Select(x => x.AutoModeRestriction ?? false ? avghighPrices[x.StartsAt.Date] : null).ToList();
-
-            priceData = new ChartData
+            if (isPriceChartInitialized && priceChart != null)
             {
-                Labels = hours.Select(x => x.ToString()).ToList(),
-                Datasets = new List<IChartDataset>()
+                GetRealTimeMeasurementData();
+                if (priceData != null)
                 {
-                    new LineChartDataset()
-                    {
-                        Label = "Price",
-                        Data = dataPoints,
-                        BackgroundColor = "rgb(255, 166, 0)",
-                        BorderColor = "rgb(255, 166, 0)",
-                        BorderWidth = 2,
-                        PointRadius = new List<double>() { 0.0 },
-                        HoverBorderWidth = 4,
-                        Fill = true,
-                        Stepped = true,
-                        Order = 6 // Hintergrund
-                    },
-                    new LineChartDataset()
-                    {
-                        Label = "Avg",
-                        Data = dataAvgPoints,
-                        BackgroundColor = "rgb(88, 80, 141)",
-
-                        BorderWidth = 1,
-                        PointRadius = new List<double>() { 1 },
-                        HoverBorderWidth = 4,
-                        Fill = true,
-                        Stepped = true,
-                        Order = 5
-                    },
-                    new LineChartDataset()
-                    {
-                        Label = "Avg high price",
-                        Data = avgHighPricePoints,
-                        BackgroundColor = "rgb(0, 128, 255)",
-                        BorderColor = "rgb(0, 128, 255)",
-                        BorderWidth = 2,
-                        PointRadius = new List<double>() { 0.0 },
-                        Stepped = true,
-                        Fill = true,
-                        Order = 3 // Vordergrund
-                    },
-                    new LineChartDataset()
-                    {
-                        Label = "AvgLine",
-                        Data = dataAvgLinePoints,
-                        BackgroundColor = "rgb(0, 0, 0)",
-                        BorderColor = "rgb(0, 0, 0)",
-                        BorderWidth = 2,
-                        PointRadius = new List<double>() { 0.0 },
-                        Stepped = true,
-                        Order = 2 // Vordergrund
-                    },
-                    new LineChartDataset()
-                    {
-                        Label = "Current Hour",
-                        Data = dataCurrentHour,
-                        BackgroundColor = "rgb(255, 0, 0)",
-                        BorderColor = "rgb(255, 0, 0)",
-                        BorderWidth = 2,
-                        PointRadius = new List<double>() { 0 },
-                        Fill = true,
-                        Stepped = true,
-                        Order = 1 // Vordergrund
-                    }
+                    await priceChart.UpdateValuesAsync(priceData);
                 }
-            };
+            }
         }
 
-        private void GetDeviceData()
+        private async void RealTimeMeasurement_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
         {
-            var dataSource = ApiServiceInfo.RealTimeMeasurement.OrderByDescending(x => x.Timestamp).Take(61).Reverse().ToList();
-
-            deviceData = new ChartData
+            try
             {
-                Labels = dataSource.Select((x, index) => index % 5 == 0 ? x.Timestamp.TimeOfDay.ToString() : string.Empty).ToList(),
-                Datasets = new List<IChartDataset>()
+                if (isRealTimeMeasurementChartInitialized && realTimeMeasurementChart != null)
                 {
-                    new LineChartDataset()
+                    GetRealTimeMeasurementData();
+                    if (realTimeMeasurementData != null)
                     {
-                        Label = "AvgOutputValue",
-                        Data = dataSource.Select(x => (double?)x.CommitedPowerValue).ToList(),
-                        BackgroundColor = "rgb(0, 255, 0)",
-                        BorderColor = "rgb(0, 255, 0)",
-                        BorderWidth = 2,
-                        PointRadius = new List<double>() { 0 },
-                        Order = 3
+                        await realTimeMeasurementChart.UpdateValuesAsync(realTimeMeasurementData);
                     }
-                },
-            };
+                }
+                if (isDeviceChartInitialized && deviceChart != null)
+                {
+                    GetDeviceData();
+                    if (deviceData != null)
+                    {
+                        await deviceChart.UpdateValuesAsync(deviceData);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Error in RealTimeMeasurement_CollectionChanged: {ex.Message}");
+            }
         }
 
         private async Task RenderTibberAsync()
@@ -372,29 +382,22 @@ namespace EnergyAutomate.Components.Pages
             GetDeviceData();
             await deviceChart.InitializeAsync(chartData: deviceData, chartOptions: deviceChartOptions);
             isDeviceChartInitialized = true;
-
         }
 
         #endregion Tibber
 
         #region Growatt
 
-        Tabs tabsGrowattRef = default!;
-
-
-        private async Task RefreshDeviceList()
-        {
-            await ApiServiceInfo.InvokeRefreshDeviceList();
-        }
+        private Tabs tabsGrowattRef = default!;
 
         private async Task ClearDeviceNoahTimeSegments()
         {
             await ApiServiceInfo.InvokeClearDeviceNoahTimeSegments();
         }
 
-        private async Task RefreshNoahs()
+        private async Task RefreshDeviceList()
         {
-            await ApiServiceInfo.InvokeRefreshNoahs();
+            await ApiServiceInfo.InvokeRefreshDeviceList();
         }
 
         private async Task RefreshNoahLastData()
@@ -402,7 +405,11 @@ namespace EnergyAutomate.Components.Pages
             await ApiServiceInfo.InvokeRefreshNoahsLastData();
         }
 
-        #endregion Growatt
+        private async Task RefreshNoahs()
+        {
+            await ApiServiceInfo.InvokeRefreshNoahs();
+        }
 
+        #endregion Growatt
     }
 }

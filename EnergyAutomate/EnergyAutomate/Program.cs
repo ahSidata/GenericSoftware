@@ -1,4 +1,3 @@
-using BlazorMonaco;
 using EnergyAutomate.Components;
 using EnergyAutomate.Components.Account;
 using EnergyAutomate.Data;
@@ -17,6 +16,8 @@ namespace EnergyAutomate;
 
 public class Program
 {
+    #region Public Methods
+
     public static void Main(string[] args)
     {
         var builder = WebApplication.CreateBuilder(args);
@@ -92,9 +93,9 @@ public class Program
         }
 
         app.UseExceptionHandler("/Error");
-        // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
+        // The default HSTS value is 30 days. You may want to change this for production scenarios,
+        // see https://aka.ms/aspnetcore-hsts.
         app.UseHsts();
-
 
         app.UseHttpsRedirection();
 
@@ -111,4 +112,6 @@ public class Program
 
         app.Run();
     }
+
+    #endregion Public Methods
 }

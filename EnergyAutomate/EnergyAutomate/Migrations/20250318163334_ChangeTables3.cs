@@ -4,10 +4,21 @@
 
 namespace EnergyAutomate.Migrations
 {
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public partial class ChangeTables3 : Migration
     {
-        /// <inheritdoc />
+        #region Protected Methods
+
+        /// <inheritdoc/>
+        protected override void Down(MigrationBuilder migrationBuilder)
+        {
+            migrationBuilder.RenameColumn(
+                name: "AvgLastPowerValue",
+                table: "RealTimeMeasurements",
+                newName: "PowerOutValue");
+        }
+
+        /// <inheritdoc/>
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.RenameColumn(
@@ -16,13 +27,6 @@ namespace EnergyAutomate.Migrations
                 newName: "AvgLastPowerValue");
         }
 
-        /// <inheritdoc />
-        protected override void Down(MigrationBuilder migrationBuilder)
-        {
-            migrationBuilder.RenameColumn(
-                name: "AvgLastPowerValue",
-                table: "RealTimeMeasurements",
-                newName: "PowerOutValue");
-        }
+        #endregion Protected Methods
     }
 }

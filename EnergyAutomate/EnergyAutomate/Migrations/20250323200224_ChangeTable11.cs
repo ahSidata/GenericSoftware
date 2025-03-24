@@ -4,10 +4,30 @@
 
 namespace EnergyAutomate.Migrations
 {
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public partial class ChangeTable11 : Migration
     {
-        /// <inheritdoc />
+        #region Protected Methods
+
+        /// <inheritdoc/>
+        protected override void Down(MigrationBuilder migrationBuilder)
+        {
+            migrationBuilder.DropColumn(
+                name: "CommitedPowerValue",
+                table: "RealTimeMeasurements");
+
+            migrationBuilder.DropColumn(
+                name: "RequestedPowerValue",
+                table: "RealTimeMeasurements");
+
+            migrationBuilder.AddColumn<string>(
+                name: "DeviceInfos",
+                table: "RealTimeMeasurements",
+                type: "nvarchar(max)",
+                nullable: true);
+        }
+
+        /// <inheritdoc/>
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropColumn(
@@ -27,22 +47,6 @@ namespace EnergyAutomate.Migrations
                 nullable: true);
         }
 
-        /// <inheritdoc />
-        protected override void Down(MigrationBuilder migrationBuilder)
-        {
-            migrationBuilder.DropColumn(
-                name: "CommitedPowerValue",
-                table: "RealTimeMeasurements");
-
-            migrationBuilder.DropColumn(
-                name: "RequestedPowerValue",
-                table: "RealTimeMeasurements");
-
-            migrationBuilder.AddColumn<string>(
-                name: "DeviceInfos",
-                table: "RealTimeMeasurements",
-                type: "nvarchar(max)",
-                nullable: true);
-        }
+        #endregion Protected Methods
     }
 }

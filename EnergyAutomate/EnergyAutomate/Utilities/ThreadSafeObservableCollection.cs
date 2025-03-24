@@ -4,7 +4,13 @@ using System.ComponentModel;
 
 public class ThreadSafeObservableCollection<T> : ObservableCollection<T>
 {
+    #region Fields
+
     private readonly object _syncRoot = new object();
+
+    #endregion Fields
+
+    #region Public Constructors
 
     public ThreadSafeObservableCollection() : base() { }
 
@@ -12,35 +18,15 @@ public class ThreadSafeObservableCollection<T> : ObservableCollection<T>
 
     public ThreadSafeObservableCollection(List<T> list) : base(list) { }
 
-    protected override void OnCollectionChanged(NotifyCollectionChangedEventArgs e)
-    {
-        lock (_syncRoot)
-        {
-            base.OnCollectionChanged(e);
-        }
-    }
+    #endregion Public Constructors
 
-    protected override void OnPropertyChanged(PropertyChangedEventArgs e)
-    {
-        lock (_syncRoot)
-        {
-            base.OnPropertyChanged(e);
-        }
-    }
+    #region Public Methods
 
     public new void Add(T item)
     {
         lock (_syncRoot)
         {
             base.Add(item);
-        }
-    }
-
-    public new void Remove(T item)
-    {
-        lock (_syncRoot)
-        {
-            base.Remove(item);
         }
     }
 
@@ -60,6 +46,14 @@ public class ThreadSafeObservableCollection<T> : ObservableCollection<T>
         }
     }
 
+    public new void Remove(T item)
+    {
+        lock (_syncRoot)
+        {
+            base.Remove(item);
+        }
+    }
+
     public new void RemoveAt(int index)
     {
         lock (_syncRoot)
@@ -67,4 +61,26 @@ public class ThreadSafeObservableCollection<T> : ObservableCollection<T>
             base.RemoveAt(index);
         }
     }
+
+    #endregion Public Methods
+
+    #region Protected Methods
+
+    protected override void OnCollectionChanged(NotifyCollectionChangedEventArgs e)
+    {
+        lock (_syncRoot)
+        {
+            base.OnCollectionChanged(e);
+        }
+    }
+
+    protected override void OnPropertyChanged(PropertyChangedEventArgs e)
+    {
+        lock (_syncRoot)
+        {
+            base.OnPropertyChanged(e);
+        }
+    }
+
+    #endregion Protected Methods
 }

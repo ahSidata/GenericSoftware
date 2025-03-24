@@ -5,6 +5,8 @@ namespace EnergyAutomate.Components.Account;
 
 internal sealed class IdentityUserAccessor(UserManager<ApplicationUser> userManager, IdentityRedirectManager redirectManager)
 {
+    #region Public Methods
+
     public async Task<ApplicationUser> GetRequiredUserAsync(HttpContext context)
     {
         var user = await userManager.GetUserAsync(context.User);
@@ -16,4 +18,6 @@ internal sealed class IdentityUserAccessor(UserManager<ApplicationUser> userMana
 
         return user;
     }
+
+    #endregion Public Methods
 }

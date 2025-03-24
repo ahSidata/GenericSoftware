@@ -5,6 +5,8 @@ namespace EnergyAutomate.Components.Account;
 
 internal sealed class IdentityRedirectManager(NavigationManager navigationManager)
 {
+    #region Fields
+
     public const string StatusCookieName = "Identity.StatusMessage";
 
     private static readonly CookieBuilder StatusCookieBuilder = new()
@@ -14,6 +16,16 @@ internal sealed class IdentityRedirectManager(NavigationManager navigationManage
         IsEssential = true,
         MaxAge = TimeSpan.FromSeconds(5),
     };
+
+    #endregion Fields
+
+    #region Properties
+
+    private string CurrentPath => navigationManager.ToAbsoluteUri(navigationManager.Uri).GetLeftPart(UriPartial.Path);
+
+    #endregion Properties
+
+    #region Public Methods
 
     [DoesNotReturn]
     public void RedirectTo(string? uri)
@@ -26,8 +38,9 @@ internal sealed class IdentityRedirectManager(NavigationManager navigationManage
             uri = navigationManager.ToBaseRelativePath(uri);
         }
 
-        // During static rendering, NavigateTo throws a NavigationException which is handled by the framework as a redirect.
-        // So as long as this is called from a statically rendered Identity component, the InvalidOperationException is never thrown.
+        // During static rendering, NavigateTo throws a NavigationException which is handled by the
+        // framework as a redirect. So as long as this is called from a statically rendered Identity
+        // component, the InvalidOperationException is never thrown.
         navigationManager.NavigateTo(uri);
         throw new InvalidOperationException($"{nameof(IdentityRedirectManager)} can only be used during static rendering.");
     }
@@ -41,18 +54,18 @@ internal sealed class IdentityRedirectManager(NavigationManager navigationManage
     }
 
     [DoesNotReturn]
+    public void RedirectToCurrentPage() => RedirectTo(CurrentPath);
+
+    [DoesNotReturn]
+    public void RedirectToCurrentPageWithStatus(string message, HttpContext context)
+        => RedirectToWithStatus(CurrentPath, message, context);
+
+    [DoesNotReturn]
     public void RedirectToWithStatus(string uri, string message, HttpContext context)
     {
         context.Response.Cookies.Append(StatusCookieName, message, StatusCookieBuilder.Build(context));
         RedirectTo(uri);
     }
 
-    private string CurrentPath => navigationManager.ToAbsoluteUri(navigationManager.Uri).GetLeftPart(UriPartial.Path);
-
-    [DoesNotReturn]
-    public void RedirectToCurrentPage() => RedirectTo(CurrentPath);
-
-    [DoesNotReturn]
-    public void RedirectToCurrentPageWithStatus(string message, HttpContext context)
-        => RedirectToWithStatus(CurrentPath, message, context);
+    #endregion Public Methods
 }
