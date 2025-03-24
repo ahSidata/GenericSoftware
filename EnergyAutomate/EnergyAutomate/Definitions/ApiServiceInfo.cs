@@ -22,17 +22,19 @@ public class ApiServiceInfo
     public List<ApiCallLog> DataReads { get; set; } = [];
     public int DeltaPowerValue { get; set; }
     public int DifferencePowerValue { get; set; }
-    public int? LastCommitedPowerValue => RealTimeMeasurement.Where(x => x.RequestedPowerValue != null).OrderByDescending(x => x.Timestamp).FirstOrDefault()?.CommitedPowerValue;
-    public int? LastRequestedPowerValue => RealTimeMeasurement.Where(x => x.RequestedPowerValue != null).OrderByDescending(x => x.Timestamp).FirstOrDefault()?.RequestedPowerValue;
+    public int? LastCommitedPowerValue => LastCommitedPowerValueItem?.CommitedPowerValue;
+    public RealTimeMeasurementExtention? LastCommitedPowerValueItem => RealTimeMeasurement.Where(x => x.Timestamp > DateTime.Now.AddMinutes(-1) && x.RequestedPowerValue != null && x.CommitedPowerValue != null).OrderByDescending(x => x.Timestamp).FirstOrDefault();
+    public int? LastRequestedPowerValue => LastRequestedPowerValueItem?.RequestedPowerValue;
+    public RealTimeMeasurementExtention? LastRequestedPowerValueItem => RealTimeMeasurement.Where(x => x.Timestamp > DateTime.Now.AddMinutes(-1) && x.RequestedPowerValue != null && x.CommitedPowerValue == null).OrderByDescending(x => x.Timestamp).FirstOrDefault();
     public int NewPowerValue { get; set; }
     public bool SettingAutoMode { get; set; }
     public bool SettingAutoModeRestriction { get; set; } = false;
     public bool SettingLoadBalanced { get; set; } = false;
     public int SettingLockSeconds { get; set; } = 600;
     public int SettingMaxPower { get; set; } = 840;
-    public int SettingOffsetAvg { get; set; } = 75;
-    public int SettingPowerLoadSeconds { get; set; } = 30;
-    public int SettingToleranceAvg { get; set; } = 50;
+    public int SettingOffsetAvg { get; set; } = 50;
+    public int SettingPowerLoadSeconds { get; set; } = 12;
+    public int SettingToleranceAvg { get; set; } = 25;
     private IServiceProvider ServiceProvider { get; init; }
 
     #endregion Properties
@@ -49,6 +51,13 @@ public class ApiServiceInfo
 
     public ApiQueueWatchdog<DeviceNoahTimeSegmentQuery> DeviceNoahTimeSegmentQueueWatchdog => ServiceProvider.GetRequiredService<ApiQueueWatchdog<DeviceNoahTimeSegmentQuery>>();
 
+    public int GetNoahCurrentPowerValueSum()
+    {
+        return Devices
+            .Where(w => w.DeviceType == "noah")
+            .Sum(noah => (int)(GetNoahLastDataPerDevice(noah.DeviceSn)?.pac ?? 0));
+    }
+
     public DeviceNoahInfo? GetNoahInfoPerDevice(string deviceSn)
     {
         return DeviceNoahInfo.FirstOrDefault(x => x.DeviceSn == deviceSn);
@@ -56,7 +65,8 @@ public class ApiServiceInfo
 
     public DeviceNoahLastData? GetNoahLastDataPerDevice(string deviceSn)
     {
-        return DeviceNoahLastData.Where(x => x.deviceSn == deviceSn).OrderByDescending(x => x.time).FirstOrDefault();
+        var result = DeviceNoahLastData.Where(x => x.deviceSn == deviceSn).OrderByDescending(x => x.time).FirstOrDefault();
+        return result;
     }
 
     public void InvokeStateHasChanged()
