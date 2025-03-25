@@ -29,15 +29,19 @@ public class ApiServiceInfo
     public bool SettingLoadBalanced { get; set; } = false;
     public int SettingLockSeconds { get; set; } = 600;
     public int SettingMaxPower { get; set; } = 840;
-    public int SettingOffsetAvg { get; set; } = 50;
-    public int SettingPowerLoadSeconds { get; set; } = 12;
 
     #region AdjustPower
 
-    public int LastLoggedPowerValue { get; set; }
-    public int SettingAvgPowerAdjustmentStep { get; set; } = 10;
+    public int SettingAvgPowerOffset { get; set; } = 50;
     public int SettingAvgPowerHysteresis { get; set; } = 25;
+
+    public int SettingAvgPowerAdjustmentStep { get; set; } = 10;
+    public int SettingAvgPowerLoadSeconds { get; set; } = 12;
+
     public DateTime SettingAvgPowerlastAdjustmentTime { get; set; }
+    public int SettingAvgPowerValueLastLogged { get; set; }
+
+
     public int SettingAvgPowerLastDifference { get; set; }
 
     #endregion AdjustPower
@@ -51,8 +55,6 @@ public class ApiServiceInfo
     public event EventHandler? StateHasChanged;
 
     public ApiQueueWatchdog<DeviceNoahLastDataQuery> DeviceNoahLastDataQueueWatchdog => ServiceProvider.GetRequiredService<ApiQueueWatchdog<DeviceNoahLastDataQuery>>();
-
-    public ApiQueueWatchdog<DeviceNoahOutputValueQuery> DeviceNoahOutputValueQueueWatchdog => ServiceProvider.GetRequiredService<ApiQueueWatchdog<DeviceNoahOutputValueQuery>>();
 
     public ApiQueueWatchdog<DeviceNoahTimeSegmentQuery> DeviceNoahTimeSegmentQueueWatchdog => ServiceProvider.GetRequiredService<ApiQueueWatchdog<DeviceNoahTimeSegmentQuery>>();
 

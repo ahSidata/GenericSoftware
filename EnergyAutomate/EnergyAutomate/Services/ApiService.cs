@@ -201,9 +201,9 @@ public partial class ApiService : IObserver<RealTimeMeasurement>, IDisposable
             Logger.LogDebug($"RequestedPowerValue: {value.RequestedPowerValue}");
 
         value.SettingLockSeconds = ApiServiceInfo.SettingLockSeconds;
-        value.SettingPowerLoadSeconds = ApiServiceInfo.SettingPowerLoadSeconds;
+        value.SettingPowerLoadSeconds = ApiServiceInfo.SettingAvgPowerLoadSeconds;
         value.AvgPowerLoad = ApiServiceInfo.AvgPowerLoad;
-        value.SettingOffSetAvg = ApiServiceInfo.SettingOffsetAvg;
+        value.SettingOffSetAvg = ApiServiceInfo.SettingAvgPowerOffset;
         value.SettingToleranceAvg = ApiServiceInfo.SettingAvgPowerHysteresis;
 
         lock (ApiServiceInfo.RealTimeMeasurement._syncRoot)
@@ -286,7 +286,7 @@ public partial class ApiService : IObserver<RealTimeMeasurement>, IDisposable
     public ApiQueueWatchdog<DeviceNoahLastDataQuery> DeviceNoahLastDataQueueWatchdog => ServiceProvider.GetRequiredService<ApiQueueWatchdog<DeviceNoahLastDataQuery>>();
     public ApiQueueWatchdog<DeviceNoahTimeSegmentQuery> DeviceNoahTimeSegmentQueueWatchdog => ServiceProvider.GetRequiredService<ApiQueueWatchdog<DeviceNoahTimeSegmentQuery>>();
     private ApiRealTimeMeasurementWatchdog ApiRealTimeMeasurementWatchdog { get; set; }
-    private IConfiguration Configuration => ServiceProvider.GetRequiredService<IConfiguration>();
+
     private ILogger Logger => ServiceProvider.GetRequiredService<ILogger<ApiService>>();
     private IServiceProvider ServiceProvider { get; set; }
 
@@ -523,10 +523,10 @@ public partial class ApiService : IObserver<RealTimeMeasurement>, IDisposable
     {
         var deviceCount = ApiServiceInfo.GetNoahDeviceCount();
         var currentPowerValueSum = ApiServiceInfo.GetNoahCurrentPowerValueSum();
-        var currentConsumption = CalcAvgOfLastSeconds(ApiServiceInfo.SettingPowerLoadSeconds);
+        var currentConsumption = CalcAvgOfLastSeconds(ApiServiceInfo.SettingAvgPowerLoadSeconds);
         ApiServiceInfo.AvgPowerLoad = currentConsumption;
 
-        var targetConsumption = ApiServiceInfo.SettingOffsetAvg;
+        var targetConsumption = ApiServiceInfo.SettingAvgPowerOffset;
         var difference = Math.Abs(currentConsumption - targetConsumption);
 
         // true if it is discharging
@@ -557,7 +557,7 @@ public partial class ApiService : IObserver<RealTimeMeasurement>, IDisposable
         // Adaptive Hysterese: Nur reagieren, wenn die Abweichung groß genug ist
         var dynamicHysteresis = ApiServiceInfo.SettingAvgPowerHysteresis * Math.Max(1, difference / 5);
 
-        Logger.LogTrace($"AdjustPower: {currentConsumption} W, Offset: {ApiServiceInfo.SettingOffsetAvg}, Diff: {difference}, Hysteresis: {dynamicHysteresis}");
+        Logger.LogTrace($"AdjustPower: {currentConsumption} W, Offset: {ApiServiceInfo.SettingAvgPowerOffset}, Diff: {difference}, Hysteresis: {dynamicHysteresis}");
         if (difference > dynamicHysteresis)
         {
             var timeSinceLastAdjustment = (DateTime.Now - ApiServiceInfo.SettingAvgPowerlastAdjustmentTime).TotalSeconds;
@@ -573,15 +573,15 @@ public partial class ApiService : IObserver<RealTimeMeasurement>, IDisposable
             // Begrenzung auf max. zulässige Leistung mit Logging
             if (newPowerValue > ApiServiceInfo.SettingMaxPower)
             {
-                if (ApiServiceInfo.LastLoggedPowerValue != ApiServiceInfo.SettingMaxPower)  // Log nur einmal pro Wert
+                if (ApiServiceInfo.SettingAvgPowerValueLastLogged != ApiServiceInfo.SettingMaxPower)  // Log nur einmal pro Wert
                 {
-                    Debug.WriteLine($"PowerChanged: {lastCommitedPowerValue} >> {newPowerValue} (exceeds max: {ApiServiceInfo.SettingMaxPower}), Offset: {ApiServiceInfo.SettingOffsetAvg}");
-                    ApiServiceInfo.LastLoggedPowerValue = ApiServiceInfo.SettingMaxPower;
+                    Debug.WriteLine($"PowerChanged: {lastCommitedPowerValue} >> {newPowerValue} (exceeds max: {ApiServiceInfo.SettingMaxPower}), Offset: {ApiServiceInfo.SettingAvgPowerOffset}");
+                    ApiServiceInfo.SettingAvgPowerValueLastLogged = ApiServiceInfo.SettingMaxPower;
                 }
                 newPowerValue = ApiServiceInfo.SettingMaxPower;
             }
             else
-                ApiServiceInfo.LastLoggedPowerValue = newPowerValue;
+                ApiServiceInfo.SettingAvgPowerValueLastLogged = newPowerValue;
 
             // Sicherstellen, dass der neue Power-Wert durch die Anzahl der Geräte teilbar ist
             if (deviceCount > 0)
@@ -601,7 +601,7 @@ public partial class ApiService : IObserver<RealTimeMeasurement>, IDisposable
                 ApiServiceInfo.NewPowerValue = newPowerValue;
             }
 
-            Logger.LogTrace($"PowerChanged: {lastCommitedPowerValue} >> {newPowerValue}, Offset: {ApiServiceInfo.SettingOffsetAvg}");
+            Logger.LogTrace($"PowerChanged: {lastCommitedPowerValue} >> {newPowerValue}, Offset: {ApiServiceInfo.SettingAvgPowerOffset}");
 
             // Update letzter Anpassungszeitpunkt
             ApiServiceInfo.SettingAvgPowerlastAdjustmentTime = DateTime.Now;

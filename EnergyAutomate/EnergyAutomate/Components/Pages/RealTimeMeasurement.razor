@@ -30,7 +30,7 @@
                                     <Card Class="col-12 col-xl-6 col-xxl-4">
                                         <CardBody>
                                             <CardTitle>
-                                                @device.DeviceType.ToUpper() 
+                                                @device.DeviceType.ToUpper()
                                                 <small Class="mb-2 text-muted">(@device.DeviceSn)</small>
                                                 <small Class="mb-2 text-muted">@(device.IsOfflineSince.HasValue ? $"Offline since {device.IsOfflineSince}" : "Online")</small>
                                             </CardTitle>
@@ -68,7 +68,7 @@
                                                         <div class="col-md-4">
                                                             <Icon Name="IconName.Plug" Size="IconSize.None" />
                                                             <span class="mx-3">
-                                                                <strong>@((ApiServiceInfo.GetLastCommitedPowerValue() ?? 0)/2) W</strong>
+                                                                <strong>@((ApiServiceInfo.GetLastCommitedPowerValue() ?? 0) / 2) W</strong>
                                                             </span>
                                                         </div>
                                                     </div>
@@ -92,7 +92,7 @@
                                                                         2 => "Discharging",
                                                                         _ => "Unknown"
                                                                     })
-                                                                </small> 
+                                                                </small>
                                                             </span>
                                                         </div>
                                                         <div class="col-md-4">
@@ -156,7 +156,7 @@
                                                                     @segment.EndTime
                                                                 </div>
                                                                 <div class="col-md-2">
-                                                                    @segment.Mode == "0" ? "Load": "Batt" 
+                                                                    @segment.Mode == "0" ? "Load": "Batt"
                                                                 </div>
                                                                 <div class="col-md-2">
                                                                     @segment.Power W
@@ -182,25 +182,14 @@
                                                         AvgPowerLoad: @ApiServiceInfo.AvgPowerLoad
                                                     </div>
                                                     <div class="col-md-6">
-                                                        LastCommitedPowerValue: @ApiServiceInfo.GetLastCommitedPowerValue()
-                                                    </div>
-                                                </div>
-                                            </li>
-                                            <li class="list-group-item">
-                                                <div class="row w-100">
-                                                    <div class="col-md-6">
-                                                        DifferencePowerValue: @ApiServiceInfo.SettingAvgPowerLastDifference
-                                                    </div>
-                                                    <div class="col-md-6">
-                                                        DeltaPowerValue: @ApiServiceInfo.DeltaPowerValue
-                                                    </div>
-                                                </div>
-
-                                            </li>
-                                            <li class="list-group-item">
-                                                <div class="row w-100">
-                                                    <div class="col-md-6">
                                                         NewPowerValue: @ApiServiceInfo.NewPowerValue
+                                                    </div>
+                                                </div>
+                                            </li>
+                                            <li class="list-group-item">
+                                                <div class="row w-100">
+                                                    <div class="col-md-6">
+                                                        LastCommitedPowerValue: @ApiServiceInfo.GetLastCommitedPowerValue()
                                                     </div>
                                                     <div class="col-md-6">
                                                         LastPowerValue: @ApiServiceInfo.GetLastRequestedPowerValue()
@@ -211,7 +200,37 @@
                                             <li class="list-group-item">
                                                 <div class="row w-100">
                                                     <div class="col-md-6">
-                                                        OutputValueQueueCount: @ApiServiceInfo.DeviceNoahOutputValueQueueWatchdog.Count
+                                                        Offset: @ApiServiceInfo.SettingAvgPowerOffset
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        Hysteresis: @ApiServiceInfo.SettingAvgPowerHysteresis
+                                                    </div>
+                                                </div>
+                                            </li>
+                                            <li class="list-group-item">
+                                                <div class="row w-100">
+                                                    <div class="col-md-6">
+                                                        AdjustmentStep: @ApiServiceInfo.SettingAvgPowerAdjustmentStep
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        LoadSeconds: @ApiServiceInfo.SettingAvgPowerLoadSeconds
+                                                    </div>
+                                                </div>
+                                            </li>
+                                            <li class="list-group-item">
+                                                <div class="row w-100">
+                                                    <div class="col-md-6">
+                                                        LastAdjustmentTime: @ApiServiceInfo.SettingAvgPowerlastAdjustmentTime
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        ValueLastLogged: @ApiServiceInfo.SettingAvgPowerValueLastLogged
+                                                    </div>
+                                                </div>
+                                            </li>
+                                            <li class="list-group-item">
+                                                <div class="row w-100">
+                                                    <div class="col-md-6">
+                                                        LastDifference: @ApiServiceInfo.SettingAvgPowerLastDifference
                                                     </div>
                                                     <div class="col-md-6">
                                                     </div>
@@ -220,22 +239,22 @@
                                             <li class="list-group-item">
                                                 <div class="row w-100">
                                                     <div class="col-md-6">
-                                                        TimeSegmentQueueCount: @ApiServiceInfo.DeviceNoahTimeSegmentQueueWatchdog.Count
+                                                        TimeSegmentQC: @ApiServiceInfo.DeviceNoahTimeSegmentQueueWatchdog.Count
                                                     </div>
                                                     <div class="col-md-6">
+                                                        LastDataQC: @ApiServiceInfo.DeviceNoahLastDataQueueWatchdog.Count
                                                     </div>
                                                 </div>
-
                                             </li>
                                             <li class="list-group-item">
                                                 <div class="row w-100">
                                                     <div class="col-md-6">
-                                                        LastDataQueueCount: @ApiServiceInfo.DeviceNoahLastDataQueueWatchdog.Count
+                                                        LastDataQC: @ApiServiceInfo.DeviceNoahLastDataQueueWatchdog.Count
                                                     </div>
                                                     <div class="col-md-6">
+                                                        TimeSegmentQC: @ApiServiceInfo.DeviceNoahTimeSegmentQueueWatchdog.Count
                                                     </div>
                                                 </div>
-
                                             </li>
                                         </ul>
                                     </CardBody>
@@ -258,13 +277,13 @@
                                 <Switch @bind-Value="ApiServiceInfo.SettingLoadBalanced" Label="LoadBalanced (zero injection on low soc)" />
                             </div>
                             <div>
-                                AvgPowerLoadSeconds <RangeInput TValue="int" @bind-Value="ApiServiceInfo.SettingPowerLoadSeconds" Min="3" Max="180" TickMarks="AvgPowerLoadSecondsTickList" Step="3" />
+                                AvgPowerLoadSeconds <RangeInput TValue="int" @bind-Value="ApiServiceInfo.SettingAvgPowerLoadSeconds" Min="3" Max="180" TickMarks="AvgPowerLoadSecondsTickList" Step="3" />
                             </div>
                             <div>
                                 ApiLockSeconds <RangeInput TValue="int" @bind-Value="ApiServiceInfo.SettingLockSeconds" Min="100" Max="1000" TickMarks="ApiLockSecondsTickList" Step="50" />
                             </div>
                             <div>
-                                ApiOffsetAvg <RangeInput TValue="int" @bind-Value="ApiServiceInfo.SettingOffsetAvg" Min="-100" Max="100" TickMarks="ApiOffsetAvgTickList" Step="25" />
+                                ApiOffsetAvg <RangeInput TValue="int" @bind-Value="ApiServiceInfo.SettingAvgPowerOffset" Min="-100" Max="100" TickMarks="ApiOffsetAvgTickList" Step="25" />
                             </div>
                             <div>
                                 SettingToleranceAvg <RangeInput TValue="int" @bind-Value="ApiServiceInfo.SettingAvgPowerHysteresis" Min="0" Max="100" TickMarks="ApiToleranceAvgTickList" Step="5" />
