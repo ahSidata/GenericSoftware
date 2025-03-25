@@ -48,16 +48,22 @@ namespace EnergyAutomate.Definitions
         #region Properties
 
         public int AvgPowerLoad { get; set; }
+
         public int? CommitedPowerValue { get; set; }
-        [JsonInclude]
+
         public int? RequestedPowerValue { get; set; }
+
         public int SettingLockSeconds { get; set; }
+
         public int SettingOffSetAvg { get; set; }
+
         public int SettingPowerLoadSeconds { get; set; }
+
         public int SettingToleranceAvg { get; set; }
 
         [NotMapped]
         public int TotalPower => Power > 0 ? (int)Power : -(int)(PowerProduction ?? 0);
+
         public DateTime TS { get; set; }
 
         #endregion Properties

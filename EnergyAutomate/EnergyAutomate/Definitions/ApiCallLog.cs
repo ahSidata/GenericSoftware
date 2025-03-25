@@ -4,8 +4,10 @@
     {
         #region Properties
 
-        public string MethodeName { get; set; } = string.Empty;
+        public DeviceNoahLastDataQuery.QueryTypes MethodeName { get; set; }
+
         public bool RaisedError { get; set; }
+
         public DateTime TimeStamp { get; set; }
 
         #endregion Properties

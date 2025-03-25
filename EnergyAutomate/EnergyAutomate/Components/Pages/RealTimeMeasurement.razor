@@ -24,11 +24,10 @@
                         {
                             <LineChart @ref="realTimeMeasurementChart" Class="tibberLineChart" Height="40" HeightUnit="Unit.Vh" />
                             <LineChart @ref="deviceChart" Class="tibberLineChart" Height="20" HeightUnit="Unit.Vh" />
-                            <CardGroup>
-
+                            <div class="row">
                                 @foreach (var device in ApiServiceInfo.Devices.Where(x => x.DeviceType == "noah"))
                                 {
-                                    <Card Style="width:18rem;">
+                                    <Card Class="col-12 col-xl-6 col-xxl-4">
                                         <CardBody>
                                             <CardTitle>
                                                 @device.DeviceType.ToUpper() 
@@ -170,7 +169,7 @@
                                         </CardBody>
                                     </Card>
                                 }
-                                <Card Style="width:18rem;">
+                                <Card Class="col-12 col-xl-6 col-xxl-4">
                                     <CardBody>
                                         <CardTitle>
                                             Last Indicator Values
@@ -190,7 +189,7 @@
                                             <li class="list-group-item">
                                                 <div class="row w-100">
                                                     <div class="col-md-6">
-                                                        DifferencePowerValue: @ApiServiceInfo.DifferencePowerValue
+                                                        DifferencePowerValue: @ApiServiceInfo.SettingAvgPowerLastDifference
                                                     </div>
                                                     <div class="col-md-6">
                                                         DeltaPowerValue: @ApiServiceInfo.DeltaPowerValue
@@ -241,7 +240,7 @@
                                         </ul>
                                     </CardBody>
                                 </Card>
-                            </CardGroup>
+                            </div>
                             <LineChart @ref="priceChart" Class="tibberLineChart" Height="40" HeightUnit="Unit.Vh" />
                         }
                     </Content>
@@ -268,7 +267,7 @@
                                 ApiOffsetAvg <RangeInput TValue="int" @bind-Value="ApiServiceInfo.SettingOffsetAvg" Min="-100" Max="100" TickMarks="ApiOffsetAvgTickList" Step="25" />
                             </div>
                             <div>
-                                SettingToleranceAvg <RangeInput TValue="int" @bind-Value="ApiServiceInfo.SettingToleranceAvg" Min="0" Max="100" TickMarks="ApiToleranceAvgTickList" Step="5" />
+                                SettingToleranceAvg <RangeInput TValue="int" @bind-Value="ApiServiceInfo.SettingAvgPowerHysteresis" Min="0" Max="100" TickMarks="ApiToleranceAvgTickList" Step="5" />
                             </div>
                             <div>
                                 SettingMaxPower <RangeInput TValue="int" @bind-Value="ApiServiceInfo.SettingMaxPower" Min="700" Max="900" TickMarks="ApiMaxPowerTickList" Step="10" />

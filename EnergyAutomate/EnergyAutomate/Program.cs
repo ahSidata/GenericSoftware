@@ -31,8 +31,10 @@ public class Program
         var configuration = builder.Configuration;
         var TraceEnabled = configuration.GetSection("Trace").GetValue<bool>("TraceEnabled");
 
+#if !DEBUG
         if (TraceEnabled)
             Trace.Listeners.Add(new ConsoleTraceListener());
+#endif
 
         // Add services to the container.
         builder.Services.AddRazorComponents()

@@ -11,7 +11,13 @@ namespace EnergyAutomate.Definitions
         public string DeviceType { get; set; } = string.Empty;
         [JsonIgnore]
         public bool Force { get; set; } = false;
-        public string QueryType { get; set; } = string.Empty;
+        public QueryTypes QueryType { get; set; }
+
+        public enum QueryTypes
+        {
+            DeviceNoahInfo,
+            DeviceNoahLastData
+        }
 
         #endregion Properties
     }

@@ -1,5 +1,6 @@
 ﻿using Growatt.OSS;
 using Growatt.Sdk;
+using Newtonsoft.Json;
 using System.Collections.ObjectModel;
 
 namespace EnergyAutomate.Watchdogs
@@ -78,10 +79,6 @@ namespace EnergyAutomate.Watchdogs
             return Collection[0];
         }
 
-        #endregion Public Methods
-
-        #region Private Methods
-
         private async Task ProceedingAsync()
         {
             if (IsProceeding)
@@ -127,6 +124,8 @@ namespace EnergyAutomate.Watchdogs
 
                     penaltyFrequentlyAccess += 100;
 
+                    Logger.LogError("ApiQueueWatchdog<{Type}>", typeof(T).Name);
+                    Logger.LogError(JsonConvert.SerializeObject(item));
                     Logger.LogError(ex, ex.Message);
                 }
             }
@@ -134,6 +133,6 @@ namespace EnergyAutomate.Watchdogs
             IsProceeding = false;
         }
 
-        #endregion Private Methods
+        #endregion Public Methods
     }
 }
