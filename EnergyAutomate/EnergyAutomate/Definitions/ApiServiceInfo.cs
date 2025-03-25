@@ -61,7 +61,7 @@ public class ApiServiceInfo
         return DataReads.Any(x => x.MethodeName == DeviceNoahLastDataQuery.QueryTypes.DeviceNoahInfo && x.TimeStamp > DateTime.Now.AddSeconds(-SettingDataReadsDelay));
     }
 
-    public int GetDeviceCount()
+    public int GetNoahDeviceCount()
     {
         return Devices.Where(x => x.DeviceType == "noah").Count();
     }
@@ -71,6 +71,13 @@ public class ApiServiceInfo
         return Devices
             .Where(w => w.DeviceType == "noah")
             .Sum(noah => (int)(GetNoahLastDataPerDevice(noah.DeviceSn)?.pac ?? 0));
+    }
+
+    public int GetNoahCurrentIsDischarchingState()
+    {
+        return Devices
+            .Where(w => w.DeviceType == "noah")
+            .Max(noah => GetNoahLastDataPerDevice(noah.DeviceSn)?.totalBatteryPackChargingStatus ?? 0);
     }
 
     public DeviceNoahInfo? GetNoahInfoPerDevice(string deviceSn)

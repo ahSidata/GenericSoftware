@@ -92,7 +92,7 @@ public partial class ApiService : IObserver<RealTimeMeasurement>, IDisposable
                 {
                     var dbContext = ServiceProvider.CreateScope().ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
-                    var newPowerValue = lastRequestedPowerValueItem.RequestedPowerValue.Value / ApiServiceInfo.GetDeviceCount();
+                    var newPowerValue = lastRequestedPowerValueItem.RequestedPowerValue.Value / ApiServiceInfo.GetNoahDeviceCount();
 
                     bool exitLoops = false;
                     foreach (var device in ApiServiceInfo.Devices.Where(x => x.DeviceType == "noah"))
@@ -197,7 +197,8 @@ public partial class ApiService : IObserver<RealTimeMeasurement>, IDisposable
 
     private async Task Write2Database(RealTimeMeasurementExtention value)
     {
-        Logger.LogDebug($"RequestedPowerValue: {value.RequestedPowerValue}");
+        if(value.RequestedPowerValue.HasValue)
+            Logger.LogDebug($"RequestedPowerValue: {value.RequestedPowerValue}");
 
         value.SettingLockSeconds = ApiServiceInfo.SettingLockSeconds;
         value.SettingPowerLoadSeconds = ApiServiceInfo.SettingPowerLoadSeconds;
@@ -520,16 +521,33 @@ public partial class ApiService : IObserver<RealTimeMeasurement>, IDisposable
     /// <param name="state">The state object passed by the Timer (not used).</param>
     private void AdjustPower(RealTimeMeasurementExtention value)
     {
-        var deviceCount = ApiServiceInfo.GetDeviceCount();
-
+        var deviceCount = ApiServiceInfo.GetNoahDeviceCount();
         var currentPowerValueSum = ApiServiceInfo.GetNoahCurrentPowerValueSum();
-
         var currentConsumption = CalcAvgOfLastSeconds(ApiServiceInfo.SettingPowerLoadSeconds);
         ApiServiceInfo.AvgPowerLoad = currentConsumption;
 
         var targetConsumption = ApiServiceInfo.SettingOffsetAvg;
-
         var difference = Math.Abs(currentConsumption - targetConsumption);
+
+        // true if it is discharging
+        var state = ApiServiceInfo.GetNoahCurrentIsDischarchingState();
+        var isDischaring = state > 1;
+
+        // Überproduktion prüfen: Wenn der Strom positiv ist und es keine Entladung gibt
+        var isOverproduction = currentPowerValueSum > 0 && !isDischaring;
+
+        // Wenn es eine Überproduktion gibt, keine Anpassung vornehmen
+        if (isOverproduction)
+        {
+            Logger.LogTrace("Overproduction detected, no adjustment needed.");
+            return;
+        }
+
+        // Wenn die Akkus entladen werden, keine Anpassung vornehmen
+        if (isDischaring) 
+        {
+            Logger.LogTrace("Batteries are in use.");
+        }
 
         // Letzten gesetzten Power-Wert holen
         int lastCommitedPowerValue = ApiServiceInfo.GetLastRequestedPowerValueItem() == null
@@ -583,7 +601,7 @@ public partial class ApiService : IObserver<RealTimeMeasurement>, IDisposable
                 ApiServiceInfo.NewPowerValue = newPowerValue;
             }
 
-            Debug.WriteLine($"PowerChanged: {lastCommitedPowerValue} >> {newPowerValue}, Offset: {ApiServiceInfo.SettingOffsetAvg}");
+            Logger.LogTrace($"PowerChanged: {lastCommitedPowerValue} >> {newPowerValue}, Offset: {ApiServiceInfo.SettingOffsetAvg}");
 
             // Update letzter Anpassungszeitpunkt
             ApiServiceInfo.SettingAvgPowerlastAdjustmentTime = DateTime.Now;
@@ -596,6 +614,8 @@ public partial class ApiService : IObserver<RealTimeMeasurement>, IDisposable
             Logger.LogTrace($"AdjustPower: Nothing to do");
         }
     }
+
+
 
     private void CalcNewOutputValue(RealTimeMeasurementExtention value)
     {
@@ -673,6 +693,7 @@ public partial class ApiService : IObserver<RealTimeMeasurement>, IDisposable
                 }
                 else
                 {
+                    Logger.LogTrace($"Not in grace periode: Nothing to do");
                 }
             }
             else
