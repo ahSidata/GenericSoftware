@@ -6,7 +6,7 @@ public class ThreadSafeObservableCollection<T> : ObservableCollection<T>
 {
     #region Fields
 
-    private readonly object _syncRoot = new object();
+    public readonly Lock _syncRoot = new Lock();
 
     #endregion Fields
 

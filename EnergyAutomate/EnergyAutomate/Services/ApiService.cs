@@ -71,8 +71,8 @@ public partial class ApiService : IObserver<RealTimeMeasurement>, IDisposable
             var ApiServiceInfo = ServiceProvider.GetRequiredService<ApiServiceInfo>();
             var client = ServiceProvider.GetRequiredService<GrowattApiClient>();
 
-            var lastRequestedPowerValueItem = ApiServiceInfo.LastRequestedPowerValueItem;
-            var lastCommitedPowerValueItem = ApiServiceInfo.LastCommitedPowerValueItem;
+            var lastRequestedPowerValueItem = ApiServiceInfo.GetLastRequestedPowerValueItem();
+            var lastCommitedPowerValueItem = ApiServiceInfo.GetLastCommitedPowerValueItem();
 
             if
             (
@@ -455,7 +455,7 @@ public partial class ApiService : IObserver<RealTimeMeasurement>, IDisposable
 
     private void CalcNewOutputValue(RealTimeMeasurementExtention value)
     {
-        int lastCommitedPowerValue = ApiServiceInfo.LastCommitedPowerValue == null ? ApiServiceInfo.GetNoahCurrentPowerValueSum() : ApiServiceInfo.LastCommitedPowerValue ?? 0;
+        int lastCommitedPowerValue = ApiServiceInfo.GetLastRequestedPowerValueItem() == null ? ApiServiceInfo.GetNoahCurrentPowerValueSum() : ApiServiceInfo.GetLastCommitedPowerValue() ?? 0;
 
         ApiServiceInfo.DifferencePowerValue = Math.Abs(ApiServiceInfo.SettingOffsetAvg - ApiServiceInfo.AvgPowerLoad);
 
@@ -473,7 +473,7 @@ public partial class ApiService : IObserver<RealTimeMeasurement>, IDisposable
             _ => 0
         };
 
-        var lastRequestedPowerValue = ApiServiceInfo.LastRequestedPowerValue ?? lastCommitedPowerValue;
+        var lastRequestedPowerValue = ApiServiceInfo.GetLastRequestedPowerValue() ?? lastCommitedPowerValue;
 
         if (ApiServiceInfo.AvgPowerLoad > ApiServiceInfo.SettingOffsetAvg + (ApiServiceInfo.SettingToleranceAvg / 2))
         {
@@ -490,14 +490,14 @@ public partial class ApiService : IObserver<RealTimeMeasurement>, IDisposable
 
         if (ApiServiceInfo.NewPowerValue <= maxPower)
         {
-            if (ApiServiceInfo.NewPowerValue != ApiServiceInfo.LastRequestedPowerValue)
+            if (ApiServiceInfo.NewPowerValue != ApiServiceInfo.GetLastRequestedPowerValue())
             {
                 value.RequestedPowerValue = ApiServiceInfo.NewPowerValue;
             }
         }
         else
         {
-            Debug.WriteLine($"PowerChanged: {ApiServiceInfo.LastRequestedPowerValue ?? 0} >> {ApiServiceInfo.NewPowerValue}, OffSet: {ApiServiceInfo.SettingOffsetAvg}");
+            Debug.WriteLine($"PowerChanged: {ApiServiceInfo.GetLastRequestedPowerValue() ?? 0} >> {ApiServiceInfo.NewPowerValue}, OffSet: {ApiServiceInfo.SettingOffsetAvg}");
         }
 
         ApiServiceInfo.InvokeStateHasChanged();

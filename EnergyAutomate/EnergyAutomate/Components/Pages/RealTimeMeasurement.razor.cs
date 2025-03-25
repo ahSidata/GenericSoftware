@@ -121,31 +121,29 @@ namespace EnergyAutomate.Components.Pages
 
         private void GetPriceData()
         {
-            var hours = new[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23 };
+            var todayOnly = DateTime.Now.Hour < 13;
+            var hours = Enumerable.Range(0, todayOnly ? 24 : 48).Select(i => i % 24).ToArray();
             List<double?> dataToday = ApiServiceInfo.GetPriceTodayDatas();
             List<double?> dataTomorrow = ApiServiceInfo.GetPriceTomorrowDatas();
             double? avgToday = dataToday.Any() ? dataToday.Average() : 0;
             double? avgTomorrow = dataTomorrow.Any() ? dataTomorrow.Average() : 0;
 
-            List<string> months = new List<string> { "Today", "Tomorrow" };
-            var dataPoints = dataToday.Concat(dataTomorrow).ToList();
+            var dataPoints = todayOnly ? dataToday : dataToday.Concat(dataTomorrow).ToList();
+            var currentHour = DateTime.Now.Hour + 1;
 
-            var dataCurrentHour = dataPoints.Select(point => dataPoints.IndexOf(point) < 24 && (hours[dataPoints.IndexOf(point)] == DateTime.Now.Hour + 1 || hours[dataPoints.IndexOf(point) + 1] == DateTime.Now.Hour + 1) ? point : null).ToList();
+            var dataCurrentHour = dataPoints.Select((point, index) => index < 23 && (hours[index] == currentHour || hours[index + 1] == currentHour) ? point : null).ToList();
+            var dataAvgPoints = dataToday.Select(point => point > avgToday ? avgToday : point).Concat(dataTomorrow.Select(point => point > avgTomorrow ? avgTomorrow : point)).ToList();
+            var dataAvgLinePoints = Enumerable.Repeat(avgToday, dataToday.Count).Concat(Enumerable.Repeat(avgTomorrow, dataTomorrow.Count)).ToList();
 
-            var dataAvgTodayPoints = dataToday.Select(point => point > avgToday ? avgToday : point).ToList();
-            var dataAvgTomorrowPoints = dataTomorrow.Select(point => point > avgTomorrow ? avgTomorrow : point).ToList();
-            var dataAvgPoints = dataAvgTodayPoints.Concat(dataAvgTomorrowPoints).ToList();
-
-            var dataAvgLineTodayPoints = dataToday.Select(point => avgToday).ToList();
-            var dataAvgLineTomorrowPoints = dataTomorrow.Select(point => avgTomorrow).ToList();
-            var dataAvgLinePoints = dataAvgLineTodayPoints.Concat(dataAvgLineTomorrowPoints).ToList();
-
-            var avghighPrices = ApiServiceInfo.Prices.OrderBy(x => x.StartsAt)
-                .Where(w => (w.AutoModeRestriction ?? false && w.Total.HasValue) == true)
+            var avghighPrices = ApiServiceInfo.Prices
+                .Where(w => w.AutoModeRestriction == true && w.Total.HasValue)
                 .GroupBy(g => g.StartsAt.Date)
-                .Select(s => new { Key = s.Key.Date, Value = s.Average(a => a.Total) }).ToDictionary(d => d.Key, x => (double?)x.Value);
+                .ToDictionary(g => g.Key, g => (double?)g.Average(a => a.Total));
 
-            var avgHighPricePoints = ApiServiceInfo.Prices.OrderBy(x => x.StartsAt).Select(x => x.AutoModeRestriction ?? false ? avghighPrices[x.StartsAt.Date] : null).ToList();
+            var avgHighPricePoints = ApiServiceInfo.Prices
+                .OrderBy(x => x.StartsAt)
+                .Select(x => x.AutoModeRestriction == true ? avghighPrices[x.StartsAt.Date] : null)
+                .ToList();
 
             priceData = new ChartData
             {
@@ -163,14 +161,13 @@ namespace EnergyAutomate.Components.Pages
                         HoverBorderWidth = 4,
                         Fill = true,
                         Stepped = true,
-                        Order = 6 // Hintergrund
+                        Order = 6
                     },
                     new LineChartDataset()
                     {
                         Label = "Avg",
                         Data = dataAvgPoints,
                         BackgroundColor = "rgb(88, 80, 141)",
-
                         BorderWidth = 1,
                         PointRadius = new List<double>() { 1 },
                         HoverBorderWidth = 4,
@@ -188,7 +185,7 @@ namespace EnergyAutomate.Components.Pages
                         PointRadius = new List<double>() { 0.0 },
                         Stepped = true,
                         Fill = true,
-                        Order = 3 // Vordergrund
+                        Order = 3
                     },
                     new LineChartDataset()
                     {
@@ -199,7 +196,7 @@ namespace EnergyAutomate.Components.Pages
                         BorderWidth = 2,
                         PointRadius = new List<double>() { 0.0 },
                         Stepped = true,
-                        Order = 2 // Vordergrund
+                        Order = 2
                     },
                     new LineChartDataset()
                     {
@@ -211,7 +208,7 @@ namespace EnergyAutomate.Components.Pages
                         PointRadius = new List<double>() { 0 },
                         Fill = true,
                         Stepped = true,
-                        Order = 1 // Vordergrund
+                        Order = 1
                     }
                 }
             };

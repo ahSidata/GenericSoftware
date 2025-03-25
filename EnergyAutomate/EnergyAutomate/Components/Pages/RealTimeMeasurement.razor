@@ -69,7 +69,7 @@
                                                         <div class="col-md-4">
                                                             <Icon Name="IconName.Plug" Size="IconSize.None" />
                                                             <span class="mx-3">
-                                                                <strong>@((ApiServiceInfo.LastCommitedPowerValue ?? 0)/2) W</strong>
+                                                                <strong>@((ApiServiceInfo.GetLastCommitedPowerValue() ?? 0)/2) W</strong>
                                                             </span>
                                                         </div>
                                                     </div>
@@ -183,7 +183,7 @@
                                                         AvgPowerLoad: @ApiServiceInfo.AvgPowerLoad
                                                     </div>
                                                     <div class="col-md-6">
-                                                        LastCommitedPowerValue: @ApiServiceInfo.LastCommitedPowerValue
+                                                        LastCommitedPowerValue: @ApiServiceInfo.GetLastCommitedPowerValue()
                                                     </div>
                                                 </div>
                                             </li>
@@ -204,7 +204,7 @@
                                                         NewPowerValue: @ApiServiceInfo.NewPowerValue
                                                     </div>
                                                     <div class="col-md-6">
-                                                        LastPowerValue: @ApiServiceInfo.LastRequestedPowerValue
+                                                        LastPowerValue: @ApiServiceInfo.GetLastRequestedPowerValue()
                                                     </div>
                                                 </div>
 
