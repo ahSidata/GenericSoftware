@@ -74,6 +74,7 @@ public class Program
         builder.Services.AddSingleton<ApiRealTimeMeasurementWatchdog>();
         builder.Services.AddSingleton<ApiQueueWatchdog<DeviceNoahTimeSegmentQuery>>();
         builder.Services.AddSingleton<ApiQueueWatchdog<DeviceNoahLastDataQuery>>();
+        builder.Services.AddSingleton<ApiQueueWatchdog<DeviceNoahOutputValueQuery>>();
 
         // Registrieren des Hintergrunddienstes
         builder.Services.AddHostedService<ApiBackgroundService>();

@@ -9,10 +9,8 @@ namespace EnergyAutomate.Definitions
 
         public string DeviceSn { get; set; } = string.Empty;
         public string DeviceType { get; set; } = string.Empty;
-        [JsonIgnore]
         public bool Force { get; set; } = false;
-
-        public DateTime TS { get; set; }
+        public DateTime? TS { get; set; }
         public int Value { get; set; }
 
         #endregion Properties

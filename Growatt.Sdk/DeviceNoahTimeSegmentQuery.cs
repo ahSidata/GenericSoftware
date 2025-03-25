@@ -12,19 +12,20 @@ namespace Growatt.OSS
         /// <summary>device type, example: noah</summary>
         public string DeviceType { get; set; }
         /// <summary>time period switch (0: off, 1: on), example: 0</summary>
-        public string Enable { get; set; }
+        public string Enable { get; set; } = "0";
         /// <summary>end time (hours:minutes), Example: 02:05</summary>
-        public string EndTime { get; set; }
+        public string EndTime { get; set; } = "23:59";
+
         [JsonIgnore]
         public bool Force { get; set; } = false;
         /// <summary>machine mode (0: load priority, 1: battery priority), example: 0</summary>
-        public string Mode { get; set; }
+        public string Mode { get; set; } = "0";
         /// <summary>output power (range 0-800 in w), example: 150</summary>
-        public string Power { get; set; }
+        public string Power { get; set; } = "0";
         /// <summary>start time (hours:minutes), Example: 01:06</summary>
-        public string StartTime { get; set; }
+        public string StartTime { get; set; } = "00:00";
         /// <summary>time period (1~9), example: 1</summary>
-        public string Type { get; set; }
+        public string Type { get; set; } = "1";
 
         #endregion Properties
 

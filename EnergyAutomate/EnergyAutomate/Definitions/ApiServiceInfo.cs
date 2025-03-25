@@ -50,7 +50,7 @@ public class ApiServiceInfo
     public event EventHandler? StateHasChanged;
 
     public ApiQueueWatchdog<DeviceNoahLastDataQuery> DeviceNoahLastDataQueueWatchdog => ServiceProvider.GetRequiredService<ApiQueueWatchdog<DeviceNoahLastDataQuery>>();
-
+    public ApiQueueWatchdog<DeviceNoahOutputValueQuery> DeviceNoahOutputValueQueueWatchdog => ServiceProvider.GetRequiredService<ApiQueueWatchdog<DeviceNoahOutputValueQuery>>();
     public ApiQueueWatchdog<DeviceNoahTimeSegmentQuery> DeviceNoahTimeSegmentQueueWatchdog => ServiceProvider.GetRequiredService<ApiQueueWatchdog<DeviceNoahTimeSegmentQuery>>();
 
     public bool DataReadsDoRefresh(DeviceNoahLastDataQuery.QueryTypes queryType)
@@ -173,7 +173,7 @@ public class ApiServiceInfo
     {
         lock (RealTimeMeasurement._syncRoot)
         {
-            return RealTimeMeasurement.Where(x => x.Timestamp > DateTime.Now.AddMinutes(-1) && x.RequestedPowerValue != null && x.CommitedPowerValue != null).OrderByDescending(x => x.Timestamp).FirstOrDefault();
+            return RealTimeMeasurement.Where(x => x.Timestamp > DateTime.Now.AddMinutes(-1) && x.CommitedPowerValue != null).OrderByDescending(x => x.Timestamp).FirstOrDefault();
         }
     }
 
@@ -183,7 +183,7 @@ public class ApiServiceInfo
     {
         lock (RealTimeMeasurement._syncRoot)
         {
-            return RealTimeMeasurement.Where(x => x.Timestamp > DateTime.Now.AddMinutes(-1) && x.RequestedPowerValue != null && x.CommitedPowerValue == null).OrderByDescending(x => x.Timestamp).FirstOrDefault();
+            return RealTimeMeasurement.Where(x => x.Timestamp > DateTime.Now.AddMinutes(-5) && x.RequestedPowerValue != null).OrderByDescending(x => x.Timestamp).FirstOrDefault();
         }
     }
 

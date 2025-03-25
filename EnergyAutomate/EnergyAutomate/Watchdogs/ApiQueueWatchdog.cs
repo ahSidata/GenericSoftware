@@ -49,6 +49,11 @@ namespace EnergyAutomate.Watchdogs
 
         #region Public Methods
 
+        public void Clear()
+        {
+            Collection.Clear();
+        }
+
         public T Dequeue()
         {
             if (Collection.Count == 0)
@@ -128,6 +133,8 @@ namespace EnergyAutomate.Watchdogs
                     Logger.LogError("ApiQueueWatchdog<{Type}>", typeof(T).Name);
                     Logger.LogError(JsonConvert.SerializeObject(item));
                     Logger.LogError(ex, ex.Message);
+
+                    await Task.Delay(TotalDelay);
                 }
             }
 
