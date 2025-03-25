@@ -1,4 +1,5 @@
-﻿using Growatt.OSS;
+﻿using EnergyAutomate.Definitions;
+using Growatt.OSS;
 using Growatt.Sdk;
 using Newtonsoft.Json;
 using System.Collections.ObjectModel;
@@ -110,6 +111,8 @@ namespace EnergyAutomate.Watchdogs
                         }
                     }
 
+                    item = null;
+
                     if (penaltyFrequentlyAccess >= 100)
                         penaltyFrequentlyAccess -= 100;
 
@@ -117,8 +120,6 @@ namespace EnergyAutomate.Watchdogs
                 }
                 catch (ApiException ex)
                 {
-                    if (ex.ErrorCode == 5) ServiceProvider.GetRequiredService<ApiService>().GetDeviceNoahInfo();
-
                     if (item != null && !item.Force)
                         item = null;
 

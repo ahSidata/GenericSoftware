@@ -32,17 +32,12 @@ public class ApiServiceInfo
 
     #region AdjustPower
 
-    public int SettingAvgPowerOffset { get; set; } = 50;
-    public int SettingAvgPowerHysteresis { get; set; } = 25;
-
     public int SettingAvgPowerAdjustmentStep { get; set; } = 10;
-    public int SettingAvgPowerLoadSeconds { get; set; } = 12;
-
+    public int SettingAvgPowerHysteresis { get; set; } = 25;
     public DateTime SettingAvgPowerlastAdjustmentTime { get; set; }
-    public int SettingAvgPowerValueLastLogged { get; set; }
-
-
     public int SettingAvgPowerLastDifference { get; set; }
+    public int SettingAvgPowerLoadSeconds { get; set; } = 12;
+    public int SettingAvgPowerOffset { get; set; } = 50;
 
     #endregion AdjustPower
 
@@ -60,12 +55,14 @@ public class ApiServiceInfo
 
     public bool DataReadsDoRefresh(DeviceNoahLastDataQuery.QueryTypes queryType)
     {
-        return DataReads.Any(x => x.MethodeName == DeviceNoahLastDataQuery.QueryTypes.DeviceNoahInfo && x.TimeStamp > DateTime.Now.AddSeconds(-SettingDataReadsDelay));
+        return !DataReads.Any(x => x.MethodeName == DeviceNoahLastDataQuery.QueryTypes.DeviceNoahInfo && x.TimeStamp > DateTime.Now.AddSeconds(-SettingDataReadsDelay));
     }
 
-    public int GetNoahDeviceCount()
+    public int GetNoahCurrentIsDischarchingState()
     {
-        return Devices.Where(x => x.DeviceType == "noah").Count();
+        return Devices
+            .Where(w => w.DeviceType == "noah")
+            .Max(noah => GetNoahLastDataPerDevice(noah.DeviceSn)?.totalBatteryPackChargingStatus ?? 0);
     }
 
     public int GetNoahCurrentPowerValueSum()
@@ -75,11 +72,9 @@ public class ApiServiceInfo
             .Sum(noah => (int)(GetNoahLastDataPerDevice(noah.DeviceSn)?.pac ?? 0));
     }
 
-    public int GetNoahCurrentIsDischarchingState()
+    public int GetNoahDeviceCount()
     {
-        return Devices
-            .Where(w => w.DeviceType == "noah")
-            .Max(noah => GetNoahLastDataPerDevice(noah.DeviceSn)?.totalBatteryPackChargingStatus ?? 0);
+        return Devices.Where(x => x.DeviceType == "noah").Count();
     }
 
     public DeviceNoahInfo? GetNoahInfoPerDevice(string deviceSn)

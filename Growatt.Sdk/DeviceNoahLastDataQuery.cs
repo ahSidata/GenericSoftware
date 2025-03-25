@@ -7,17 +7,17 @@ namespace EnergyAutomate.Definitions
     {
         #region Properties
 
+        public enum QueryTypes
+        {
+            DeviceNoahInfo,
+            DeviceNoahLastData,
+            DeviceNoahTimeSegment
+        }
         public string DeviceSn { get; set; } = string.Empty;
         public string DeviceType { get; set; } = string.Empty;
         [JsonIgnore]
         public bool Force { get; set; } = false;
         public QueryTypes QueryType { get; set; }
-
-        public enum QueryTypes
-        {
-            DeviceNoahInfo,
-            DeviceNoahLastData
-        }
 
         #endregion Properties
     }
