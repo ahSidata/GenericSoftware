@@ -156,7 +156,7 @@
                                                                     @segment.EndTime
                                                                 </div>
                                                                 <div class="col-md-2">
-                                                                    @segment.Mode == "0" ? "Load": "Batt"
+                                                                    @(segment.Mode == "0" ? "Load": "Batt")
                                                                 </div>
                                                                 <div class="col-md-2">
                                                                     @segment.Power W
@@ -200,6 +200,16 @@
                                             <li class="list-group-item">
                                                 <div class="row w-100">
                                                     <div class="col-md-6">
+                                                        LastAdjustmentTime: @ApiServiceInfo.SettingAvgPowerlastAdjustmentTime
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        LastPowerDifference: @ApiServiceInfo.SettingAvgPowerLastDifference
+                                                    </div>
+                                                </div>
+                                            </li>
+                                            <li class="list-group-item">
+                                                <div class="row w-100">
+                                                    <div class="col-md-6">
                                                         Offset: @ApiServiceInfo.SettingAvgPowerOffset
                                                     </div>
                                                     <div class="col-md-6">
@@ -217,25 +227,7 @@
                                                     </div>
                                                 </div>
                                             </li>
-                                            <li class="list-group-item">
-                                                <div class="row w-100">
-                                                    <div class="col-md-6">
-                                                        LastAdjustmentTime: @ApiServiceInfo.SettingAvgPowerlastAdjustmentTime
-                                                    </div>
-                                                    <div class="col-md-6">
-
-                                                    </div>
-                                                </div>
-                                            </li>
-                                            <li class="list-group-item">
-                                                <div class="row w-100">
-                                                    <div class="col-md-6">
-                                                        LastDifference: @ApiServiceInfo.SettingAvgPowerLastDifference
-                                                    </div>
-                                                    <div class="col-md-6">
-                                                    </div>
-                                                </div>
-                                            </li>
+  
                                             <li class="list-group-item">
                                                 <div class="row w-100">
                                                     <div class="col-md-6">
@@ -267,30 +259,37 @@
                 <Tab Title="Settings">
                     <Content>
                         <div class="mt-3 d-flex flex-column justify-content-center gap-3">
-                            <div>
-                                <Switch @bind-Value="ApiServiceInfo.SettingAutoMode" Label="AutoMode (zero injection on low soc)" />
-                            </div>
-                            <div>
-                                <Switch @bind-Value="ApiServiceInfo.SettingAutoModeRestriction" Label="AutoMode Restriction (only if current price is over avg price)" />
-                            </div>
-                            <div>
-                                <Switch @bind-Value="ApiServiceInfo.SettingLoadBalanced" Label="LoadBalanced (zero injection on low soc)" />
-                            </div>
-                            <div>
-                                AvgPowerLoadSeconds <RangeInput TValue="int" @bind-Value="ApiServiceInfo.SettingAvgPowerLoadSeconds" Min="3" Max="180" TickMarks="AvgPowerLoadSecondsTickList" Step="3" />
-                            </div>
-                            <div>
-                                ApiLockSeconds <RangeInput TValue="int" @bind-Value="ApiServiceInfo.SettingLockSeconds" Min="100" Max="1000" TickMarks="ApiLockSecondsTickList" Step="50" />
-                            </div>
-                            <div>
-                                ApiOffsetAvg <RangeInput TValue="int" @bind-Value="ApiServiceInfo.SettingAvgPowerOffset" Min="-100" Max="100" TickMarks="ApiOffsetAvgTickList" Step="25" />
-                            </div>
-                            <div>
-                                SettingToleranceAvg <RangeInput TValue="int" @bind-Value="ApiServiceInfo.SettingAvgPowerHysteresis" Min="0" Max="100" TickMarks="ApiToleranceAvgTickList" Step="5" />
-                            </div>
-                            <div>
-                                SettingMaxPower <RangeInput TValue="int" @bind-Value="ApiServiceInfo.SettingMaxPower" Min="700" Max="900" TickMarks="ApiMaxPowerTickList" Step="10" />
-                            </div>
+                            <CardBody>
+                                <div>
+                                    <Switch @bind-Value="ApiServiceInfo.SettingAutoMode" Label="AutoMode (zero injection on low soc)" />
+                                </div>
+                                <div>
+                                    <Switch @bind-Value="ApiServiceInfo.SettingAutoModeRestriction" Label="AutoMode Restriction (only if current price is over avg price)" />
+                                </div>
+                                <div>
+                                    <Switch @bind-Value="ApiServiceInfo.SettingLoadBalanced" Label="LoadBalanced (zero injection on low soc)" />
+                                </div>
+                                <div>
+                                    ApiLockSeconds <RangeInput TValue="int" @bind-Value="ApiServiceInfo.SettingLockSeconds" Min="100" Max="1000" TickMarks="ApiLockSecondsTickList" Step="50" />
+                                </div>
+                            </CardBody>
+                            <CardBody>
+                                <div>
+                                    AvgPowerOffset <RangeInput TValue="int" @bind-Value="ApiServiceInfo.SettingAvgPowerOffset" Min="-100" Max="100" TickMarks="ApiOffsetAvgTickList" Step="25" />
+                                </div>
+                                <div>
+                                    AvgPowerHysteresis <RangeInput TValue="int" @bind-Value="ApiServiceInfo.SettingAvgPowerHysteresis" Min="0" Max="100" TickMarks="ApiToleranceAvgTickList" Step="5" />
+                                </div>
+                                <div>
+                                    AvgPowerAdjustmentStep <RangeInput TValue="int" @bind-Value="ApiServiceInfo.SettingAvgPowerAdjustmentStep" Min="-100" Max="100" TickMarks="ApiOffsetAvgTickList" Step="25" />
+                                </div>
+                                <div>
+                                    AvgPowerLoadSeconds <RangeInput TValue="int" @bind-Value="ApiServiceInfo.SettingAvgPowerLoadSeconds" Min="5" Max="180" TickMarks="AvgPowerLoadSecondsTickList" Step="5" />
+                                </div>
+                                <div>
+                                    SettingMaxPower <RangeInput TValue="int" @bind-Value="ApiServiceInfo.SettingMaxPower" Min="700" Max="900" TickMarks="ApiMaxPowerTickList" Step="10" />
+                                </div>
+                            </CardBody>
                         </div>
                     </Content>
                 </Tab>

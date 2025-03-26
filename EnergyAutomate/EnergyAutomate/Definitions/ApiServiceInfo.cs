@@ -28,7 +28,6 @@ public class ApiServiceInfo
     public int SettingDataReadsDelay { get; set; } = 6000;
     public bool SettingLoadBalanced { get; set; } = false;
     public int SettingLockSeconds { get; set; } = 600;
-    public int SettingMaxPower { get; set; } = 840;
 
     #region AdjustPower
 
@@ -36,8 +35,9 @@ public class ApiServiceInfo
     public int SettingAvgPowerHysteresis { get; set; } = 25;
     public DateTime SettingAvgPowerlastAdjustmentTime { get; set; }
     public int SettingAvgPowerLastDifference { get; set; }
-    public int SettingAvgPowerLoadSeconds { get; set; } = 12;
+    public int SettingAvgPowerLoadSeconds { get; set; } = 15;
     public int SettingAvgPowerOffset { get; set; } = 50;
+    public int SettingMaxPower { get; set; } = 840;
 
     #endregion AdjustPower
 

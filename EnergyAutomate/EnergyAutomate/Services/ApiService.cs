@@ -521,11 +521,11 @@ public partial class ApiService : IObserver<RealTimeMeasurement>, IDisposable
 
         if (ApiServiceInfo.AvgPowerLoad > ApiServiceInfo.SettingAvgPowerOffset + (ApiServiceInfo.SettingAvgPowerHysteresis / 2))
         {
-            ApiServiceInfo.NewPowerValue = lastRequestedPowerValue + ApiServiceInfo.DeltaPowerValue;
+            ApiServiceInfo.NewPowerValue = lastCommitedPowerValue + ApiServiceInfo.DeltaPowerValue;
         }
         else if (ApiServiceInfo.AvgPowerLoad < ApiServiceInfo.SettingAvgPowerOffset - (ApiServiceInfo.SettingAvgPowerHysteresis / 2))
         {
-            ApiServiceInfo.NewPowerValue = lastRequestedPowerValue - ApiServiceInfo.DeltaPowerValue;
+            ApiServiceInfo.NewPowerValue = lastCommitedPowerValue - ApiServiceInfo.DeltaPowerValue;
         }
 
         var maxPower = ApiServiceInfo.SettingMaxPower;
