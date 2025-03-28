@@ -1,12 +1,21 @@
-﻿using Growatt.Sdk;
+﻿using Growatt.OSS;
+using Growatt.Sdk;
 using Newtonsoft.Json;
 
 namespace EnergyAutomate.Definitions
 {
-    public class DeviceNoahLastDataQuery : IDeviceQuery
+    public class DeviceNoahHistoricalDataQuery : IDeviceQuery
     {
         #region Properties
 
+        public enum QueryTypes
+        {
+            DeviceNoahInfo,
+            DeviceNoahLastData,
+            DeviceNoahTimeSegment,
+            SetPowerAsync
+        }
+        public string Date { get; set; } = string.Empty;
         public string DeviceSn { get; set; } = string.Empty;
         public string DeviceType { get; set; } = string.Empty;
         [JsonIgnore]
@@ -22,6 +31,7 @@ namespace EnergyAutomate.Definitions
             {
                 new KeyValuePair<string, string>("deviceSn", DeviceSn),
                 new KeyValuePair<string, string>("deviceType", DeviceType),
+                new KeyValuePair<string, string>("date", Date)
             };
 
             return new FormUrlEncodedContent(keyValuePairs);

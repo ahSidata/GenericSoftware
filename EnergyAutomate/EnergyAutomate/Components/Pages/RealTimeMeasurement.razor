@@ -1,4 +1,4 @@
-﻿@page "/realtimemeasurement"
+﻿@page "/"
 
 @using System.Collections.Specialized
 @using BlazorBootstrap
@@ -176,7 +176,27 @@
                                             Last Indicator Values
                                             <Button Color="ButtonColor.Primary" @onclick="RefreshNoahLastData">Refresh</Button>
                                         </CardTitle>
-                                        <ul class="list-group list-group-flush">                                          
+                                        <ul class="list-group list-group-flush">
+                                            <li class="list-group-item">
+                                                <div class="row w-100">
+                                                    <div class="col-md-6">
+                                                        Offset: @ApiServiceInfo.SettingAvgPowerOffset
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        Hysteresis: @ApiServiceInfo.SettingAvgPowerHysteresis
+                                                    </div>
+                                                </div>
+                                            </li>
+                                            <li class="list-group-item">
+                                                <div class="row w-100">
+                                                    <div class="col-md-6">
+                                                        LoadSeconds: @ApiServiceInfo.SettingAvgPowerLoadSeconds
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        DeviceQueryQueue: @ApiServiceInfo.DeviceQueryQueueWatchdog.Count
+                                                    </div>
+                                                </div>
+                                            </li>
                                             @{
                                                 var enumerator = ApiServiceInfo.SettingAvgPowerAdjustmentTraceValues.GetEnumerator();
                                             }
@@ -203,58 +223,7 @@
                                                         }
                                                     </div>
                                                 </li>
-                                            }
-                                            <li class="list-group-item">
-                                                <div class="row w-100">
-                                                    <div class="col-md-6">
-                                                        LastAdjustmentTime: @ApiServiceInfo.SettingAvgPowerlastAdjustmentTime
-                                                    </div>
-                                                    <div class="col-md-6">
-                                                        LastPowerDifference: @ApiServiceInfo.SettingAvgPowerLastDifference
-                                                    </div>
-                                                </div>
-                                            </li>
-                                            <li class="list-group-item">
-                                                <div class="row w-100">
-                                                    <div class="col-md-6">
-                                                        Offset: @ApiServiceInfo.SettingAvgPowerOffset
-                                                    </div>
-                                                    <div class="col-md-6">
-                                                        Hysteresis: @ApiServiceInfo.SettingAvgPowerHysteresis
-                                                    </div>
-                                                </div>
-                                            </li>
-                                            <li class="list-group-item">
-                                                <div class="row w-100">
-                                                    <div class="col-md-6">
-                                                        AdjustmentStep: @ApiServiceInfo.SettingAvgPowerAdjustmentStep
-                                                    </div>
-                                                    <div class="col-md-6">
-                                                        LoadSeconds: @ApiServiceInfo.SettingAvgPowerLoadSeconds
-                                                    </div>
-                                                </div>
-                                            </li>
-
-                                            <li class="list-group-item">
-                                                <div class="row w-100">
-                                                    <div class="col-md-6">
-                                                        TimeSegmentQC: @ApiServiceInfo.DeviceNoahTimeSegmentQueueWatchdog.Count
-                                                    </div>
-                                                    <div class="col-md-6">
-                                                        LastDataQC: @ApiServiceInfo.DeviceNoahLastDataQueueWatchdog.Count
-                                                    </div>
-                                                </div>
-                                            </li>
-                                            <li class="list-group-item">
-                                                <div class="row w-100">
-                                                    <div class="col-md-6">
-                                                        LastDataQC: @ApiServiceInfo.DeviceNoahLastDataQueueWatchdog.Count
-                                                    </div>
-                                                    <div class="col-md-6">
-                                                        TimeSegmentQC: @ApiServiceInfo.DeviceNoahTimeSegmentQueueWatchdog.Count
-                                                    </div>
-                                                </div>
-                                            </li>
+                                            }            
                                         </ul>
                                     </CardBody>
                                 </Card>
@@ -286,9 +255,6 @@
                                 </div>
                                 <div>
                                     AvgPowerHysteresis <RangeInput TValue="int" @bind-Value="ApiServiceInfo.SettingAvgPowerHysteresis" Min="0" Max="100" TickMarks="ApiToleranceAvgTickList" Step="5" />
-                                </div>
-                                <div>
-                                    AvgPowerAdjustmentStep <RangeInput TValue="int" @bind-Value="ApiServiceInfo.SettingAvgPowerAdjustmentStep" Min="-100" Max="100" TickMarks="ApiOffsetAvgTickList" Step="25" />
                                 </div>
                                 <div>
                                     AvgPowerLoadSeconds <RangeInput TValue="int" @bind-Value="ApiServiceInfo.SettingAvgPowerLoadSeconds" Min="5" Max="180" TickMarks="AvgPowerLoadSecondsTickList" Step="5" />

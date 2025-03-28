@@ -4,7 +4,7 @@
     {
         #region Properties
 
-        public DeviceNoahLastDataQuery.QueryTypes MethodeName { get; set; }
+        public string MethodeName { get; set; } = string.Empty;
 
         public bool RaisedError { get; set; }
 

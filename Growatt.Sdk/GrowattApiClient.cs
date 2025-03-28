@@ -1,4 +1,5 @@
-﻿using Growatt.Sdk;
+﻿using EnergyAutomate.Definitions;
+using Growatt.Sdk;
 using Newtonsoft.Json;
 
 namespace Growatt.OSS
@@ -49,16 +50,12 @@ namespace Growatt.OSS
             });
         }
 
-        public async Task<List<DeviceNoahInfo>?> GetDeviceInfoAsync(string deviceType, string deviceSn)
+        public async Task<List<DeviceNoahInfo>?> GetDeviceInfoAsync(IDeviceQuery deviceQuery)
         {
             return await ExecuteWithExceptionHandlingAsync(async () =>
             {
                 var endpoint = "/v4/new-api/queryDeviceInfo";
-                var content = new FormUrlEncodedContent(new[]
-                {
-                        new KeyValuePair<string, string>("deviceType", deviceType),
-                        new KeyValuePair<string, string>("deviceSn", deviceSn)
-                });
+                var content = deviceQuery.ToFormUrlEncodedContent();
 
                 var response = await _httpClient.PostAsync(endpoint, content);
                 response.EnsureSuccessStatusCode();
@@ -79,16 +76,12 @@ namespace Growatt.OSS
             });
         }
 
-        public async Task<List<DeviceNoahLastData>?> GetDeviceLastDataAsync(string deviceType, string deviceSn)
+        public async Task<List<DeviceNoahLastData>?> GetDeviceLastDataAsync(IDeviceQuery deviceQuery)
         {
             return await ExecuteWithExceptionHandlingAsync(async () =>
             {
                 var endpoint = "/v4/new-api/queryLastData";
-                var content = new FormUrlEncodedContent(new[]
-                {
-                        new KeyValuePair<string, string>("deviceType", deviceType),
-                        new KeyValuePair<string, string>("deviceSn", deviceSn)
-                });
+                var content = deviceQuery.ToFormUrlEncodedContent();
 
                 var response = await _httpClient.PostAsync(endpoint, content);
                 response.EnsureSuccessStatusCode();
@@ -138,17 +131,12 @@ namespace Growatt.OSS
             });
         }
 
-        public async Task<List<DeviceNoahHistoricalData>?> GetDevicesHistoricalDataAsync(string deviceSn, string deviceType, string date)
+        public async Task<List<DeviceNoahHistoricalData>?> GetDevicesHistoricalDataAsync(IDeviceQuery deviceQuery)
         {
             return await ExecuteWithExceptionHandlingAsync(async () =>
             {
                 var endpoint = "/v4/new-api/queryDevicesHistoricalData";
-                var content = new FormUrlEncodedContent(new[]
-                {
-                        new KeyValuePair<string, string>("deviceSn", deviceSn),
-                        new KeyValuePair<string, string>("deviceType", deviceType),
-                        new KeyValuePair<string, string>("date", date)
-                });
+                var content = deviceQuery.ToFormUrlEncodedContent();
 
                 var response = await _httpClient.PostAsync(endpoint, content);
                 response.EnsureSuccessStatusCode();
@@ -169,17 +157,12 @@ namespace Growatt.OSS
             });
         }
 
-        public async Task SetPowerAsync(string deviceSn, string deviceType, int value)
+        public async Task SetPowerAsync(IDeviceQuery deviceQuery)
         {
             await ExecuteWithExceptionHandlingAsync(async () =>
             {
                 var endpoint = "/v4/new-api/setPower";
-                var content = new FormUrlEncodedContent(new[]
-                {
-                        new KeyValuePair<string, string>("deviceSn", deviceSn),
-                        new KeyValuePair<string, string>("deviceType", deviceType),
-                        new KeyValuePair<string, string>("value", value.ToString())
-                });
+                var content = deviceQuery.ToFormUrlEncodedContent();
 
                 var response = await _httpClient.PostAsync(endpoint, content);
                 response.EnsureSuccessStatusCode();
@@ -196,12 +179,12 @@ namespace Growatt.OSS
             });
         }
 
-        public async Task SetTimeSegmentAsync(DeviceNoahTimeSegmentQuery deviceNoahTimeSegment)
+        public async Task SetTimeSegmentAsync(IDeviceQuery deviceQuery)
         {
             await ExecuteWithExceptionHandlingAsync(async () =>
             {
                 var endpoint = "/v4/new-api/setTimeSegment";
-                var content = deviceNoahTimeSegment.ToFormUrlEncodedContent();
+                var content = deviceQuery.ToFormUrlEncodedContent();
 
                 var response = await _httpClient.PostAsync(endpoint, content);
                 response.EnsureSuccessStatusCode();

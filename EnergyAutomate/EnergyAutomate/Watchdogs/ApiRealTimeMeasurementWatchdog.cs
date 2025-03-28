@@ -12,7 +12,7 @@ namespace EnergyAutomate.Watchdogs
         {
             ServiceProvider = serviceProvider;
 
-            Trace.WriteLine("Create new TibberApiClient for watchdog ...");
+            Trace.WriteLine("Create new TibberApiClient for watchdog ...", "Tibber");
         }
 
         #endregion Public Constructors
@@ -45,13 +45,13 @@ namespace EnergyAutomate.Watchdogs
                 }
                 finally
                 {
-                    TibberApiClient.Dispose();
+                    TibberApiClient?.Dispose();
                     TibberApiClient = null;
                     RealTimeMeasurementListener = null;
                     GC.Collect();
                     GC.WaitForPendingFinalizers();
 
-                    Trace.WriteLine("StopRealTimeMeasurementListener finished ...");
+                    Trace.WriteLine("StopRealTimeMeasurementListener finished ...", "Tibber");
                 }
 
                 _ = StartListener();
@@ -60,37 +60,37 @@ namespace EnergyAutomate.Watchdogs
 
         public async Task StartAsync(CancellationToken cancellationToken)
         {
-            TibberApiClient = GetNewTibberClient();
+            await StartListener(cancellationToken);
+        }
+
+        public async Task StartListener(CancellationToken cancellationToken = default)
+        {
+            TibberApiClient = ServiceProvider.GetRequiredService<TibberApiClient>();
 
             if (TibberApiClient != null)
             {
                 var basicData = await TibberApiClient.GetBasicData(cancellationToken);
                 TibberHomeId = basicData.Data.Viewer.Homes.FirstOrDefault()?.Id;
 
-                await StartListener(cancellationToken);
-            }
-        }
+                if (TibberHomeId.HasValue && TibberApiClient != null)
+                {
+                    try
+                    {
+                        Trace.WriteLine("StartRealTimeMeasurementListener calling ...", "Tibber");
 
-        public async Task StartListener(CancellationToken cancellationToken = default)
-        {
-            if (TibberHomeId.HasValue && TibberApiClient != null)
-            {
-                try
-                {
-                    Trace.WriteLine("StartRealTimeMeasurementListener calling ...");
-
-                    RealTimeMeasurementListener = await TibberApiClient.StartRealTimeMeasurementListener(TibberHomeId.Value, cancellationToken);
-                    _ = RealTimeMeasurementListener.Subscribe(ApiService);
-                }
-                catch (OperationCanceledException ex) when (ex.CancellationToken == cancellationToken)
-                {
-                    Console.WriteLine("Operation cancled.");
-                }
-                catch (Exception ex)
-                {
-                    Debug.WriteLine(ex.Message);
-                    await Task.Delay(5000);
-                    _ = StartListener();
+                        RealTimeMeasurementListener = await TibberApiClient.StartRealTimeMeasurementListener(TibberHomeId.Value, cancellationToken);
+                        _ = RealTimeMeasurementListener.Subscribe(ApiService);
+                    }
+                    catch (OperationCanceledException ex) when (ex.CancellationToken == cancellationToken)
+                    {
+                        Console.WriteLine("Operation cancled.");
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.WriteLine(ex.Message);
+                        await Task.Delay(5000);
+                        _ = StartListener();
+                    }
                 }
             }
         }
@@ -110,15 +110,5 @@ namespace EnergyAutomate.Watchdogs
         }
 
         #endregion Public Methods
-
-        #region Private Methods
-
-        private TibberApiClient GetNewTibberClient()
-        {
-            var configuration = ServiceProvider.GetRequiredService<IConfiguration>();
-            return new TibberApiClient(configuration["ApiSettings:TibberApiToken"] ?? string.Empty, new ProductInfoHeaderValue("EnergyAutomate", "1.0"));
-        }
-
-        #endregion Private Methods
     }
 }

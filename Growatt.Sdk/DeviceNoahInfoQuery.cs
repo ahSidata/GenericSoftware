@@ -1,9 +1,11 @@
-﻿using Growatt.Sdk;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
+using System;
+using System.Collections.Generic;
+using System.Text;
 
-namespace EnergyAutomate.Definitions
+namespace Growatt.Sdk
 {
-    public class DeviceNoahLastDataQuery : IDeviceQuery
+    public class DeviceNoahInfoQuery : IDeviceQuery
     {
         #region Properties
 

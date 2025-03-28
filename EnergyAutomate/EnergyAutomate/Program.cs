@@ -5,6 +5,7 @@ using EnergyAutomate.Definitions;
 using EnergyAutomate.Services;
 using EnergyAutomate.Watchdogs;
 using Growatt.OSS;
+using Growatt.Sdk;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -35,6 +36,13 @@ public class Program
         if (TraceEnabled)
             Trace.Listeners.Add(new ConsoleTraceListener());
 #endif
+        if (TraceEnabled)
+        {
+            // Erstellen und registrieren des benutzerdefinierten Trace-Listeners
+            var customTraceListener = new CustomTraceListener();
+            builder.Services.AddSingleton(customTraceListener);
+            Trace.Listeners.Add(customTraceListener);
+        }
 
         // Add services to the container.
         builder.Services.AddRazorComponents()
@@ -72,9 +80,7 @@ public class Program
         builder.Services.AddSingleton<ApiServiceInfo>();
         builder.Services.AddSingleton<ApiService>();
         builder.Services.AddSingleton<ApiRealTimeMeasurementWatchdog>();
-        builder.Services.AddSingleton<ApiQueueWatchdog<DeviceNoahTimeSegmentQuery>>();
-        builder.Services.AddSingleton<ApiQueueWatchdog<DeviceNoahLastDataQuery>>();
-        builder.Services.AddSingleton<ApiQueueWatchdog<DeviceNoahOutputValueQuery>>();
+        builder.Services.AddSingleton<ApiQueueWatchdog<IDeviceQuery>>();
 
         // Registrieren des Hintergrunddienstes
         builder.Services.AddHostedService<ApiBackgroundService>();

@@ -251,7 +251,7 @@ namespace EnergyAutomate.Components.Pages
                     },
                     new LineChartDataset()
                     {
-                        Label = "AvgPowerLoad",
+                        Label = "AvgPowerConsumption",
                         Data = dataSource.Select(x => (double?)x.AvgPowerConsumption).ToList(),
                         BackgroundColor = "rgb(0, 0, 0)",
                         BorderColor = "rgb(0, 0, 0)",
@@ -261,7 +261,7 @@ namespace EnergyAutomate.Components.Pages
                     },
                     new LineChartDataset()
                     {
-                        Label = "AvgPowerLoad",
+                        Label = "AvgPowerProduction",
                         Data = dataSource.Select(x => (double?)x.AvgPowerProduction).ToList(),
                         BackgroundColor = "rgb(0, 0, 0)",
                         BorderColor = "rgb(0, 0, 0)",
@@ -382,7 +382,7 @@ namespace EnergyAutomate.Components.Pages
             deviceChartOptions.Plugins.Title.Display = true;
             deviceChartOptions.Plugins.Title.Font = new ChartFont { Size = 20 };
             deviceChartOptions.Responsive = true;
-            deviceChartOptions.Scales.Y = new ChartAxes() { Min = 0, Max = 1000 };
+            deviceChartOptions.Scales.Y = new ChartAxes() { Min = 0, Max = 800 };
             deviceChartOptions.Scales.X!.Title = new ChartAxesTitle { Text = "Seconds (one minute)", Display = true };
             deviceChartOptions.Scales.Y!.Title = new ChartAxesTitle { Text = "Watt", Display = true };
             deviceChartOptions.MaintainAspectRatio = false;

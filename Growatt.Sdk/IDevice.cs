@@ -1,6 +1,6 @@
 ﻿namespace Growatt.Sdk
 {
-    public interface IDevice
+    public interface IDeviceQuery
     {
         #region Properties
 
@@ -9,6 +9,8 @@
         public string DeviceType { get; set; }
 
         bool Force { get; set; }
+
+        FormUrlEncodedContent ToFormUrlEncodedContent();
 
         #endregion Properties
     }

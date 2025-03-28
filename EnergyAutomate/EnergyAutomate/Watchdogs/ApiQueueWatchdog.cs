@@ -6,7 +6,7 @@ using System.Collections.ObjectModel;
 
 namespace EnergyAutomate.Watchdogs
 {
-    public class ApiQueueWatchdog<T> where T : class, IDevice
+    public class ApiQueueWatchdog<T> where T : class, IDeviceQuery
     {
         #region Fields
 

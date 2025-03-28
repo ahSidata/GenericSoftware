@@ -28,11 +28,8 @@ public class ApiServiceInfo
 
     #region AdjustPower
 
-    public int SettingAvgPowerAdjustmentStep { get; set; } = 10;
     public List<APiTraceValue> SettingAvgPowerAdjustmentTraceValues { get; set; } = [];
     public int SettingAvgPowerHysteresis { get; set; } = 25;
-    public DateTime SettingAvgPowerlastAdjustmentTime { get; set; }
-    public int SettingAvgPowerLastDifference { get; set; }
     public int SettingAvgPowerLoadSeconds { get; set; } = 15;
     public int SettingAvgPowerOffset { get; set; } = 75;
     public int SettingMaxPower { get; set; } = 840;
@@ -47,15 +44,11 @@ public class ApiServiceInfo
 
     public event EventHandler? StateHasChanged;
 
-    public ApiQueueWatchdog<DeviceNoahLastDataQuery> DeviceNoahLastDataQueueWatchdog => ServiceProvider.GetRequiredService<ApiQueueWatchdog<DeviceNoahLastDataQuery>>();
-    public ApiQueueWatchdog<DeviceNoahOutputValueQuery> DeviceNoahOutputValueQueueWatchdog => ServiceProvider.GetRequiredService<ApiQueueWatchdog<DeviceNoahOutputValueQuery>>();
-    public ApiQueueWatchdog<DeviceNoahTimeSegmentQuery> DeviceNoahTimeSegmentQueueWatchdog => ServiceProvider.GetRequiredService<ApiQueueWatchdog<DeviceNoahTimeSegmentQuery>>();
+    public ApiQueueWatchdog<IDeviceQuery> DeviceQueryQueueWatchdog => ServiceProvider.GetRequiredService<ApiQueueWatchdog<IDeviceQuery>>();
 
-    public bool DataReadsDoRefresh(DeviceNoahLastDataQuery.QueryTypes queryType, int? delay = null)
+    public bool DataReadsDoRefresh(string queryType, int? delay = null)
     {
-        var query = DataReads.Where(x => x.MethodeName == queryType && x.TimeStamp > DateTime.Now.AddSeconds(-(delay ?? SettingDataReadsDelaySec))).AsQueryable();
-        Debug.WriteLine($"DataReads {queryType} Count: {query.Count()}");
-        return !query.Any();
+        return !DataReads.Where(x => x.MethodeName == queryType && x.TimeStamp > DateTime.Now.AddSeconds(-(delay ?? SettingDataReadsDelaySec))).Any();
     }
 
     public int GetNoahCurrentIsDischarchingState()

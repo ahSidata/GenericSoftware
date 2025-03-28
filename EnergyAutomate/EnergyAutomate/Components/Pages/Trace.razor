@@ -1,0 +1,61 @@
+﻿@page "/tracelog"
+
+@rendermode Microsoft.AspNetCore.Components.Web.RenderMode.InteractiveServer
+
+<h3>Trace Log</h3>
+
+@if (CustomTraceListener.GetLogMessages().Any())
+{
+    <Tabs @ref="tabsMainRef">
+        @foreach (var category in LogMessageCategories)
+        {
+            <Tab Title="@category">
+                <Content>
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Timestamp</th>
+                                <th>Message</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var log in CustomTraceListener.GetLogMessages().Where(x => x.Category == category).OrderByDescending(x => x.TS))
+                            {
+                                <tr>
+                                    <td>@log.TS</td>
+                                    <td>@log.Category</td>
+                                    <td>@log.Message</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </Content>
+            </Tab>
+        }
+    </Tabs>
+}
+else
+{
+    <p>No log messages available.</p>
+}
+
+@code {
+
+    [Inject]
+    private CustomTraceListener CustomTraceListener { get; set; } = default!;
+
+    private List<string?> LogMessageCategories => CustomTraceListener.GetLogMessages().GroupBy(x => x.Category).Select(s => s.Key).ToList();
+
+    private Tabs tabsMainRef = default!;
+
+
+    protected override void OnInitialized()
+    {
+        CustomTraceListener.LogMessages.CollectionChanged += CollectionChanged;
+    }
+
+    private async void CollectionChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
+    {
+        await InvokeAsync(StateHasChanged);
+    }
+}

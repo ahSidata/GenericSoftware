@@ -3,14 +3,14 @@ using Newtonsoft.Json;
 
 namespace Growatt.OSS
 {
-    public class DeviceNoahTimeSegmentQuery : IDevice
+    public class DeviceNoahTimeSegmentQuery : IDeviceQuery
     {
         #region Properties
 
         /// <summary>device SN, example: xxxxxxx</summary>
-        public string DeviceSn { get; set; }
+        public string DeviceSn { get; set; } = string.Empty;
         /// <summary>device type, example: noah</summary>
-        public string DeviceType { get; set; }
+        public string DeviceType { get; set; } = string.Empty;
         /// <summary>time period switch (0: off, 1: on), example: 0</summary>
         public string Enable { get; set; } = "0";
         /// <summary>end time (hours:minutes), Example: 02:05</summary>
