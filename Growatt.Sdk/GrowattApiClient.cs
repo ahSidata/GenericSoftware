@@ -21,24 +21,43 @@ namespace Growatt.OSS
 
         #endregion Public Constructors
 
+        #region Private Methods
+
+        private async Task<T> ExecuteWithExceptionHandlingAsync<T>(Func<Task<T>> func)
+        {
+            try
+            {
+                return await func();
+            }
+            catch (Exception ex)
+            {
+                throw new ApiException("API error: Other", -10, ex);
+            }
+        }
+
+        #endregion Private Methods
+
         #region Public Methods
 
         public async Task<string> GetDataAsync(string endpoint)
         {
-            var response = await _httpClient.GetAsync(endpoint);
-            response.EnsureSuccessStatusCode();
-            return await response.Content.ReadAsStringAsync();
+            return await ExecuteWithExceptionHandlingAsync(async () =>
+            {
+                var response = await _httpClient.GetAsync(endpoint);
+                response.EnsureSuccessStatusCode();
+                return await response.Content.ReadAsStringAsync();
+            });
         }
 
         public async Task<List<DeviceNoahInfo>?> GetDeviceInfoAsync(string deviceType, string deviceSn)
         {
-            try
+            return await ExecuteWithExceptionHandlingAsync(async () =>
             {
                 var endpoint = "/v4/new-api/queryDeviceInfo";
                 var content = new FormUrlEncodedContent(new[]
                 {
-                    new KeyValuePair<string, string>("deviceType", deviceType),
-                    new KeyValuePair<string, string>("deviceSn", deviceSn)
+                        new KeyValuePair<string, string>("deviceType", deviceType),
+                        new KeyValuePair<string, string>("deviceSn", deviceSn)
                 });
 
                 var response = await _httpClient.PostAsync(endpoint, content);
@@ -47,7 +66,7 @@ namespace Growatt.OSS
                 var responseString = await response.Content.ReadAsStringAsync();
                 var result = JsonConvert.DeserializeObject<DeviceInfoResponse>(responseString);
 
-                if (result != null && result?.Code == 0)
+                if (result != null && result.Code == 0)
                 {
                     return result.Data.Noah;
                 }
@@ -55,23 +74,20 @@ namespace Growatt.OSS
                 {
                     throw new ApiException($"API error: {result.Message}", result.Code);
                 }
-            }
-            catch (Exception ex)
-            {
-                throw new ApiException($"API error: Other", -10, ex);
-            }
-            return default;
+
+                return default;
+            });
         }
 
         public async Task<List<DeviceNoahLastData>?> GetDeviceLastDataAsync(string deviceType, string deviceSn)
         {
-            try
+            return await ExecuteWithExceptionHandlingAsync(async () =>
             {
                 var endpoint = "/v4/new-api/queryLastData";
                 var content = new FormUrlEncodedContent(new[]
                 {
-                    new KeyValuePair<string, string>("deviceType", deviceType),
-                    new KeyValuePair<string, string>("deviceSn", deviceSn)
+                        new KeyValuePair<string, string>("deviceType", deviceType),
+                        new KeyValuePair<string, string>("deviceSn", deviceSn)
                 });
 
                 var response = await _httpClient.PostAsync(endpoint, content);
@@ -88,22 +104,19 @@ namespace Growatt.OSS
                 {
                     throw new ApiException($"API error: {result.Message}", result.Code);
                 }
-            }
-            catch (Exception ex)
-            {
-                throw new ApiException($"API error: Other", -10, ex);
-            }
-            return default;
+
+                return default;
+            });
         }
 
         public async Task<List<Device>?> GetDeviceListAsync(int page = 1)
         {
-            try
+            return await ExecuteWithExceptionHandlingAsync(async () =>
             {
                 var endpoint = "/v4/new-api/queryDeviceList";
                 var content = new FormUrlEncodedContent(new[]
                 {
-                    new KeyValuePair<string, string>("page", page.ToString())
+                        new KeyValuePair<string, string>("page", page.ToString())
                 });
 
                 var response = await _httpClient.PostAsync(endpoint, content);
@@ -120,25 +133,21 @@ namespace Growatt.OSS
                 {
                     throw new ApiException($"API error: {result.Message}", result.Code);
                 }
-            }
-            catch (Exception ex)
-            {
-                throw new ApiException($"API error: Other", -10, ex);
-            }
 
-            return default;
+                return default;
+            });
         }
 
         public async Task<List<DeviceNoahHistoricalData>?> GetDevicesHistoricalDataAsync(string deviceSn, string deviceType, string date)
         {
-            try
+            return await ExecuteWithExceptionHandlingAsync(async () =>
             {
                 var endpoint = "/v4/new-api/queryDevicesHistoricalData";
                 var content = new FormUrlEncodedContent(new[]
                 {
-                    new KeyValuePair<string, string>("deviceSn", deviceSn),
-                    new KeyValuePair<string, string>("deviceType", deviceType),
-                    new KeyValuePair<string, string>("date", date)
+                        new KeyValuePair<string, string>("deviceSn", deviceSn),
+                        new KeyValuePair<string, string>("deviceType", deviceType),
+                        new KeyValuePair<string, string>("date", date)
                 });
 
                 var response = await _httpClient.PostAsync(endpoint, content);
@@ -155,25 +164,21 @@ namespace Growatt.OSS
                 {
                     throw new ApiException($"API error: {result.Message}", result.Code);
                 }
-            }
-            catch (Exception ex)
-            {
-                throw new ApiException($"API error: Other", -10, ex);
-            }
 
-            return default;
+                return default;
+            });
         }
 
         public async Task SetPowerAsync(string deviceSn, string deviceType, int value)
         {
-            try
+            await ExecuteWithExceptionHandlingAsync(async () =>
             {
                 var endpoint = "/v4/new-api/setPower";
                 var content = new FormUrlEncodedContent(new[]
                 {
-                    new KeyValuePair<string, string>("deviceSn", deviceSn),
-                    new KeyValuePair<string, string>("deviceType", deviceType),
-                    new KeyValuePair<string, string>("value", value.ToString())
+                        new KeyValuePair<string, string>("deviceSn", deviceSn),
+                        new KeyValuePair<string, string>("deviceType", deviceType),
+                        new KeyValuePair<string, string>("value", value.ToString())
                 });
 
                 var response = await _httpClient.PostAsync(endpoint, content);
@@ -186,16 +191,14 @@ namespace Growatt.OSS
                 {
                     throw new ApiException($"API error: {result.Message}", result.Code);
                 }
-            }
-            catch (Exception ex)
-            {
-                throw new ApiException($"API error: Other", -10, ex);
-            }
+
+                return Task.CompletedTask;
+            });
         }
 
         public async Task SetTimeSegmentAsync(DeviceNoahTimeSegmentQuery deviceNoahTimeSegment)
         {
-            try
+            await ExecuteWithExceptionHandlingAsync(async () =>
             {
                 var endpoint = "/v4/new-api/setTimeSegment";
                 var content = deviceNoahTimeSegment.ToFormUrlEncodedContent();
@@ -210,11 +213,9 @@ namespace Growatt.OSS
                 {
                     throw new ApiException($"API error: {result.Message}", result.Code);
                 }
-            }
-            catch (Exception ex)
-            {
-                throw new ApiException($"API error: Other", -10, ex);
-            }
+
+                return Task.CompletedTask;
+            });
         }
 
         #endregion Public Methods
