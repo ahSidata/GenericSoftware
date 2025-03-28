@@ -478,18 +478,13 @@ public partial class ApiService : IObserver<RealTimeMeasurement>, IDisposable
                 {
                     if (value.TotalPower > 0)
                     {
-                        Trace.WriteLine($"Power consumption is too high: {value.AvgPowerConsumption} W", "ApiService");
-                        Trace.WriteLine($"AvgPowerConsumption: {value.AvgPowerConsumption}", "ApiService");
-                        Trace.WriteLine($"TotalPower: {value.TotalPower}, upperDelta: {consumptionDelta} = {value.AvgPowerConsumption} - {upperlimit}", "ApiService");
-                        Trace.WriteLine($"lastCommitedPowerValue: {lastCommitedPowerValue}, upperDelta: {consumptionDelta} = {value.AvgPowerConsumption} - {upperlimit}", "ApiService");
-                        Trace.WriteLine($"calcPowerValue: {calcPowerValue}, OffSet: {ApiServiceInfo.SettingAvgPowerOffset}", "ApiService");
+                        Trace.WriteLine($"TotalPower: {value.TotalPower}, AvgPowerProduction: {value.AvgPowerConsumption}, upperDelta: {consumptionDelta} = {value.AvgPowerConsumption} - {upperlimit}", "ApiService");
+                        Trace.WriteLine($"lastCommitedPowerValue: {lastCommitedPowerValue}, upperDelta: {consumptionDelta} = {value.AvgPowerConsumption} - {upperlimit}, calcPowerValue: {calcPowerValue}, OffSet: {ApiServiceInfo.SettingAvgPowerOffset}", "ApiService");
                     }
                     if (value.TotalPower < 0)
                     {
-                        Trace.WriteLine($"AvgPowerProduction: {value.AvgPowerProduction}", "ApiService");
-                        Trace.WriteLine($"TotalPower: {value.TotalPower}, lowerDelta: {productionDelta} = {value.AvgPowerProduction} - {lowerlimit}", "ApiService");
-                        Trace.WriteLine($"lastCommitedPowerValue: {lastCommitedPowerValue} - lowerDelta: {productionDelta}", "ApiService");
-                        Trace.WriteLine($"calcPowerValue: {calcPowerValue}, OffSet: {ApiServiceInfo.SettingAvgPowerOffset}", "ApiService");
+                        Trace.WriteLine($"TotalPower: {value.TotalPower}, AvgPowerProduction: {value.AvgPowerProduction}, lowerDelta: {productionDelta} = {value.AvgPowerProduction} - {lowerlimit}", "ApiService");
+                        Trace.WriteLine($"lastCommitedPowerValue: {lastCommitedPowerValue} - lowerDelta: {productionDelta}, calcPowerValue: {calcPowerValue}, OffSet: {ApiServiceInfo.SettingAvgPowerOffset}", "ApiService");
                     }
                 }
 
