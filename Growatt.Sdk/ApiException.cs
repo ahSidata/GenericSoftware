@@ -9,6 +9,11 @@
             ErrorCode = errorCode;
         }
 
+        public ApiException(string message, int errorCode, Exception innerException) : base(message, innerException)
+        {
+            ErrorCode = errorCode;
+        }
+
         #endregion Public Constructors
 
         #region Properties
