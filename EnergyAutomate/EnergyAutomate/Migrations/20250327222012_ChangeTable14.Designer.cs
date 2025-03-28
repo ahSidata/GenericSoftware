@@ -4,6 +4,7 @@ using EnergyAutomate.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace EnergyAutomate.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250327222012_ChangeTable14")]
+    partial class ChangeTable14
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -669,6 +672,9 @@ namespace EnergyAutomate.Migrations
                     b.Property<string>("DeviceSn")
                         .HasColumnType("nvarchar(450)");
 
+                    b.Property<int>("CommitedPowerValue")
+                        .HasColumnType("int");
+
                     b.Property<DateTime>("CreateDate")
                         .HasColumnType("datetime2");
 
@@ -678,13 +684,10 @@ namespace EnergyAutomate.Migrations
                     b.Property<DateTime?>("IsOfflineSince")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("PowerValueCommited")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime?>("PowerValueLastChanged")
+                    b.Property<DateTime?>("LastChangePowerValue")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("PowerValueRequested")
+                    b.Property<int>("RequestedPowerValue")
                         .HasColumnType("int");
 
                     b.HasKey("DeviceSn");

@@ -2,6 +2,7 @@
 
 @using System.Collections.Specialized
 @using BlazorBootstrap
+@using EnergyAutomate.Definitions
 @using Microsoft.AspNetCore.Components.Web
 
 @rendermode Microsoft.AspNetCore.Components.Web.RenderMode.InteractiveServer
@@ -62,13 +63,13 @@
                                                         <div class="col-md-4">
                                                             <Icon Name="IconName.Plugin" Size="IconSize.None" />
                                                             <span class="mx-3">
-                                                                @((int)(ApiServiceInfo.GetNoahLastDataPerDevice(device.DeviceSn)?.pac ?? 0)) W
+                                                                @((int)(ApiServiceInfo.Devices.FirstOrDefault(x => x.DeviceSn == device.DeviceSn)?.PowerValueCommited ?? 0)) W
                                                             </span>
                                                         </div>
                                                         <div class="col-md-4">
                                                             <Icon Name="IconName.Plug" Size="IconSize.None" />
                                                             <span class="mx-3">
-                                                                <strong>@((ApiServiceInfo.GetLastCommitedPowerValue() ?? 0) / 2) W</strong>
+                                                                <strong>@(ApiServiceInfo.Devices.FirstOrDefault(x => x.DeviceSn == device.DeviceSn)?.PowerValueRequested ?? 0) W</strong>
                                                             </span>
                                                         </div>
                                                     </div>
@@ -175,28 +176,34 @@
                                             Last Indicator Values
                                             <Button Color="ButtonColor.Primary" @onclick="RefreshNoahLastData">Refresh</Button>
                                         </CardTitle>
-                                        <ul class="list-group list-group-flush">
-                                            <li class="list-group-item">
-                                                <div class="row w-100">
-                                                    <div class="col-md-6">
-                                                        AvgPowerLoad: @ApiServiceInfo.AvgPowerLoad
-                                                    </div>
-                                                    <div class="col-md-6">
-                                                        NewPowerValue: @ApiServiceInfo.NewPowerValue
-                                                    </div>
-                                                </div>
-                                            </li>
-                                            <li class="list-group-item">
-                                                <div class="row w-100">
-                                                    <div class="col-md-6">
-                                                        LastCommitedPowerValue: @ApiServiceInfo.GetLastCommitedPowerValue()
-                                                    </div>
-                                                    <div class="col-md-6">
-                                                        LastPowerValue: @ApiServiceInfo.GetLastRequestedPowerValue()
-                                                    </div>
-                                                </div>
+                                        <ul class="list-group list-group-flush">                                          
+                                            @{
+                                                var enumerator = ApiServiceInfo.SettingAvgPowerAdjustmentTraceValues.GetEnumerator();
+                                            }
 
-                                            </li>
+                                            @while (enumerator.MoveNext())
+                                            {
+                                                APiTraceValue firstEntry = enumerator.Current;
+                                                APiTraceValue secondEntry = null;
+
+                                                if (enumerator.MoveNext()) { secondEntry = enumerator.Current;
+            
+                                                }
+
+                                                <li class="list-group-item">
+                                                    <div class="row w-100">
+                                                        <div class="col-md-6">
+                                                            @firstEntry.Key: @firstEntry.Value
+                                                        </div>
+                                                        @if (secondEntry != null)
+                                                        {
+                                                            <div class="col-md-6">
+                                                                @secondEntry.Key: @secondEntry.Value
+                                                            </div>
+                                                        }
+                                                    </div>
+                                                </li>
+                                            }
                                             <li class="list-group-item">
                                                 <div class="row w-100">
                                                     <div class="col-md-6">
@@ -227,7 +234,7 @@
                                                     </div>
                                                 </div>
                                             </li>
-  
+
                                             <li class="list-group-item">
                                                 <div class="row w-100">
                                                     <div class="col-md-6">
@@ -275,7 +282,7 @@
                             </CardBody>
                             <CardBody>
                                 <div>
-                                    AvgPowerOffset <RangeInput TValue="int" @bind-Value="ApiServiceInfo.SettingAvgPowerOffset" Min="-100" Max="100" TickMarks="ApiOffsetAvgTickList" Step="25" />
+                                    AvgPowerOffset <RangeInput TValue="int" @bind-Value="ApiServiceInfo.SettingAvgPowerOffset" Min="-25" Max="75" TickMarks="ApiOffsetAvgTickList" Step="5" />
                                 </div>
                                 <div>
                                     AvgPowerHysteresis <RangeInput TValue="int" @bind-Value="ApiServiceInfo.SettingAvgPowerHysteresis" Min="0" Max="100" TickMarks="ApiToleranceAvgTickList" Step="5" />

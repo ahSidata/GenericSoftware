@@ -3,6 +3,7 @@ using EnergyAutomate.Definitions;
 using EnergyAutomate.Watchdogs;
 using Growatt.OSS;
 using Growatt.Sdk;
+using System.Diagnostics;
 
 public class ApiServiceInfo
 {
@@ -19,24 +20,21 @@ public class ApiServiceInfo
 
     #region Properties
 
-    public int AvgPowerLoad { get; set; }
-    public int DeltaPowerValue { get; set; }
-
-    public int NewPowerValue { get; set; }
     public bool SettingAutoMode { get; set; }
     public bool SettingAutoModeRestriction { get; set; } = false;
-    public int SettingDataReadsDelay { get; set; } = 6000;
+    public int SettingDataReadsDelaySec { get; set; } = 60;
     public bool SettingLoadBalanced { get; set; } = false;
     public int SettingLockSeconds { get; set; } = 600;
 
     #region AdjustPower
 
     public int SettingAvgPowerAdjustmentStep { get; set; } = 10;
+    public List<APiTraceValue> SettingAvgPowerAdjustmentTraceValues { get; set; } = [];
     public int SettingAvgPowerHysteresis { get; set; } = 25;
     public DateTime SettingAvgPowerlastAdjustmentTime { get; set; }
     public int SettingAvgPowerLastDifference { get; set; }
     public int SettingAvgPowerLoadSeconds { get; set; } = 15;
-    public int SettingAvgPowerOffset { get; set; } = 50;
+    public int SettingAvgPowerOffset { get; set; } = 75;
     public int SettingMaxPower { get; set; } = 840;
 
     #endregion AdjustPower
@@ -53,9 +51,11 @@ public class ApiServiceInfo
     public ApiQueueWatchdog<DeviceNoahOutputValueQuery> DeviceNoahOutputValueQueueWatchdog => ServiceProvider.GetRequiredService<ApiQueueWatchdog<DeviceNoahOutputValueQuery>>();
     public ApiQueueWatchdog<DeviceNoahTimeSegmentQuery> DeviceNoahTimeSegmentQueueWatchdog => ServiceProvider.GetRequiredService<ApiQueueWatchdog<DeviceNoahTimeSegmentQuery>>();
 
-    public bool DataReadsDoRefresh(DeviceNoahLastDataQuery.QueryTypes queryType)
+    public bool DataReadsDoRefresh(DeviceNoahLastDataQuery.QueryTypes queryType, int? delay = null)
     {
-        return !DataReads.Any(x => x.MethodeName == DeviceNoahLastDataQuery.QueryTypes.DeviceNoahInfo && x.TimeStamp > DateTime.Now.AddSeconds(-SettingDataReadsDelay));
+        var query = DataReads.Where(x => x.MethodeName == queryType && x.TimeStamp > DateTime.Now.AddSeconds(-(delay ?? SettingDataReadsDelaySec))).AsQueryable();
+        Debug.WriteLine($"DataReads {queryType} Count: {query.Count()}");
+        return !query.Any();
     }
 
     public int GetNoahCurrentIsDischarchingState()
@@ -63,13 +63,6 @@ public class ApiServiceInfo
         return Devices
             .Where(w => w.DeviceType == "noah")
             .Max(noah => GetNoahLastDataPerDevice(noah.DeviceSn)?.totalBatteryPackChargingStatus ?? 0);
-    }
-
-    public int GetNoahCurrentPowerValueSum()
-    {
-        return Devices
-            .Where(w => w.DeviceType == "noah")
-            .Sum(noah => (int)(GetNoahLastDataPerDevice(noah.DeviceSn)?.pac ?? 0));
     }
 
     public int GetNoahDeviceCount()
@@ -173,7 +166,7 @@ public class ApiServiceInfo
     {
         lock (RealTimeMeasurement._syncRoot)
         {
-            return RealTimeMeasurement.Where(x => x.Timestamp > DateTime.Now.AddMinutes(-1) && x.CommitedPowerValue != null).OrderByDescending(x => x.Timestamp).FirstOrDefault();
+            return RealTimeMeasurement.Where(x => x.Timestamp > DateTime.Now.AddDays(-1) && x.CommitedPowerValue != null).OrderByDescending(x => x.Timestamp).FirstOrDefault();
         }
     }
 
@@ -183,7 +176,7 @@ public class ApiServiceInfo
     {
         lock (RealTimeMeasurement._syncRoot)
         {
-            return RealTimeMeasurement.Where(x => x.Timestamp > DateTime.Now.AddMinutes(-5) && x.RequestedPowerValue != null).OrderByDescending(x => x.Timestamp).FirstOrDefault();
+            return RealTimeMeasurement.Where(x => x.Timestamp > DateTime.Now.AddDays(-1) && x.RequestedPowerValue != null).OrderByDescending(x => x.Timestamp).FirstOrDefault();
         }
     }
 

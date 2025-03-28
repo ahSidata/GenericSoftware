@@ -11,7 +11,8 @@ namespace EnergyAutomate.Definitions
         {
             DeviceNoahInfo,
             DeviceNoahLastData,
-            DeviceNoahTimeSegment
+            DeviceNoahTimeSegment,
+            SetPowerAsync
         }
         public string DeviceSn { get; set; } = string.Empty;
         public string DeviceType { get; set; } = string.Empty;

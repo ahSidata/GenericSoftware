@@ -8,6 +8,20 @@ namespace EnergyAutomate
     {
         #region Growatt
 
+        public static void AddOrUpdate(this List<APiTraceValue> list, APiTraceValue value)
+        {
+            var existing = list.FirstOrDefault(x => x.Index == value.Index);
+            if (existing != null)
+            {
+                existing.Key = value.Key;
+                existing.Value = value.Value;
+            }
+            else
+            {
+                list.Add(value);
+            }
+        }
+
         #endregion Growatt
 
         #region Timbber

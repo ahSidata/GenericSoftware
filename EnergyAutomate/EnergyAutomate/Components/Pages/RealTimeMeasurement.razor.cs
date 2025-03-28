@@ -12,8 +12,8 @@ namespace EnergyAutomate.Components.Pages
 
         private readonly IEnumerable<TickMark> ApiLockSecondsTickList = GenerateTickTickMarks(100, 1000, 50);
         private readonly IEnumerable<TickMark> ApiMaxPowerTickList = GenerateTickTickMarks(700, 900, 10);
-        private readonly IEnumerable<TickMark> ApiOffsetAvgTickList = GenerateTickTickMarks(-100, 100, 25);
-        private readonly IEnumerable<TickMark> ApiToleranceAvgTickList = GenerateTickTickMarks(0, 100, 25);
+        private readonly IEnumerable<TickMark> ApiOffsetAvgTickList = GenerateTickTickMarks(-25, 75, 5);
+        private readonly IEnumerable<TickMark> ApiToleranceAvgTickList = GenerateTickTickMarks(0, 100, 5);
         private readonly IEnumerable<TickMark> AvgPowerLoadSecondsTickList = GenerateTickTickMarks(5, 180, 5);
         private Tabs tabsMainRef = default!;
 
@@ -252,7 +252,17 @@ namespace EnergyAutomate.Components.Pages
                     new LineChartDataset()
                     {
                         Label = "AvgPowerLoad",
-                        Data = dataSource.Select(x => (double?)x.AvgPowerLoad).ToList(),
+                        Data = dataSource.Select(x => (double?)x.AvgPowerConsumption).ToList(),
+                        BackgroundColor = "rgb(0, 0, 0)",
+                        BorderColor = "rgb(0, 0, 0)",
+                        BorderWidth = 2,
+                        PointRadius = new List<double>() { 0 },
+                        Order = 3
+                    },
+                    new LineChartDataset()
+                    {
+                        Label = "AvgPowerLoad",
+                        Data = dataSource.Select(x => (double?)x.AvgPowerProduction).ToList(),
                         BackgroundColor = "rgb(0, 0, 0)",
                         BorderColor = "rgb(0, 0, 0)",
                         BorderWidth = 2,

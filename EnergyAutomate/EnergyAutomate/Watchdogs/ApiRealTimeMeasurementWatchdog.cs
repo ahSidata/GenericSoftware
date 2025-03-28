@@ -21,6 +21,7 @@ namespace EnergyAutomate.Watchdogs
 
         public TibberApiClient? TibberApiClient { get; set; }
         private ApiService ApiService => ServiceProvider.GetRequiredService<ApiService>();
+        private ILogger Logger => ServiceProvider.GetRequiredService<ILogger<ApiRealTimeMeasurementWatchdog>>();
         private CancellationTokenSource? RealTimeMeasurementCancellationTokenSource { get; set; }
         private IObservable<RealTimeMeasurement>? RealTimeMeasurementListener { get; set; }
         private IServiceProvider ServiceProvider { get; init; }
@@ -34,42 +35,26 @@ namespace EnergyAutomate.Watchdogs
         {
             if (TibberHomeId.HasValue && TibberApiClient != null)
             {
-                if (RealTimeMeasurementListener != null)
+                try
                 {
-                    Trace.WriteLine("StopRealTimeMeasurementListener calling ...");
-
-                    await TibberApiClient.StopRealTimeMeasurementListener(TibberHomeId.Value);
+                    await StopListenerAsync();
+                }
+                catch (Exception ex)
+                {
+                    Logger.LogError(ex, ex.Message);
+                }
+                finally
+                {
                     TibberApiClient.Dispose();
                     TibberApiClient = null;
                     RealTimeMeasurementListener = null;
-
                     GC.Collect();
                     GC.WaitForPendingFinalizers();
 
                     Trace.WriteLine("StopRealTimeMeasurementListener finished ...");
                 }
 
-                try
-                {
-                    Trace.WriteLine("Create new TibberApiClient ...");
-
-                    TibberApiClient = GetNewTibberClient();
-
-                    Trace.WriteLine("StartRealTimeMeasurementListener calling ...");
-
-                    RealTimeMeasurementListener = await TibberApiClient.StartRealTimeMeasurementListener(TibberHomeId.Value, cancellationToken);
-                    _ = RealTimeMeasurementListener.Subscribe(ApiService);
-                }
-                catch (OperationCanceledException ex) when (ex.CancellationToken == cancellationToken)
-                {
-                    Console.WriteLine("Operation cancled.");
-                }
-                catch (Exception ex)
-                {
-                    Debug.WriteLine(ex.Message);
-                    await Task.Delay(5000);
-                    _ = StartListener();
-                }
+                _ = StartListener();
             }
         }
 

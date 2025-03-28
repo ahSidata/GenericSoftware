@@ -47,7 +47,9 @@ namespace EnergyAutomate.Definitions
 
         #region Properties
 
-        public int AvgPowerLoad { get; set; }
+        public int AvgPowerConsumption { get; set; }
+
+        public int AvgPowerProduction { get; set; }
 
         public int? CommitedPowerValue { get; set; }
 
