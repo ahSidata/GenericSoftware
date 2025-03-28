@@ -476,10 +476,11 @@ public partial class ApiService : IObserver<RealTimeMeasurement>, IDisposable
 
             var last = devices.OrderBy(x => x.PowerValueLastChanged).FirstOrDefault();
 
-            int upperDelta = 0;
-            int lowerDelta = 0;
-            int upperlimit = 0;
-            int lowerlimit = 0;
+            var upperlimit = ApiServiceInfo.SettingAvgPowerOffset + (ApiServiceInfo.SettingAvgPowerHysteresis / 2);
+            var lowerlimit = ApiServiceInfo.SettingAvgPowerOffset - (ApiServiceInfo.SettingAvgPowerHysteresis / 2);
+
+            int consumptionDelta = 0;
+            int productionDelta = 0;
 
             if (last == null || last.PowerValueRequested == last.PowerValueCommited)
             {
@@ -494,29 +495,56 @@ public partial class ApiService : IObserver<RealTimeMeasurement>, IDisposable
                     int lastCommitedPowerValue = device.PowerValueCommited == 0 ? (int)(ApiServiceInfo.GetNoahLastDataPerDevice(device.DeviceSn)?.pac ?? 0) : device.PowerValueCommited;
                     var lastRequestedPowerValue = device.PowerValueRequested;
 
+                    // If the total power is greater than 0, it indicates power consumption
                     if (value.TotalPower > 0)
                     {
-                        upperlimit = ApiServiceInfo.SettingAvgPowerOffset + (ApiServiceInfo.SettingAvgPowerHysteresis / 2);
+                        // If the average power consumption is greater than the upper limit
                         if (value.AvgPowerConsumption > upperlimit)
                         {
-                            upperDelta = value.AvgPowerConsumption - upperlimit;
-                            ApiServiceInfo.SettingAvgPowerAdjustmentTraceValues.AddOrUpdate(new APiTraceValue() { Index = 4, Key = "DeltaPowerValue", Value = upperDelta.ToString() });
-                            calcPowerValue = lastCommitedPowerValue + (int)(upperDelta / 2);
+                            // Calculate the difference between the average power consumption and
+                            // the upper limit
+                            consumptionDelta = Math.Abs(value.AvgPowerConsumption - upperlimit);
+                            // Add or update the trace value for the delta power value
+                            ApiServiceInfo.SettingAvgPowerAdjustmentTraceValues.AddOrUpdate(new APiTraceValue() { Index = 4, Key = "DeltaPowerValue", Value = consumptionDelta.ToString() });
+                            // Calculate the new power value based on the consumption delta
+                            calcPowerValue = lastCommitedPowerValue + (consumptionDelta / devices.Count);
+                        }
+                        // If the average power consumption is less than the lower limit
+                        else if (value.AvgPowerConsumption < lowerlimit)
+                        {
+                            // Calculate the difference between the lower limit and the average
+                            // power consumption
+                            consumptionDelta = Math.Abs(lowerlimit - value.AvgPowerConsumption);
+                            // Calculate the new power value based on the consumption delta
+                            calcPowerValue = lastCommitedPowerValue - (consumptionDelta / devices.Count);
                         }
                     }
-                    else if (value.TotalPower < 0 && value.AvgPowerProduction < ApiServiceInfo.SettingAvgPowerOffset - (ApiServiceInfo.SettingAvgPowerHysteresis / 2))
+                    // If the total power is less than 0, it indicates power production
+                    else if (value.TotalPower < 0)
                     {
-                        lowerlimit = ApiServiceInfo.SettingAvgPowerOffset - (ApiServiceInfo.SettingAvgPowerHysteresis / 2);
+                        // If the average power production is less than the lower limit
                         if (value.AvgPowerProduction < lowerlimit)
                         {
-                            lowerDelta = value.AvgPowerProduction - lowerlimit;
-                            ApiServiceInfo.SettingAvgPowerAdjustmentTraceValues.AddOrUpdate(new APiTraceValue() { Index = 4, Key = "DeltaPowerValue", Value = lowerDelta.ToString() });
-
-                            calcPowerValue = lastCommitedPowerValue + (int)(lowerDelta / 2);
+                            // Calculate the difference between the average power production and the
+                            // lower limit
+                            productionDelta = Math.Abs(value.AvgPowerProduction - lowerlimit);
+                            // Add or update the trace value for the delta power value
+                            ApiServiceInfo.SettingAvgPowerAdjustmentTraceValues.AddOrUpdate(new APiTraceValue() { Index = 4, Key = "DeltaPowerValue", Value = productionDelta.ToString() });
+                            // Calculate the new power value based on the production delta
+                            calcPowerValue = lastCommitedPowerValue - (productionDelta / devices.Count);
+                        }
+                        // If the average power production is greater than the upper limit
+                        else if (value.AvgPowerProduction > upperlimit)
+                        {
+                            // Calculate the difference between the average power production and the
+                            // upper limit
+                            productionDelta = Math.Abs(value.AvgPowerProduction - upperlimit);
+                            // Calculate the new power value based on the production delta
+                            calcPowerValue = lastCommitedPowerValue + (productionDelta / devices.Count);
                         }
                     }
 
-                    var maxPower = ApiServiceInfo.SettingMaxPower;
+                    var maxPower = ApiServiceInfo.SettingMaxPower / devices.Count;
 
                     newPowerValue = calcPowerValue > maxPower ? maxPower : calcPowerValue < 0 ? 0 : calcPowerValue;
 
@@ -546,15 +574,15 @@ public partial class ApiService : IObserver<RealTimeMeasurement>, IDisposable
                         if (value.TotalPower > 0)
                         {
                             Logger.LogTrace($"AvgPowerConsumption: {value.AvgPowerConsumption}");
-                            Logger.LogTrace($"TotalPower: {value.TotalPower}, upperDelta: {upperDelta} = {value.AvgPowerConsumption} - {upperlimit}");
-                            Logger.LogTrace($"lastCommitedPowerValue: {lastCommitedPowerValue}, upperDelta: {upperDelta} = {value.AvgPowerConsumption} - {upperlimit}");
+                            Logger.LogTrace($"TotalPower: {value.TotalPower}, upperDelta: {consumptionDelta} = {value.AvgPowerConsumption} - {upperlimit}");
+                            Logger.LogTrace($"lastCommitedPowerValue: {lastCommitedPowerValue}, upperDelta: {consumptionDelta} = {value.AvgPowerConsumption} - {upperlimit}");
                             Logger.LogTrace($"calcPowerValue: {calcPowerValue}, OffSet: {ApiServiceInfo.SettingAvgPowerOffset}");
                         }
                         if (value.TotalPower < 0)
                         {
                             Logger.LogTrace($"AvgPowerProduction: {value.AvgPowerProduction}");
-                            Logger.LogTrace($"TotalPower: {value.TotalPower}, lowerDelta: {lowerDelta} = {value.AvgPowerProduction} - {lowerlimit}");
-                            Logger.LogTrace($"lastCommitedPowerValue: {lastCommitedPowerValue} - lowerDelta: {lowerDelta}");
+                            Logger.LogTrace($"TotalPower: {value.TotalPower}, lowerDelta: {productionDelta} = {value.AvgPowerProduction} - {lowerlimit}");
+                            Logger.LogTrace($"lastCommitedPowerValue: {lastCommitedPowerValue} - lowerDelta: {productionDelta}");
                             Logger.LogTrace($"calcPowerValue: {calcPowerValue}, OffSet: {ApiServiceInfo.SettingAvgPowerOffset}");
                         }
                     }
@@ -563,56 +591,6 @@ public partial class ApiService : IObserver<RealTimeMeasurement>, IDisposable
                 }
             }
         }
-    }
-
-    private void CalcNewOutputValue(RealTimeMeasurementExtention value)
-    {
-        //int lastCommitedPowerValue = ApiServiceInfo.GetLastRequestedPowerValueItem() == null ? ApiServiceInfo.GetNoahCurrentPowerValueSum() : ApiServiceInfo.GetLastCommitedPowerValue() ?? 0;
-
-        //ApiServiceInfo.DifferencePowerValue = Math.Abs(ApiServiceInfo.SettingOffsetAvg - ApiServiceInfo.AvgPowerLoad);
-
-        //ApiServiceInfo.DeltaPowerValue = ApiServiceInfo.DifferencePowerValue switch
-        //{
-        //    > 300 => 150,
-        //    > 250 => 125,
-        //    > 200 => 100,
-        //    > 150 => 75,
-        //    > 100 => 50,
-        //    > 75 => 35,
-        //    > 50 => 25,
-        //    > 25 => 10,
-        //    > 10 => 5,
-        //    _ => 0
-        //};
-
-        //var lastRequestedPowerValue = ApiServiceInfo.GetLastRequestedPowerValue() ?? lastCommitedPowerValue;
-
-        //if (ApiServiceInfo.AvgPowerLoad > ApiServiceInfo.SettingOffsetAvg + (ApiServiceInfo.SettingToleranceAvg / 2))
-        //{
-        //    ApiServiceInfo.NewPowerValue = lastRequestedPowerValue + ApiServiceInfo.DeltaPowerValue;
-        //}
-        //else if (ApiServiceInfo.AvgPowerLoad < ApiServiceInfo.SettingOffsetAvg - (ApiServiceInfo.SettingToleranceAvg / 2))
-        //{
-        //    ApiServiceInfo.NewPowerValue = lastRequestedPowerValue - ApiServiceInfo.DeltaPowerValue;
-        //}
-
-        //var maxPower = ApiServiceInfo.SettingMaxPower;
-
-        //ApiServiceInfo.NewPowerValue = ApiServiceInfo.NewPowerValue > maxPower ? maxPower : ApiServiceInfo.NewPowerValue < 0 ? 0 : ApiServiceInfo.NewPowerValue;
-
-        //if (ApiServiceInfo.NewPowerValue <= maxPower)
-        //{
-        //    if (ApiServiceInfo.NewPowerValue != ApiServiceInfo.GetLastRequestedPowerValue())
-        //    {
-        //        value.RequestedPowerValue = ApiServiceInfo.NewPowerValue;
-        //    }
-        //}
-        //else
-        //{
-        //    Debug.WriteLine($"PowerChanged: {ApiServiceInfo.GetLastRequestedPowerValue() ?? 0} >> {ApiServiceInfo.NewPowerValue}, OffSet: {ApiServiceInfo.SettingOffsetAvg}");
-        //}
-
-        //ApiServiceInfo.InvokeStateHasChanged();
     }
 
     private async Task DisableAutoMode(RealTimeMeasurementExtention value)
