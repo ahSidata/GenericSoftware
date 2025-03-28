@@ -29,9 +29,9 @@ public class ApiServiceInfo
     #region AdjustPower
 
     public List<APiTraceValue> SettingAvgPowerAdjustmentTraceValues { get; set; } = [];
-    public int SettingAvgPowerHysteresis { get; set; } = 25;
-    public int SettingAvgPowerLoadSeconds { get; set; } = 15;
-    public int SettingAvgPowerOffset { get; set; } = 75;
+    public int SettingAvgPowerHysteresis { get; set; } = 50;
+    public int SettingAvgPowerLoadSeconds { get; set; } = 30;
+    public int SettingAvgPowerOffset { get; set; } = 25;
     public int SettingMaxPower { get; set; } = 840;
 
     #endregion AdjustPower

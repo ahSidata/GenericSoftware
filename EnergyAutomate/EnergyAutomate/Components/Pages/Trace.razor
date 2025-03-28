@@ -44,7 +44,7 @@ else
     [Inject]
     private CustomTraceListener CustomTraceListener { get; set; } = default!;
 
-    private List<string?> LogMessageCategories => CustomTraceListener.GetLogMessages().GroupBy(x => x.Category).Select(s => s.Key).ToList();
+    private List<string?> LogMessageCategories => CustomTraceListener.GetLogMessages().GroupBy(x => x.Category).Select(s => s.Key).OrderBy(o => o).ToList();
 
     private Tabs tabsMainRef = default!;
 
