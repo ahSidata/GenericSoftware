@@ -907,6 +907,8 @@ public partial class ApiService : IObserver<RealTimeMeasurement>, IDisposable
 
                 Logger.LogTrace($"Commited lastRequestedPowerValue: {item.Value} W");
 
+                ApiServiceInfo.InvokeStateHasChanged();
+
                 return default; // Operation erfolgreich
             }
             catch (ApiException ex)
