@@ -414,7 +414,8 @@ public partial class ApiService : IObserver<RealTimeMeasurement>, IDisposable
                         consumptionDelta = Math.Abs(value.AvgPowerConsumption - upperlimit);
                         // Add or update the trace value for the delta power value
                         ApiServiceInfo.SettingAvgPowerAdjustmentTraceValues.AddOrUpdate(new APiTraceValue() { Index = 4, Key = "DeltaPowerValue", Value = consumptionDelta.ToString() });
-                        // Calculate the new power value based on the consumption delta
+                        // Calculate the new power value based on the consumption delta additional
+                        // half for slower decreasing
                         calcPowerValue = lastCommitedPowerValue + (consumptionDelta / devices.Count);
                     }
                     // If the average power consumption is less than the lower limit
