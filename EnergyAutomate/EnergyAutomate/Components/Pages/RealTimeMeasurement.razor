@@ -158,7 +158,7 @@
                                                                     @segment.EndTime
                                                                 </div>
                                                                 <div class="col-md-2">
-                                                                    @(segment.Mode == "0" ? "Load": "Batt")
+                                                                    @(segment.Mode == "0" ? "Load" : "Batt")
                                                                 </div>
                                                                 <div class="col-md-2">
                                                                     @segment.Power W
@@ -181,17 +181,17 @@
                                             <li class="list-group-item">
                                                 <div class="row w-100">
                                                     <div class="col-md-6">
-                                                        Offset: @ApiService.SettingAvgPowerOffset
+                                                        Offset: @ApiService.ApiSettingAvgPowerOffset
                                                     </div>
                                                     <div class="col-md-6">
-                                                        Hysteresis: @ApiService.SettingAvgPowerHysteresis
+                                                        Hysteresis: @ApiService.ApiSettingAvgPowerHysteresis
                                                     </div>
                                                 </div>
                                             </li>
                                             <li class="list-group-item">
                                                 <div class="row w-100">
                                                     <div class="col-md-6">
-                                                        LoadSeconds: @ApiService.SettingAvgPowerLoadSeconds
+                                                        LoadSeconds: @ApiService.ApiSettingAvgPowerLoadSeconds
                                                     </div>
                                                     <div class="col-md-6">
                                                         DeviceQueryQueue: @ApiService.GrowattDeviceQueryQueueWatchdogCount()
@@ -199,7 +199,7 @@
                                                 </div>
                                             </li>
                                             @{
-                                                var enumerator = ApiService.SettingAvgPowerAdjustmentTraceValues.GetEnumerator();
+                                                var enumerator = ApiService.ApiSettingAvgPowerAdjustmentTraceValues.GetEnumerator();
                                             }
 
                                             @while (enumerator.MoveNext())
@@ -207,8 +207,10 @@
                                                 APiTraceValue firstEntry = enumerator.Current;
                                                 APiTraceValue secondEntry = null;
 
-                                                if (enumerator.MoveNext()) { secondEntry = enumerator.Current;
-            
+                                                if (enumerator.MoveNext())
+                                                {
+                                                    secondEntry = enumerator.Current;
+
                                                 }
 
                                                 <li class="list-group-item">
@@ -224,7 +226,7 @@
                                                         }
                                                     </div>
                                                 </li>
-                                            }            
+                                            }
                                         </ul>
                                     </CardBody>
                                 </Card>
@@ -238,30 +240,30 @@
                         <div class="mt-3 d-flex flex-column justify-content-center gap-3">
                             <CardBody>
                                 <div>
-                                    <Switch @bind-Value="ApiService.SettingAutoMode" Label="AutoMode (zero injection on low soc)" />
+                                    <Switch @bind-Value="ApiService.ApiSettingAutoMode" Label="AutoMode (zero injection on low soc)" />
                                 </div>
                                 <div>
-                                    <Switch @bind-Value="ApiService.SettingAutoModeRestriction" Label="AutoMode Restriction (only if current price is over avg price)" />
+                                    <Switch @bind-Value="ApiService.ApiSettingAutoModeRestriction" Label="AutoMode Restriction (only if current price is over avg price)" />
                                 </div>
                                 <div>
-                                    <Switch @bind-Value="ApiService.SettingLoadBalanced" Label="LoadBalanced (zero injection on low soc)" />
+                                    <Switch @bind-Value="ApiService.ApiSettingLoadBalanced" Label="LoadBalanced (zero injection on low soc)" />
                                 </div>
                                 <div>
-                                    ApiLockSeconds <RangeInput TValue="int" @bind-Value="ApiService.SettingLockSeconds" Min="100" Max="1000" TickMarks="ApiLockSecondsTickList" Step="50" />
+                                    ApiLockSeconds <RangeInput TValue="int" @bind-Value="ApiService.ApiSettingLockSeconds" Min="100" Max="1000" TickMarks="ApiLockSecondsTickList" Step="50" />
                                 </div>
                             </CardBody>
                             <CardBody>
                                 <div>
-                                    AvgPowerOffset <RangeInput TValue="int" @bind-Value="ApiService.SettingAvgPowerOffset" Min="-25" Max="75" TickMarks="ApiOffsetAvgTickList" Step="5" />
+                                    AvgPowerOffset <RangeInput TValue="int" @bind-Value="ApiService.ApiSettingAvgPowerOffset" Min="-25" Max="75" TickMarks="ApiOffsetAvgTickList" Step="5" />
                                 </div>
                                 <div>
-                                    AvgPowerHysteresis <RangeInput TValue="int" @bind-Value="ApiService.SettingAvgPowerHysteresis" Min="0" Max="100" TickMarks="ApiToleranceAvgTickList" Step="5" />
+                                    AvgPowerHysteresis <RangeInput TValue="int" @bind-Value="ApiService.ApiSettingAvgPowerHysteresis" Min="0" Max="100" TickMarks="ApiToleranceAvgTickList" Step="5" />
                                 </div>
                                 <div>
-                                    AvgPowerLoadSeconds <RangeInput TValue="int" @bind-Value="ApiService.SettingAvgPowerLoadSeconds" Min="5" Max="180" TickMarks="AvgPowerLoadSecondsTickList" Step="5" />
+                                    AvgPowerLoadSeconds <RangeInput TValue="int" @bind-Value="ApiService.ApiSettingAvgPowerLoadSeconds" Min="5" Max="180" TickMarks="AvgPowerLoadSecondsTickList" Step="5" />
                                 </div>
                                 <div>
-                                    SettingMaxPower <RangeInput TValue="int" @bind-Value="ApiService.SettingMaxPower" Min="700" Max="900" TickMarks="ApiMaxPowerTickList" Step="10" />
+                                    SettingMaxPower <RangeInput TValue="int" @bind-Value="ApiService.ApiSettingMaxPower" Min="700" Max="900" TickMarks="ApiMaxPowerTickList" Step="10" />
                                 </div>
                             </CardBody>
                         </div>
@@ -272,73 +274,128 @@
     </Tab>
     <Tab Title="Growatt">
         <Content>
+            <CardGroup Class="my-3">
+                <Card Class="mb-4" Style="width:18rem;">
+                    <CardHeader>Defaults</CardHeader>
+                    <CardBody>
+                        <div class="form-group row mb-3">
+                            <label class="col-md-2 col-form-label">
+                                <strong>SunRise:</strong>
+                            </label>
+                            <div class="col-md-10">
+                                <TimeInput TValue="TimeOnly" @bind-Value="@ApiService.SunRise" />
+                            </div>
+                        </div>
+                        <div class="form-group row mb-3">
+                            <label class="col-md-2 col-form-label">
+                                <strong>SunRise:</strong>
+                            </label>
+                            <div class="col-md-10">
+                                <TimeInput TValue="TimeOnly" @bind-Value="@ApiService.SunSet" />
+                            </div>
+                        </div>
+                    </CardBody>
+                </Card>
+                <Card Class="mb-4" Style="width:18rem;">
+                    <CardHeader>Standard program</CardHeader>
+                    <CardBody>
 
-            <div class="mb-3">
-                <strong>SunRise</strong>:
-            </div>
-            <div class="mb-3">
-                <TimeInput TValue="TimeOnly" @bind-Value="@ApiService.SunRise" />
-            </div>
+                        <Grid @ref="gridPrograms"
+                              Style="--bb-table-selected-row-color: #fff;--bb-table-selected-row-background-color: #4c0bce;--bb-table-selected-row-hover-color: #fff;--bb-table-selected-row-hover-background-color: #4c0bce;"
+                              Class="table table-hover table-bordered table-striped mt-3"
+                              TItem="GrowattProgram"
+                              DataProvider="GrowattProgramDataProvider"
+                              @bind-SelectedItems="@GrowattSelectedPrograms"
+                              AllowSelection="true"
+                              Responsive="true">
 
-            <Button Color="ButtonColor.Primary" @onclick="ApiService.GrowattInvokeRefreshDeviceList">Refresh Device List</Button>
-            <Button Color="ButtonColor.Primary" @onclick="ApiService.GrowattInvokeClearDeviceNoahTimeSegments">Clear Device Noah Timesegments </Button>
-            <Button Color="ButtonColor.Primary" @onclick="ApiService.GrowattInvokeBattPriorityDeviceNoah">BattPriorityDeviceNoah</Button>
-            <Button Color="ButtonColor.Primary" @onclick="ApiService.GrowattInvokeLoadPriorityDeviceNoah">LoadPriorityDeviceNoah </Button>
+                            <GridColumns>
+                                <GridColumn TItem="GrowattProgram" HeaderText="Name" PropertyName="Name" >
+                                    @context.Name
+                                </GridColumn>
+                                <GridColumn TItem="GrowattProgram" HeaderText="IsActive" PropertyName="IsActive">
+                                    @context.IsActive
+                                </GridColumn>
 
-            @if (ApiService.GrowattListDevices() == null || !ApiService.GrowattListDevices().Any())
-            {
-                <p>Loading...</p>
-            }
-            else
-            {
-                <ul>
-                    @foreach (var device in ApiService.GrowattListDevices())
+                            </GridColumns>
+
+                        </Grid>
+                        @if (GrowattSelectedPrograms != null && (GrowattSelectedPrograms?.Count ?? 0) > 0)
+                        {
+                            <Button Color="ButtonColor.Primary" @onclick="@(async () => {await GrowattSetProgramActive(GrowattSelectedPrograms?.FirstOrDefault());})">Set "@GrowattSelectedPrograms?.FirstOrDefault()?.Name" as new active program</Button>
+                        }
+                    </CardBody>
+                </Card>
+            </CardGroup>
+            <Card Class="my-3">
+                <CardHeader>Actions</CardHeader>
+                <CardBody>
+                    <Button Color="ButtonColor.Primary" @onclick="ApiService.GrowattInvokeRefreshDeviceList">Refresh Device List</Button>
+                    <Button Color="ButtonColor.Primary" @onclick="ApiService.GrowattInvokeClearDeviceNoahTimeSegments">Clear Device Noah Timesegments </Button>
+                    <Button Color="ButtonColor.Primary" @onclick="ApiService.GrowattInvokeBattPriorityDeviceNoah">BattPriorityDeviceNoah</Button>
+                    <Button Color="ButtonColor.Primary" @onclick="ApiService.GrowattInvokeLoadPriorityDeviceNoah">LoadPriorityDeviceNoah </Button>
+                </CardBody>
+            </Card>
+
+            <Card Class="my-3">
+                <CardHeader>Devices</CardHeader>
+                <CardBody>
+                    @if (ApiService.GrowattListDevices() == null || !ApiService.GrowattListDevices().Any())
                     {
-                        <li>@device.DeviceType : @device.DeviceSn </li>
+                        <p>Loading...</p>
                     }
-                </ul>
-            }
-
-            <Button Color="ButtonColor.Primary" @onclick="ApiService.GrowattInvokeRefreshNoahs">Refresh Noah Devices</Button>
-            <Button Color="ButtonColor.Primary" @onclick="ApiService.GrowattInvokeRefreshNoahsLastData">Refresh Noah Device last data</Button>
-
-            Growatt    @if (!ApiService.GrowattListNoahInfos().Any())
-            {
-                <p>Loading...</p>
-            }
-            else
-            {
-                <Tabs @ref="tabsGrowattRef">
-                    @foreach (var deviceInfo in ApiService.GrowattListNoahInfos())
+                    else
                     {
-                        <Tab Title="@($"{deviceInfo.Model} : {deviceInfo.DeviceSn}")">
-                            <Content>
-                                <div class="mt-3 d-flex">
-                                    <div class="flex-column">
-                                        <ul>
-                                            @foreach (var property in deviceInfo.GetType().GetProperties())
-                                            {
-                                                <li>@property.Name : @property.GetValue(deviceInfo)</li>
-                                            }
-                                        </ul>
-                                    </div>
-                                    <div class="flex-column ml-3">
-                                        <ul>
-                                            @foreach (var lastData in ApiService.GrowattListNoahLastDatas().Where(x => x != null && x.deviceSn == deviceInfo.DeviceSn))
-                                            {
-
-                                                DateTime time = DateTimeOffset.FromUnixTimeMilliseconds(@lastData.time).DateTime;
-
-                                                <li>@time,  Workmode: @lastData.workMode , Power(W): @lastData.ppv, PAC(W): @lastData.pac, ChargingModus: @lastData.totalBatteryPackChargingStatus , Charging(W): @lastData.totalBatteryPackChargingPower , SOC: @lastData.totalBatteryPackSoc</li>
-                                            }
-                                        </ul>
-                                    </div>
-                                </div>
-                            </Content>
-                        </Tab>
+                        <ul>
+                            @foreach (var device in ApiService.GrowattListDevices())
+                            {
+                                <li>@device.DeviceType : @device.DeviceSn </li>
+                            }
+                        </ul>
                     }
-                </Tabs>
-            }
+
+                    <Button Color="ButtonColor.Primary" @onclick="ApiService.GrowattInvokeRefreshNoahs">Refresh Noah Devices</Button>
+                    <Button Color="ButtonColor.Primary" @onclick="ApiService.GrowattInvokeRefreshNoahsLastData">Refresh Noah Device last data</Button>
+
+                    Growatt    @if (!ApiService.GrowattListNoahInfos().Any())
+                    {
+                        <p>Loading...</p>
+                    }
+                    else
+                    {
+                        <Tabs @ref="tabsGrowattRef">
+                            @foreach (var deviceInfo in ApiService.GrowattListNoahInfos())
+                            {
+                                <Tab Title="@($"{deviceInfo.Model} : {deviceInfo.DeviceSn}")">
+                                    <Content>
+                                        <div class="mt-3 d-flex">
+                                            <div class="flex-column">
+                                                <ul>
+                                                    @foreach (var property in deviceInfo.GetType().GetProperties())
+                                                    {
+                                                        <li>@property.Name : @property.GetValue(deviceInfo)</li>
+                                                    }
+                                                </ul>
+                                            </div>
+                                            <div class="flex-column ml-3">
+                                                <ul>
+                                                    @foreach (var lastData in ApiService.GrowattListNoahLastDatas().Where(x => x != null && x.deviceSn == deviceInfo.DeviceSn))
+                                                    {
+
+                                                        DateTime time = DateTimeOffset.FromUnixTimeMilliseconds(@lastData.time).DateTime;
+
+                                                        <li>@time,  Workmode: @lastData.workMode , Power(W): @lastData.ppv, PAC(W): @lastData.pac, ChargingModus: @lastData.totalBatteryPackChargingStatus , Charging(W): @lastData.totalBatteryPackChargingPower , SOC: @lastData.totalBatteryPackSoc</li>
+                                                    }
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    </Content>
+                                </Tab>
+                            }
+                        </Tabs>
+                    }
+                </CardBody>
+            </Card>
         </Content>
     </Tab>
 </Tabs>

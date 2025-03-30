@@ -42,7 +42,7 @@ namespace EnergyAutomate.Watchdogs
 
         private IServiceProvider ServiceProvider { get; init; }
 
-        private int TotalDelay => ServiceProvider.GetRequiredService<ApiService>().SettingLockSeconds + penaltyFrequentlyAccess;
+        private int TotalDelay => ServiceProvider.GetRequiredService<ApiService>().ApiSettingLockSeconds + penaltyFrequentlyAccess;
 
         #endregion Properties
 

@@ -1,5 +1,6 @@
 ﻿using BlazorBootstrap;
 using EnergyAutomate.Components.Layout;
+using EnergyAutomate.Definitions;
 using Microsoft.AspNetCore.Components;
 using System.Collections.Specialized;
 using System.Diagnostics;
@@ -73,6 +74,8 @@ namespace EnergyAutomate.Components.Pages
         {
             await InvokeAsync(StateHasChanged);
         }
+
+
 
         #endregion Private Methods
 
@@ -391,6 +394,42 @@ namespace EnergyAutomate.Components.Pages
 
         private Tabs tabsGrowattRef = default!;
 
+        private Grid<GrowattProgram> gridPrograms = default!;
+
+        private IEnumerable<GrowattProgram>? listPrograms;
+
+        private HashSet<GrowattProgram>? GrowattSelectedPrograms;
+
+        private async Task<GridDataProviderResult<GrowattProgram>> GrowattProgramDataProvider(GridDataProviderRequest<GrowattProgram> request)
+        {
+            Console.WriteLine("EmployeesDataProvider called...");
+
+            if (listPrograms is null) // pull employees only one time for client-side filtering, sorting, and paging
+                listPrograms = GrowattGetPrograms(); // call a service or an API to pull the employees
+
+            return await Task.FromResult(request.ApplyTo(listPrograms));
+        }
+
+        private IEnumerable<GrowattProgram> GrowattGetPrograms()
+        {
+            return new List<GrowattProgram>() {
+                new GrowattProgram() { Id = "1", Name = "Program 1", IsActive = true },
+                new GrowattProgram() { Id = "2", Name = "Program 2", IsActive = false },
+                new GrowattProgram() { Id = "3", Name = "Program 3", IsActive = false }
+            };
+        }
+
+        public async Task GrowattSetProgramActive(GrowattProgram? growattProgram)
+        {
+            if (growattProgram != null)
+            {
+                await ApiService.GrowattSetProgramActive(growattProgram);
+                GrowattSelectedPrograms = null;
+                await gridPrograms.RefreshDataAsync();
+            }
+        }
+
         #endregion Growatt
+
     }
 }
