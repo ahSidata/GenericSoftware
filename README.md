@@ -75,8 +75,8 @@ The `AdjustPower` method adjusts the requested power value (`PowerValueRequested
    - **English:** If a new value is computed, it is stored in `device.PowerValueRequested`, `value.RequestedPowerValue`, and then sent to the corresponding device via the `DeviceQueryQueueWatchdog` queue.
 
 6. **Logging und Aktualisierung / Logging and refresh**  
-   - **Deutsch:** Bei Überschreitungen der Limits werden Debug-Informationen per `Trace.WriteLine` ausgegeben. Danach wird ein UI-Update über `ApiServiceInfo.InvokeStateHasChanged()` ausgelöst.  
-   - **English:** When the limits are exceeded, debug information is written via `Trace.WriteLine`. A UI refresh is triggered by calling `ApiServiceInfo.InvokeStateHasChanged()`.
+   - **Deutsch:** Bei Überschreitungen der Limits werden Debug-Informationen per `Trace.WriteLine` ausgegeben. Danach wird ein UI-Update über `ApiService.InvokeStateHasChanged()` ausgelöst.  
+   - **English:** When the limits are exceeded, debug information is written via `Trace.WriteLine`. A UI refresh is triggered by calling `ApiService.InvokeStateHasChanged()`.
 
 ---
 

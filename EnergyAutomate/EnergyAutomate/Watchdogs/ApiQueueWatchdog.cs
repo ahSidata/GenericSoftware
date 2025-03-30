@@ -1,5 +1,4 @@
-﻿using EnergyAutomate.Definitions;
-using Growatt.OSS;
+﻿using Growatt.OSS;
 using Growatt.Sdk;
 using Newtonsoft.Json;
 using System.Collections.ObjectModel;
@@ -43,7 +42,7 @@ namespace EnergyAutomate.Watchdogs
 
         private IServiceProvider ServiceProvider { get; init; }
 
-        private int TotalDelay => ServiceProvider.GetRequiredService<ApiServiceInfo>().SettingLockSeconds + penaltyFrequentlyAccess;
+        private int TotalDelay => ServiceProvider.GetRequiredService<ApiService>().SettingLockSeconds + penaltyFrequentlyAccess;
 
         #endregion Properties
 

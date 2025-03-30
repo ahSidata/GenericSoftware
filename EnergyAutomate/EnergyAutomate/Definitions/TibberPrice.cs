@@ -2,7 +2,7 @@
 
 namespace EnergyAutomate
 {
-    public class ApiPrice
+    public class TibberPrice
     {
         #region Properties
 

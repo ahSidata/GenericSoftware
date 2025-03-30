@@ -239,7 +239,7 @@ namespace EnergyAutomate.Migrations
 
                     b.HasKey("DeviceSn");
 
-                    b.ToTable("DeviceNoahInfo");
+                    b.ToTable("DeviceNoahInfo", (string)null);
                 });
 
             modelBuilder.Entity("DeviceNoahLastData", b =>
@@ -462,7 +462,7 @@ namespace EnergyAutomate.Migrations
 
                     b.HasKey("deviceSn", "time");
 
-                    b.ToTable("DeviceNoahLastData");
+                    b.ToTable("DeviceNoahLastData", (string)null);
                 });
 
             modelBuilder.Entity("EnergyAutomate.ApiPrice", b =>
@@ -481,7 +481,7 @@ namespace EnergyAutomate.Migrations
 
                     b.HasKey("StartsAt");
 
-                    b.ToTable("Prices");
+                    b.ToTable("Prices", (string)null);
                 });
 
             modelBuilder.Entity("EnergyAutomate.Data.ApplicationUser", b =>
@@ -661,7 +661,7 @@ namespace EnergyAutomate.Migrations
 
                     b.HasKey("Timestamp");
 
-                    b.ToTable("RealTimeMeasurements");
+                    b.ToTable("RealTimeMeasurements", (string)null);
                 });
 
             modelBuilder.Entity("Growatt.OSS.Device", b =>
@@ -689,7 +689,7 @@ namespace EnergyAutomate.Migrations
 
                     b.HasKey("DeviceSn");
 
-                    b.ToTable("Devices");
+                    b.ToTable("Devices", (string)null);
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>

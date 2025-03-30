@@ -8,7 +8,7 @@ namespace Growatt.OSS
 
         public int Count { get; set; }
         [JsonProperty("data")]
-        public List<Device>? Devices { get; set; }
+        public List<DeviceList>? Devices { get; set; }
         public int Pages { get; set; }
         public int PageSize { get; set; }
 

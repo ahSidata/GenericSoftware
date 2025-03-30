@@ -1,5 +1,5 @@
-﻿using System.Diagnostics;
-using System.Net.Http.Headers;
+﻿using EnergyAutomate.Services;
+using System.Diagnostics;
 using Tibber.Sdk;
 
 namespace EnergyAutomate.Watchdogs

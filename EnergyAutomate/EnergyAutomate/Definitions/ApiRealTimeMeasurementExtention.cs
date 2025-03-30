@@ -1,5 +1,4 @@
 ﻿using System.ComponentModel.DataAnnotations.Schema;
-using System.Text.Json.Serialization;
 using Tibber.Sdk;
 
 namespace EnergyAutomate.Definitions

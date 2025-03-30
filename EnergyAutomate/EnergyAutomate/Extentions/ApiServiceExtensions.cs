@@ -1,5 +1,4 @@
 ﻿using EnergyAutomate.Definitions;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Tibber.Sdk;
 
 namespace EnergyAutomate

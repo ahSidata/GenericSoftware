@@ -1,6 +1,6 @@
 ﻿namespace Growatt.OSS
 {
-    public class Device
+    public class DeviceList
     {
         #region Properties
 

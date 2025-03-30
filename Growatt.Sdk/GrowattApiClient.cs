@@ -61,7 +61,7 @@ namespace Growatt.OSS
                 response.EnsureSuccessStatusCode();
 
                 var responseString = await response.Content.ReadAsStringAsync();
-                var result = JsonConvert.DeserializeObject<DeviceInfoResponse>(responseString);
+                var result = JsonConvert.DeserializeObject<DeviceNoahInfoResponse>(responseString);
 
                 if (result != null && result.Code == 0)
                 {
@@ -102,7 +102,7 @@ namespace Growatt.OSS
             });
         }
 
-        public async Task<List<Device>?> GetDeviceListAsync(int page = 1)
+        public async Task<List<DeviceList>?> GetDeviceListAsync(int page = 1)
         {
             return await ExecuteWithExceptionHandlingAsync(async () =>
             {

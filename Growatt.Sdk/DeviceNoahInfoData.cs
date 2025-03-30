@@ -1,4 +1,4 @@
-public class DeviceInfoData
+public class DeviceNoahInfoData
 {
     #region Properties
 

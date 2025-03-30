@@ -32,12 +32,12 @@ namespace EnergyAutomate.Services
         public async Task StartAsync(CancellationToken cancellationToken)
         {
             await ApiRealTimeMeasurementWatchdog.StartAsync(CancellationTokenSource.CreateLinkedTokenSource(cancellationToken).Token);
-            await ApiService.StartAsync(CancellationTokenSource.CreateLinkedTokenSource(cancellationToken).Token);
+            await ApiService.ApiStartAsync(CancellationTokenSource.CreateLinkedTokenSource(cancellationToken).Token);
         }
 
         public async Task StopAsync(CancellationToken cancellationToken)
         {
-            await ApiService.StopAsync(CancellationTokenSource.CreateLinkedTokenSource(cancellationToken).Token);
+            await ApiService.ApiStopAsync(CancellationTokenSource.CreateLinkedTokenSource(cancellationToken).Token);
             await ApiRealTimeMeasurementWatchdog.StopAsync(CancellationTokenSource.CreateLinkedTokenSource(cancellationToken).Token);
         }
 

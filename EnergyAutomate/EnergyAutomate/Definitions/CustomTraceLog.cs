@@ -1,6 +1,4 @@
-﻿using System.Diagnostics;
-
-namespace EnergyAutomate.Definitions
+﻿namespace EnergyAutomate.Definitions
 {
     public class CustomTraceLog
     {

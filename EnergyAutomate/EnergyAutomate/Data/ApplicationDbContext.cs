@@ -26,8 +26,8 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
 
     public DbSet<DeviceNoahInfo> DeviceNoahInfo { get; set; }
     public DbSet<DeviceNoahLastData> DeviceNoahLastData { get; set; }
-    public DbSet<Device> Devices { get; set; }
-    public DbSet<ApiPrice> Prices { get; set; }
+    public DbSet<DeviceList> Devices { get; set; }
+    public DbSet<TibberPrice> Prices { get; set; }
     public DbSet<RealTimeMeasurementExtention> RealTimeMeasurements { get; set; }
 
     #endregion Properties
@@ -38,7 +38,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     {
         base.OnModelCreating(modelBuilder);
 
-        modelBuilder.Entity<Device>().HasKey(x => x.DeviceSn);
+        modelBuilder.Entity<DeviceList>().HasKey(x => x.DeviceSn);
         modelBuilder.Entity<DeviceNoahInfo>().HasKey(x => x.DeviceSn);
         modelBuilder.Entity<DeviceNoahInfo>().Ignore(x => x.TimeSegments);
         modelBuilder.Entity<DeviceNoahLastData>().HasKey(x => new { x.deviceSn, x.time });
@@ -46,7 +46,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
         modelBuilder.Entity<RealTimeMeasurementExtention>()
             .HasKey(x => new { x.Timestamp });
 
-        modelBuilder.Entity<ApiPrice>().HasKey(x => new { x.StartsAt });
+        modelBuilder.Entity<TibberPrice>().HasKey(x => new { x.StartsAt });
 
         // Set all string properties to be nullable
         foreach (var entityType in modelBuilder.Model.GetEntityTypes())

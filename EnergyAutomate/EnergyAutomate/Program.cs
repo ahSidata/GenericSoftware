@@ -1,9 +1,8 @@
-using EnergyAutomate.Components;
-using EnergyAutomate.Components.Account;
-using EnergyAutomate.Data;
-using EnergyAutomate.Definitions;
-using EnergyAutomate.Services;
-using EnergyAutomate.Watchdogs;
+global using EnergyAutomate.Components;
+global using EnergyAutomate.Components.Account;
+global using EnergyAutomate.Data;
+global using EnergyAutomate.Services;
+global using EnergyAutomate.Watchdogs;
 using Growatt.OSS;
 using Growatt.Sdk;
 using Microsoft.AspNetCore.Components.Authorization;
@@ -77,7 +76,7 @@ public class Program
 
         builder.Services.AddTransient(sp => new GrowattApiClient("https://openapi.growatt.com", builder.Configuration["ApiSettings:GrowattApiToken"] ?? string.Empty));
         builder.Services.AddTransient(sp => new TibberApiClient(builder.Configuration["ApiSettings:TibberApiToken"] ?? string.Empty, new ProductInfoHeaderValue("EnergyAutomate", "1.0")));
-        builder.Services.AddSingleton<ApiServiceInfo>();
+        builder.Services.AddSingleton<ApiService>();
         builder.Services.AddSingleton<ApiService>();
         builder.Services.AddSingleton<ApiRealTimeMeasurementWatchdog>();
         builder.Services.AddSingleton<ApiQueueWatchdog<IDeviceQuery>>();

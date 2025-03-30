@@ -30,11 +30,8 @@ namespace EnergyAutomate.Components.Pages
 
         public void Dispose()
         {
-            ApiServiceInfo.RealTimeMeasurement.CollectionChanged -= RealTimeMeasurement_CollectionChanged;
-            ApiServiceInfo.Prices.CollectionChanged -= Price_CollectionChanged;
-            ApiServiceInfo.Devices.CollectionChanged -= ApiServiceInfo_StateHasChanged;
-            ApiServiceInfo.DeviceNoahLastData.CollectionChanged -= ApiServiceInfo_StateHasChanged;
-            ApiServiceInfo.StateHasChanged -= ApiServiceInfo_StateHasChanged;
+            ApiService.GrowattRealTimeMeasurementChanged -= RealTimeMeasurement_CollectionChanged;
+            ApiService.StateHasChanged -= ApiService_StateHasChanged;
         }
 
         #endregion Public Methods
@@ -54,11 +51,8 @@ namespace EnergyAutomate.Components.Pages
 
         protected override void OnInitialized()
         {
-            ApiServiceInfo.RealTimeMeasurement.CollectionChanged += RealTimeMeasurement_CollectionChanged;
-            ApiServiceInfo.Prices.CollectionChanged += Price_CollectionChanged;
-            ApiServiceInfo.Devices.CollectionChanged += ApiServiceInfo_StateHasChanged;
-            ApiServiceInfo.DeviceNoahLastData.CollectionChanged += ApiServiceInfo_StateHasChanged;
-            ApiServiceInfo.StateHasChanged += ApiServiceInfo_StateHasChanged;
+            ApiService.GrowattRealTimeMeasurementChanged += RealTimeMeasurement_CollectionChanged;
+            ApiService.StateHasChanged += ApiService_StateHasChanged;
         }
 
         #endregion Protected Methods
@@ -75,7 +69,7 @@ namespace EnergyAutomate.Components.Pages
             return tickMarks;
         }
 
-        private async void ApiServiceInfo_StateHasChanged(object? sender, EventArgs e)
+        private async void ApiService_StateHasChanged(object? sender, EventArgs e)
         {
             await InvokeAsync(StateHasChanged);
         }
@@ -98,7 +92,7 @@ namespace EnergyAutomate.Components.Pages
 
         private void GetDeviceData()
         {
-            var dataSource = ApiServiceInfo.RealTimeMeasurement.OrderByDescending(x => x.Timestamp).Take(61).Reverse().ToList();
+            var dataSource = ApiService.TibberListRealTimeMeasurement().OrderByDescending(x => x.Timestamp).Take(61).Reverse().ToList();
 
             deviceData = new ChartData
             {
@@ -123,8 +117,8 @@ namespace EnergyAutomate.Components.Pages
         {
             var todayOnly = DateTime.Now.Hour < 13;
             var hours = Enumerable.Range(0, todayOnly ? 24 : 48).Select(i => i % 24).ToArray();
-            List<double?> dataToday = ApiServiceInfo.GetPriceTodayDatas();
-            List<double?> dataTomorrow = ApiServiceInfo.GetPriceTomorrowDatas();
+            List<double?> dataToday = ApiService.TibberGetPriceTodayDatas();
+            List<double?> dataTomorrow = ApiService.TibberGetPriceTomorrowDatas();
             double? avgToday = dataToday.Any() ? dataToday.Average() : 0;
             double? avgTomorrow = dataTomorrow.Any() ? dataTomorrow.Average() : 0;
 
@@ -135,12 +129,12 @@ namespace EnergyAutomate.Components.Pages
             var dataAvgPoints = dataToday.Select(point => point > avgToday ? avgToday : point).Concat(dataTomorrow.Select(point => point > avgTomorrow ? avgTomorrow : point)).ToList();
             var dataAvgLinePoints = Enumerable.Repeat(avgToday, dataToday.Count).Concat(Enumerable.Repeat(avgTomorrow, dataTomorrow.Count)).ToList();
 
-            var avghighPrices = ApiServiceInfo.Prices
+            var avghighPrices = ApiService.TibberListPrices()
                 .Where(w => w.AutoModeRestriction == true && w.Total.HasValue)
                 .GroupBy(g => g.StartsAt.Date)
                 .ToDictionary(g => g.Key, g => (double?)g.Average(a => a.Total));
 
-            var avgHighPricePoints = ApiServiceInfo.Prices
+            var avgHighPricePoints = ApiService.TibberListPrices()
                 .OrderBy(x => x.StartsAt)
                 .Select(x => x.AutoModeRestriction == true ? avghighPrices[x.StartsAt.Date] : null)
                 .ToList();
@@ -216,7 +210,7 @@ namespace EnergyAutomate.Components.Pages
 
         private void GetRealTimeMeasurementData()
         {
-            var dataSource = ApiServiceInfo.RealTimeMeasurement.OrderByDescending(x => x.Timestamp).Take(61).Reverse().ToList();
+            var dataSource = ApiService.TibberListRealTimeMeasurement().OrderByDescending(x => x.Timestamp).Take(61).Reverse().ToList();
 
             var AvgPowerList = dataSource.Select(x => x.TotalPower).ToList();
 
@@ -318,7 +312,7 @@ namespace EnergyAutomate.Components.Pages
             }
         }
 
-        private async void RealTimeMeasurement_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+        private async void RealTimeMeasurement_CollectionChanged(object? sender, EventArgs eventArgs)
         {
             try
             {
@@ -396,26 +390,6 @@ namespace EnergyAutomate.Components.Pages
         #region Growatt
 
         private Tabs tabsGrowattRef = default!;
-
-        private async Task ClearDeviceNoahTimeSegments()
-        {
-            await ApiServiceInfo.InvokeClearDeviceNoahTimeSegments();
-        }
-
-        private async Task RefreshDeviceList()
-        {
-            await ApiServiceInfo.InvokeRefreshDeviceList();
-        }
-
-        private async Task RefreshNoahLastData()
-        {
-            await ApiServiceInfo.InvokeRefreshNoahsLastData();
-        }
-
-        private async Task RefreshNoahs()
-        {
-            await ApiServiceInfo.InvokeRefreshNoahs();
-        }
 
         #endregion Growatt
     }
