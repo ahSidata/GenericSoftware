@@ -30,6 +30,10 @@ namespace Growatt.OSS
             {
                 return await func();
             }
+            catch (ApiException apiException)
+            {
+                throw apiException;
+            }
             catch (Exception ex)
             {
                 throw new ApiException("API error: Other", -10, ex);

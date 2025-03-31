@@ -124,14 +124,17 @@ namespace EnergyAutomate.Watchdogs
                 }
                 catch (ApiException ex)
                 {
+                    Logger.LogError("ApiQueueWatchdog<{Type}> ErrorCode: {ErrorCode}", typeof(T).Name, ex.ErrorCode);
+                    if (item != null)
+                    {
+                        Logger.LogError("ItemType: {itemType}", item.GetType().Name);
+                        Logger.LogError(JsonConvert.SerializeObject(item).ToString());
+                    }
+
                     if (item != null && !item.Force)
                         item = null;
 
                     penaltyFrequentlyAccess += 100;
-
-                    Logger.LogError("ApiQueueWatchdog<{Type}>", typeof(T).Name);
-                    Logger.LogError(JsonConvert.SerializeObject(item));
-                    Logger.LogError(ex, ex.Message);
 
                     await Task.Delay(TotalDelay);
                 }

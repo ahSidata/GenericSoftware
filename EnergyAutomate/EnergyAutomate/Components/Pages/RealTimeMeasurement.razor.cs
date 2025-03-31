@@ -16,6 +16,7 @@ namespace EnergyAutomate.Components.Pages
         private readonly IEnumerable<TickMark> ApiOffsetAvgTickList = GenerateTickTickMarks(-25, 150, 5);
         private readonly IEnumerable<TickMark> ApiToleranceAvgTickList = GenerateTickTickMarks(0, 300, 10);
         private readonly IEnumerable<TickMark> AvgPowerLoadSecondsTickList = GenerateTickTickMarks(5, 180, 5);
+        private readonly IEnumerable<TickMark> ApiDataReadsDelaySecTickList = GenerateTickTickMarks(0, 90, 10);
         private Tabs tabsMainRef = default!;
 
         #endregion Fields
@@ -426,6 +427,30 @@ namespace EnergyAutomate.Components.Pages
                 await ApiService.GrowattSetProgramActive(growattProgram);
                 GrowattSelectedPrograms = null;
                 await gridPrograms.RefreshDataAsync();
+            }
+        }
+
+        private int ApiSettingDataReadsDelaySec_DeviceNoahLastDataQuery
+        {
+            get
+            {
+                return ApiService.ApiSettingDataReadsDelaySec["DeviceNoahLastDataQuery"];
+            }
+            set
+            {
+                ApiService.ApiSettingDataReadsDelaySec["DeviceNoahLastDataQuery"] = value;
+            }
+        }        
+        
+        private int ApiSettingDataReadsDelaySec_DeviceNoahInfoQuery
+        {
+            get
+            {
+                return ApiService.ApiSettingDataReadsDelaySec["DeviceNoahInfoQuery"];
+            }
+            set
+            {
+                ApiService.ApiSettingDataReadsDelaySec["DeviceNoahInfoQuery"] = value;
             }
         }
 

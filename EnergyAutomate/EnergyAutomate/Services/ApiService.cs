@@ -42,12 +42,12 @@ namespace EnergyAutomate.Services
         public bool ApiSettingAutoMode { get; set; }
         public bool ApiSettingAutoModeRestriction { get; set; } = false;
         public List<APiTraceValue> ApiSettingAvgPowerAdjustmentTraceValues { get; set; } = [];
-        public int ApiSettingAvgPowerHysteresis { get; set; } = 50;
+        public int ApiSettingAvgPowerHysteresis { get; set; } = 100;
         public int ApiSettingAvgPowerLoadSeconds { get; set; } = 180;
         public int ApiSettingAvgPowerOffset { get; set; } = 75;
         public Dictionary<string, int> ApiSettingDataReadsDelaySec { get; set; } = new Dictionary<string, int>() {
             { nameof(DeviceNoahInfoQuery), 60 } ,
-            { nameof(DeviceNoahLastDataQuery), 10 } ,
+            { nameof(DeviceNoahLastDataQuery), 60 } ,
             { nameof(DeviceNoahSetPowerQuery), 60 } ,
             { nameof(DeviceNoahTimeSegmentQuery), 60 } ,
             { nameof(DeviceListQuery), 60 }
@@ -169,7 +169,7 @@ namespace EnergyAutomate.Services
             return Task.CompletedTask;
         }
 
-        public void GrowattGetDeviceNoahLastData()
+        public Task GrowattGetDeviceNoahLastData()
         {
             var devices = GrowattDevices.Where(x => x.DeviceType == "noah").ToList();
 
@@ -183,6 +183,8 @@ namespace EnergyAutomate.Services
                     DeviceSn = deviceSnList,
                 });
             }
+
+            return Task.CompletedTask;
         }
 
         public int? GrowattGetLastCommitedPowerValue() => GrowattGetLastCommitedPowerValueItem()?.CommitedPowerValue;
@@ -568,28 +570,12 @@ namespace EnergyAutomate.Services
 
         private async Task ApiEnableAutoMode(RealTimeMeasurementExtention value)
         {
-            GrowattGetDeviceNoahLastData();
             await GrowattSetNoDeviceNoahTimeSegments();
         }
 
         private ApplicationDbContext ApiGetDbContext()
         {
             return ServiceProvider.CreateScope().ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        }
-
-        private void ApiProceedRules()
-        {
-            //Refresh Last data ever minute
-            if (GrowattDataReadsDoRefresh(nameof(DeviceNoahInfoQuery)))
-            {
-                GrowattGetDeviceNoahInfo();
-            }
-
-            //Refresh Last data ever minute
-            if (GrowattDataReadsDoRefresh(nameof(DeviceNoahLastDataQuery)))
-            {
-                GrowattGetDeviceNoahLastData();
-            }
         }
 
         private void CalcAvgOfLastSeconds(RealTimeMeasurementExtention value)
@@ -1035,6 +1021,7 @@ namespace EnergyAutomate.Services
                     else
                     {
                         Trace.WriteLine($"Not in grace periode: Nothing to do", "ApiService");
+                        await GrowattSetBattPriorityDeviceNoahTimeSegmentsAsync();
                     }
                 }
                 else
@@ -1044,8 +1031,6 @@ namespace EnergyAutomate.Services
                         AdjustPower(value);
                     }
                 }
-
-                ApiProceedRules();
             }
             else
             {
@@ -1055,6 +1040,9 @@ namespace EnergyAutomate.Services
                     await ApiDisableAutoMode(value);
                 }
             }
+
+            await GrowattGetDeviceNoahInfo();
+            await GrowattGetDeviceNoahLastData();
         }
 
         private async Task TibberSavePrices(IList<TibberPrice> prices)
