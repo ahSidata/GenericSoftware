@@ -178,6 +178,9 @@
                                         <CardTitle>
                                             Last Indicator Values
                                             <Button Color="ButtonColor.Primary" @onclick="ApiService.GrowattInvokeRefreshNoahsLastData">Refresh</Button>
+                                            <p>
+                                                AutoModeRestriction: @ApiService.ApiSettingAutoModeRestrictionCurrentState
+                                            </p>            
                                         </CardTitle>
                                         <ul class="list-group list-group-flush">
                                             <li class="list-group-item">
@@ -262,13 +265,16 @@
                                 </CardHeader>
                                 <CardBody>
                                     <div>
+                                        ApiTimeOffset <RangeInput TValue="int" @bind-Value="ApiService.ApiSettingTimeOffset" Min="-12" Max="12" TickMarks="ApiSettingTimeOffsetTickList" Step="1" />
+                                    </div>
+                                    <div>
                                         ApiLockSeconds <RangeInput TValue="int" @bind-Value="ApiService.ApiSettingLockSeconds" Min="100" Max="1000" TickMarks="ApiLockSecondsTickList" Step="50" />
                                     </div>
                                     <div>
-                                        DataReadsDelaySec DeviceNoahInfoQuery <RangeInput TValue="int" @bind-Value="ApiSettingDataReadsDelaySec_DeviceNoahInfoQuery" Min="0" Max="90" TickMarks="ApiDataReadsDelaySecTickList" Step="10" />
+                                        DataReadsDelaySec DeviceNoah InfoQuery <RangeInput TValue="int" @bind-Value="ApiSettingDataReadsDelaySec_DeviceNoahInfoQuery" Min="0" Max="90" TickMarks="ApiDataReadsDelaySecTickList" Step="10" />
                                     </div>
                                     <div>
-                                        DataReadsDelaySec DeviceNoahLastDataQuery <RangeInput TValue="int" @bind-Value="ApiSettingDataReadsDelaySec_DeviceNoahLastDataQuery" Min="0" Max="90" TickMarks="ApiDataReadsDelaySecTickList" Step="10" />
+                                        DataReadsDelaySec DeviceNoah LastDataQuery <RangeInput TValue="int" @bind-Value="ApiSettingDataReadsDelaySec_DeviceNoahLastDataQuery" Min="0" Max="90" TickMarks="ApiDataReadsDelaySecTickList" Step="10" />
                                     </div>
                                 </CardBody>
                             </Card>

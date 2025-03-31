@@ -62,6 +62,8 @@ namespace EnergyAutomate.Definitions
 
         public int SettingToleranceAvg { get; set; }
 
+        public bool SettingAutoModeRestriction { get; set; }
+
         [NotMapped]
         public int TotalPower => Power > 0 ? (int)Power : -(int)(PowerProduction ?? 0);
 

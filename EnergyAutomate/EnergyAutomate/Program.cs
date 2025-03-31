@@ -38,9 +38,13 @@ public class Program
         if (TraceEnabled)
         {
             // Erstellen und registrieren des benutzerdefinierten Trace-Listeners
-            var customTraceListener = new CustomTraceListener();
-            builder.Services.AddSingleton(customTraceListener);
-            Trace.Listeners.Add(customTraceListener);
+            
+            builder.Services.AddSingleton(sp => {
+                var customTraceListener = new CustomTraceListener(sp);
+                Trace.Listeners.Add(customTraceListener);
+                return customTraceListener; 
+            });
+            
         }
 
         // Add services to the container.

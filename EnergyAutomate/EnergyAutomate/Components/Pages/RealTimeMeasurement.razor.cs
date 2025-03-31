@@ -4,6 +4,7 @@ using EnergyAutomate.Definitions;
 using Microsoft.AspNetCore.Components;
 using System.Collections.Specialized;
 using System.Diagnostics;
+using System.Linq;
 
 namespace EnergyAutomate.Components.Pages
 {
@@ -11,6 +12,7 @@ namespace EnergyAutomate.Components.Pages
     {
         #region Fields
 
+        private readonly IEnumerable<TickMark> ApiSettingTimeOffsetTickList = GenerateTickTickMarks(-12, 12, 1);
         private readonly IEnumerable<TickMark> ApiLockSecondsTickList = GenerateTickTickMarks(100, 1000, 50);
         private readonly IEnumerable<TickMark> ApiMaxPowerTickList = GenerateTickTickMarks(700, 900, 10);
         private readonly IEnumerable<TickMark> ApiOffsetAvgTickList = GenerateTickTickMarks(-25, 150, 5);
@@ -76,8 +78,6 @@ namespace EnergyAutomate.Components.Pages
             await InvokeAsync(StateHasChanged);
         }
 
-
-
         #endregion Private Methods
 
         #region Tibber
@@ -119,29 +119,25 @@ namespace EnergyAutomate.Components.Pages
 
         private void GetPriceData()
         {
-            var todayOnly = DateTime.Now.Hour < 13;
+            var todayOnly = ApiService.ApiSettingCurrentHour.Hour < 13;
             var hours = Enumerable.Range(0, todayOnly ? 24 : 48).Select(i => i % 24).ToArray();
-            List<double?> dataToday = ApiService.TibberGetPriceTodayDatas();
-            List<double?> dataTomorrow = ApiService.TibberGetPriceTomorrowDatas();
+            var dataTodayItems = ApiService.TibberGetPriceTodayDatas();
+            var dataTomorrowItems = ApiService.TibberGetPriceTomorrowDatas();
+            List<double?> dataToday = dataTodayItems.Select(x => (double?)x.Total).ToList();
+            List<double?> dataTomorrow = dataTomorrowItems.Select(x => (double?)x.Total).ToList();
             double? avgToday = dataToday.Any() ? dataToday.Average() : 0;
             double? avgTomorrow = dataTomorrow.Any() ? dataTomorrow.Average() : 0;
 
             var dataPoints = todayOnly ? dataToday : dataToday.Concat(dataTomorrow).ToList();
-            var currentHour = DateTime.Now.Hour + 1;
+            var currentHour = ApiService.ApiSettingCurrentHour.Hour;
 
             var dataCurrentHour = dataPoints.Select((point, index) => index < 23 && (hours[index] == currentHour || hours[index + 1] == currentHour) ? point : null).ToList();
             var dataAvgPoints = dataToday.Select(point => point > avgToday ? avgToday : point).Concat(dataTomorrow.Select(point => point > avgTomorrow ? avgTomorrow : point)).ToList();
             var dataAvgLinePoints = Enumerable.Repeat(avgToday, dataToday.Count).Concat(Enumerable.Repeat(avgTomorrow, dataTomorrow.Count)).ToList();
 
-            var avghighPrices = ApiService.TibberListPrices()
-                .Where(w => w.AutoModeRestriction == true && w.Total.HasValue)
-                .GroupBy(g => g.StartsAt.Date)
-                .ToDictionary(g => g.Key, g => (double?)g.Average(a => a.Total));
-
-            var avgHighPricePoints = ApiService.TibberListPrices()
-                .OrderBy(x => x.StartsAt)
-                .Select(x => x.AutoModeRestriction == true ? avghighPrices[x.StartsAt.Date] : null)
-                .ToList();
+            var highPriceToday = dataTodayItems.Select(s => (int)(s.Level ?? 0) > 2 ? avgToday : null).ToList();
+            var highPriceTomorrow = dataTomorrowItems.Select(s => (int)(s.Level ?? 0) > 2 ? avgTomorrow : null).ToList();
+            var avghighPrices = highPriceToday.Concat(highPriceTomorrow).ToList();
 
             priceData = new ChartData
             {
@@ -176,7 +172,7 @@ namespace EnergyAutomate.Components.Pages
                     new LineChartDataset()
                     {
                         Label = "Avg high price",
-                        Data = avgHighPricePoints,
+                        Data = avghighPrices,
                         BackgroundColor = "rgb(0, 128, 255)",
                         BorderColor = "rgb(0, 128, 255)",
                         BorderWidth = 2,

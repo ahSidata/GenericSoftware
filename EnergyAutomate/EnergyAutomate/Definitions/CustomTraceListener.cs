@@ -7,6 +7,13 @@ public class CustomTraceListener : TraceListener
 
     public ThreadSafeObservableCollection<CustomTraceLog> LogMessages = new();
 
+    private readonly IServiceProvider _serviceProvider;
+
+    public CustomTraceListener(IServiceProvider serviceProvider)
+    {
+        _serviceProvider = serviceProvider;
+    }
+
     #endregion Fields
 
     #region Public Methods
@@ -30,7 +37,7 @@ public class CustomTraceListener : TraceListener
             LogMessages.Add(new CustomTraceLog()
             {
                 Message = message,
-                TS = DateTime.Now,
+                TS = _serviceProvider.GetRequiredService<ApiService>().ApiSettingCurrentHour,
                 Category = category
             });
         }
