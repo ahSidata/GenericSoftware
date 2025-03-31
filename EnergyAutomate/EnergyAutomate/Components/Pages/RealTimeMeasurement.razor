@@ -180,7 +180,10 @@
                                             <Button Color="ButtonColor.Primary" @onclick="ApiService.GrowattInvokeRefreshNoahsLastData">Refresh</Button>
                                             <p>
                                                 AutoModeRestriction: @ApiService.ApiSettingAutoModeRestrictionCurrentState
-                                            </p>            
+                                            </p>
+                                            <p>
+                                                CurrentHour: @ApiService.ApiSettingCurrentHour
+                                            </p>
                                         </CardTitle>
                                         <ul class="list-group list-group-flush">
                                             <li class="list-group-item">
@@ -290,7 +293,7 @@
                                         AvgPowerHysteresis <RangeInput TValue="int" @bind-Value="ApiService.ApiSettingAvgPowerHysteresis" Min="0" Max="300" TickMarks="ApiToleranceAvgTickList" Step="10" />
                                     </div>
                                     <div>
-                                        AvgPowerLoadSeconds <RangeInput TValue="int" @bind-Value="ApiService.ApiSettingAvgPowerLoadSeconds" Min="5" Max="180" TickMarks="AvgPowerLoadSecondsTickList" Step="5" />
+                                        AvgPowerLoadSeconds <RangeInput TValue="int" @bind-Value="ApiService.ApiSettingAvgPowerLoadSeconds" Min="0" Max="180" TickMarks="AvgPowerLoadSecondsTickList" Step="5" />
                                     </div>
                                 </CardBody>
                             </Card>

@@ -78,7 +78,7 @@ namespace EnergyAutomate.Watchdogs
                     {
                         Trace.WriteLine("StartRealTimeMeasurementListener calling ...", "Tibber");
 
-                        RealTimeMeasurementListener = await TibberApiClient.StartRealTimeMeasurementListener(TibberHomeId.Value, cancellationToken);
+                        RealTimeMeasurementListener = await TibberApiClient.StartRealTimeMeasurementListener(TibberHomeId.Value, null, cancellationToken);
                         _ = RealTimeMeasurementListener.Subscribe(ApiService);
                     }
                     catch (OperationCanceledException ex) when (ex.CancellationToken == cancellationToken)

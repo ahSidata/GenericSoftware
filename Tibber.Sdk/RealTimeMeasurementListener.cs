@@ -27,8 +27,9 @@ namespace Tibber.Sdk
             SubscriptionId = subscriptionId;
         }
 
-        /// <inheritdoc/>
-        /// <summary></summary>
+        /// <inheritdoc />
+        /// <summary>
+        /// </summary>
         /// <param name="observer"></param>
         /// <exception cref="T:System.ArgumentException"></exception>
         /// <returns></returns>
@@ -80,7 +81,7 @@ namespace Tibber.Sdk
             _streamRestartTimer = new Timer(CheckDataStreamAlive, null, -1, 0);
         }
 
-        public async Task<IObservable<RealTimeMeasurement>> SubscribeHome(Guid homeId, CancellationToken cancellationToken)
+        public async Task<IObservable<RealTimeMeasurement>> SubscribeHome(Guid homeId, CancellationToken cancellationToken, TibberApiSubscriptionQueryBuilder queryBuilder = null)
         {
             CheckObjectNotDisposed();
 
@@ -95,9 +96,7 @@ namespace Tibber.Sdk
                     throw new InvalidOperationException($"Home {homeId} is already subscribed. ");
 
                 subscriptionId = Interlocked.Increment(ref _streamId);
-                _homeObservables.Add(
-                    homeId,
-                    collection = new HomeStreamObserverCollection { Observable = new HomeRealTimeMeasurementObservable(this, homeId, subscriptionId) });
+                _homeObservables.Add(homeId, collection = new HomeStreamObserverCollection { Observable = new HomeRealTimeMeasurementObservable(this, homeId, subscriptionId) });
 
                 observable = collection.Observable;
             }
@@ -112,7 +111,7 @@ namespace Tibber.Sdk
                     _streamRestartTimer.Change(StreamReSubscriptionCheckPeriodMs, 5000);
                 }
 
-                await SubscribeStream(homeId, subscriptionId, cancellationToken);
+                await SubscribeStream(homeId, subscriptionId, cancellationToken, queryBuilder);
 
                 if (!observable.IsInitialized)
                     throw new InvalidOperationException($"real-time measurement subscription initialization failed{(observable.ErrorMessage is null ? null : $": {observable.ErrorMessage}")}");
@@ -177,14 +176,13 @@ namespace Tibber.Sdk
             await SubscribeStream(homeId, subscriptionId, cancellationToken);
         }
 
-        private async Task SubscribeStream(Guid homeId, int subscriptionId, CancellationToken cancellationToken)
+        private async Task SubscribeStream(Guid homeId, int subscriptionId, CancellationToken cancellationToken, TibberApiSubscriptionQueryBuilder queryBuilder = null)
         {
-            Trace.WriteLine($"subscribe to home id {homeId} with subscription id {subscriptionId}", "Tibber");
+            Trace.WriteLine($"subscribe to home id {homeId} with subscription id {subscriptionId}");
 
-            await ExecuteStreamRequest(
-                //$@"{{""payload"":{{""query"":""subscription{{testMeasurement(count:2, complete:false){{timestamp,power,powerReactive,powerProduction,powerProductionReactive,accumulatedConsumption,accumulatedConsumptionLastHour,accumulatedProduction,accumulatedProductionLastHour,accumulatedCost,accumulatedReward,currency,minPower,averagePower,maxPower,minPowerProduction,maxPowerProduction,voltagePhase1,voltagePhase2,voltagePhase3,currentL1,currentL2,currentL3,lastMeterConsumption,lastMeterProduction,powerFactor,signalStrength}}}}"",""variables"":{{}},""extensions"":{{}}}},""type"":""subscribe"",""id"":""{subscriptionId}""}}",
-                $@"{{""payload"":{{""query"":""subscription{{liveMeasurement(homeId:\""{homeId}\""){{timestamp,power,powerReactive,powerProduction,powerProductionReactive,accumulatedConsumption,accumulatedConsumptionLastHour,accumulatedProduction,accumulatedProductionLastHour,accumulatedCost,accumulatedReward,currency,minPower,averagePower,maxPower,minPowerProduction,maxPowerProduction,voltagePhase1,voltagePhase2,voltagePhase3,currentL1,currentL2,currentL3,lastMeterConsumption,lastMeterProduction,powerFactor,signalStrength}}}}"",""variables"":{{}},""extensions"":{{}}}},""type"":""subscribe"",""id"":""{subscriptionId}""}}",
-                cancellationToken);
+            queryBuilder ??= new TibberApiSubscriptionQueryBuilder().WithLiveMeasurement(new LiveMeasurementQueryBuilder().WithAllScalarFields(), homeId);
+            var query = queryBuilder.Build().Replace(@"""", @"\""");
+            await ExecuteStreamRequest($@"{{""payload"":{{""query"":""{query}"",""variables"":{{}},""extensions"":{{}}}},""type"":""subscribe"",""id"":""{subscriptionId}""}}", cancellationToken);
 
             if (cancellationToken == default)
                 await _semaphore.WaitAsync(30000);
@@ -194,13 +192,13 @@ namespace Tibber.Sdk
 
         private async Task UnsubscribeStream(int subscriptionId, CancellationToken cancellationToken)
         {
-            Trace.WriteLine($"unsubscribe subscription with id {subscriptionId}", "Tibber");
+            Trace.WriteLine($"unsubscribe subscription with id {subscriptionId}");
             await ExecuteStreamRequest($@"{{""type"":""complete"",""id"":""{subscriptionId}""}}", cancellationToken);
         }
 
         private Task ExecuteStreamRequest(string request, CancellationToken cancellationToken)
         {
-            Trace.WriteLine($"send message; client state {_wssClient.State} {_wssClient.CloseStatus} {_wssClient.CloseStatusDescription} {request}", "Tibber");
+            Trace.WriteLine($"send message; client state {_wssClient.State} {_wssClient.CloseStatus} {_wssClient.CloseStatusDescription} {request}");
             var requestBytes = new ArraySegment<byte>(Encoding.ASCII.GetBytes(request));
             return _wssClient.SendAsync(requestBytes, WebSocketMessageType.Text, true, cancellationToken);
         }
@@ -221,7 +219,7 @@ namespace Tibber.Sdk
 #endif
             await _wssClient.ConnectAsync(websocketSubscriptionUrl, cancellationToken);
 
-            Trace.WriteLine("web socket connected", "Tibber");
+            Trace.WriteLine("web socket connected");
 
             var connectionInitMessage = new WebSocketConnectionInitMessage { Payload = connectionInitPayload };
             var json = JsonConvert.SerializeObject(connectionInitMessage, TibberApiClient.JsonSerializerSettings);
@@ -229,7 +227,7 @@ namespace Tibber.Sdk
 
             await _wssClient.SendAsync(init, WebSocketMessageType.Text, true, cancellationToken);
 
-            Trace.WriteLine("web socket initialization message sent", "Tibber");
+            Trace.WriteLine("web socket initialization message sent");
 
             var result = await _wssClient.ReceiveAsync(_receiveBuffer, cancellationToken);
             if (result.CloseStatus.HasValue)
@@ -242,7 +240,7 @@ namespace Tibber.Sdk
 
             _isInitialized = true;
 
-            Trace.WriteLine("web socket initialization completed", "Tibber");
+            Trace.WriteLine("web socket initialization completed");
         }
 
         private async void StartListening()
@@ -260,7 +258,7 @@ namespace Tibber.Sdk
 
                     do
                     {
-                        Trace.WriteLine($"Receive tibber message; client state {_wssClient.State} {_wssClient.CloseStatus} {_wssClient.CloseStatusDescription}", "Tibber");
+                        Trace.WriteLine($"receive message; client state {_wssClient.State} {_wssClient.CloseStatus} {_wssClient.CloseStatusDescription}");
                         result = await _wssClient.ReceiveAsync(_receiveBuffer, _cancellationTokenSource.Token);
                         var json = Encoding.ASCII.GetString(_receiveBuffer.Array, 0, result.Count);
                         stringBuilder.Append(json);
@@ -268,7 +266,7 @@ namespace Tibber.Sdk
                 }
                 catch (OperationCanceledException)
                 {
-                    Trace.WriteLine("web socket operation canceled", "Tibber");
+                    Trace.WriteLine("web socket operation canceled");
                     return;
                 }
                 catch (Exception exception)
@@ -292,7 +290,7 @@ namespace Tibber.Sdk
 
                             if (!_cancellationTokenSource.IsCancellationRequested)
                             {
-                                Trace.WriteLine("connection re-established; re-initialize data streams", "Tibber");
+                                Trace.WriteLine("connection re-established; re-initialize data streams");
                                 ResubscribeStreams(c => true);
                                 continue;
                             }
@@ -307,11 +305,7 @@ namespace Tibber.Sdk
 
                 stringBuilder.Clear();
 
-                var measurementGroups =
-                    stringRecords
-                        .Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries)
-                        .Select(JsonConvert.DeserializeObject<WebSocketMessage>)
-                        .GroupBy(m => m.Id);
+                var measurementGroups = stringRecords.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries).Select(JsonConvert.DeserializeObject<WebSocketMessage>).GroupBy(m => m.Id);
 
                 foreach (var measurementGroup in measurementGroups)
                 {
@@ -360,7 +354,7 @@ namespace Tibber.Sdk
                                 break;
 
                             case "error":
-                                Trace.WriteLine($"web socket error message received: {String.Join("; ", message.Payload.Errors.Select(e => e.Message))}", "Tibber");
+                                Trace.WriteLine($"web socket error message received: {String.Join("; ", message.Payload.Errors.Select(e => e.Message))}");
                                 foreach (var error in message.Payload.Errors)
                                     homeStreamObserverCollection.Observable.Error(error.Message);
 
@@ -391,7 +385,7 @@ namespace Tibber.Sdk
                 if (_isDisposed)
                     return;
 
-                Trace.WriteLine("listener disposal started", "Tibber");
+                Trace.WriteLine("listener disposal started");
 
                 _isDisposed = true;
 
@@ -419,7 +413,7 @@ namespace Tibber.Sdk
             _wssClient.Dispose();
             _cancellationTokenSource.Dispose();
 
-            Trace.WriteLine("listener disposal finished", "Tibber");
+            Trace.WriteLine("listener disposal finished");
         }
 
         private void CheckObjectNotDisposed()
@@ -450,10 +444,10 @@ namespace Tibber.Sdk
                 try
                 {
                     var delay = GetDelay(failures);
-                    Trace.WriteLine($"retrying to connect in {delay.TotalSeconds} seconds", "Tibber");
+                    Trace.WriteLine($"retrying to connect in {delay.TotalSeconds} seconds");
                     await Task.Delay(delay, _cancellationTokenSource.Token);
 
-                    Trace.WriteLine("check there is a valid real time device", "Tibber");
+                    Trace.WriteLine("check there is a valid real time device");
                     var homes = await _tibberApiClient.ValidateRealtimeDevice();
                     _websocketSubscriptionUrl = new Uri(homes.Data.Viewer.WebsocketSubscriptionUrl);
 
@@ -472,28 +466,31 @@ namespace Tibber.Sdk
         {
             var now = DateTimeOffset.UtcNow;
 
-            ResubscribeStreams(
-                c =>
+            ResubscribeStreams(c =>
+            {
+                var sinceLastMessageMs = (now - c.LastMessageReceivedAt).TotalMilliseconds;
+                if (sinceLastMessageMs <= StreamReSubscriptionCheckPeriodMs)
+                    return false;
+
+                // Data not received during past minute; delay exponentially and then resubscribe
+                var sinceLastReconnectionMs = (now - c.LastReconnectionAttemptAt).TotalMilliseconds;
+                var delay = GetDelay(c.ReconnectionAttempts);
+                if (sinceLastReconnectionMs <= delay.TotalMilliseconds)
                 {
-                    var sinceLastMessageMs = (now - c.LastMessageReceivedAt).TotalMilliseconds;
-                    if (sinceLastMessageMs <= StreamReSubscriptionCheckPeriodMs)
-                        return false;
+                    Trace.WriteLine(
+                        $"{now:yyyy-MM-dd HH:mm:ss.fff zzz} home {c.Observable.HomeId} subscription {c.Observable.SubscriptionId}: no data received during last {sinceLastMessageMs:N0} ms; reconnection attempts {c.ReconnectionAttempts}; resubscription delay {delay.TotalSeconds}s not passed yet"
+                    );
+                    return false;
+                }
 
-                    // Data not received during past minute; delay exponentially and then resubscribe
-                    var sinceLastReconnectionMs = (now - c.LastReconnectionAttemptAt).TotalMilliseconds;
-                    var delay = GetDelay(c.ReconnectionAttempts);
-                    if (sinceLastReconnectionMs <= delay.TotalMilliseconds)
-                    {
-                        Trace.WriteLine($"{now:yyyy-MM-dd HH:mm:ss.fff zzz} home {c.Observable.HomeId} subscription {c.Observable.SubscriptionId}: no data received during last {sinceLastMessageMs:N0} ms; reconnection attempts {c.ReconnectionAttempts}; resubscription delay {delay.TotalSeconds}s not passed yet", "Tibber");
-                        return false;
-                    }
+                Trace.WriteLine(
+                    $"{now:yyyy-MM-dd HH:mm:ss.fff zzz} home {c.Observable.HomeId} subscription {c.Observable.SubscriptionId}: no data received during last {sinceLastMessageMs:N0} ms; reconnection attempts {c.ReconnectionAttempts}; re-initialize data stream"
+                );
+                c.ReconnectionAttempts++;
+                c.LastReconnectionAttemptAt = now;
 
-                    Trace.WriteLine($"{now:yyyy-MM-dd HH:mm:ss.fff zzz} home {c.Observable.HomeId} subscription {c.Observable.SubscriptionId}: no data received during last {sinceLastMessageMs:N0} ms; reconnection attempts {c.ReconnectionAttempts}; re-initialize data stream", "Tibber");
-                    c.ReconnectionAttempts++;
-                    c.LastReconnectionAttemptAt = now;
-
-                    return true;
-                });
+                return true;
+            });
         }
 
         private static TimeSpan GetDelay(int failures)
@@ -528,9 +525,7 @@ namespace Tibber.Sdk
             public WebSocketPayload Payload { get; set; }
         }
 
-        private class WebSocketPayload : GraphQlResponse<WebSocketData>
-        {
-        }
+        private class WebSocketPayload : GraphQlResponse<WebSocketData> { }
 
         private class WebSocketData
         {
@@ -539,7 +534,9 @@ namespace Tibber.Sdk
 
             [JsonProperty("testMeasurement")]
             public RealTimeMeasurement TestMeasurement
-            { set { RealTimeMeasurement = value; } }
+            {
+                set { RealTimeMeasurement = value; }
+            }
         }
 
         private class HomeStreamObserverCollection

@@ -17,7 +17,7 @@ namespace EnergyAutomate.Components.Pages
         private readonly IEnumerable<TickMark> ApiMaxPowerTickList = GenerateTickTickMarks(700, 900, 10);
         private readonly IEnumerable<TickMark> ApiOffsetAvgTickList = GenerateTickTickMarks(-25, 150, 5);
         private readonly IEnumerable<TickMark> ApiToleranceAvgTickList = GenerateTickTickMarks(0, 300, 10);
-        private readonly IEnumerable<TickMark> AvgPowerLoadSecondsTickList = GenerateTickTickMarks(5, 180, 5);
+        private readonly IEnumerable<TickMark> AvgPowerLoadSecondsTickList = GenerateTickTickMarks(0, 180, 5);
         private readonly IEnumerable<TickMark> ApiDataReadsDelaySecTickList = GenerateTickTickMarks(0, 90, 10);
         private Tabs tabsMainRef = default!;
 
@@ -131,7 +131,7 @@ namespace EnergyAutomate.Components.Pages
             var dataPoints = todayOnly ? dataToday : dataToday.Concat(dataTomorrow).ToList();
             var currentHour = ApiService.ApiSettingCurrentHour.Hour;
 
-            var dataCurrentHour = dataPoints.Select((point, index) => index < 23 && (hours[index] == currentHour || hours[index + 1] == currentHour) ? point : null).ToList();
+            var dataCurrentHour = dataTodayItems.Concat(dataTomorrowItems).Select((point, index) => index < 23 && point.StartsAt.Hour == currentHour || point.StartsAt.Hour == currentHour + 1 ? (double?)point.Total : null).ToList();
             var dataAvgPoints = dataToday.Select(point => point > avgToday ? avgToday : point).Concat(dataTomorrow.Select(point => point > avgTomorrow ? avgTomorrow : point)).ToList();
             var dataAvgLinePoints = Enumerable.Repeat(avgToday, dataToday.Count).Concat(Enumerable.Repeat(avgTomorrow, dataTomorrow.Count)).ToList();
 

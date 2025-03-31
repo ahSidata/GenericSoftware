@@ -47,7 +47,7 @@ namespace EnergyAutomate.Services
         public bool ApiSettingAutoModeRestrictionCurrentState { get; set; } = false;
         public List<APiTraceValue> ApiSettingAvgPowerAdjustmentTraceValues { get; set; } = [];
         public int ApiSettingAvgPowerHysteresis { get; set; } = 100;
-        public int ApiSettingAvgPowerLoadSeconds { get; set; } = 180;
+        public int ApiSettingAvgPowerLoadSeconds { get; set; } = 90;
         public int ApiSettingAvgPowerOffset { get; set; } = 75;
         public Dictionary<string, int> ApiSettingDataReadsDelaySec { get; set; } = new Dictionary<string, int>() {
             { nameof(DeviceNoahInfoQuery), 60 } ,
@@ -597,7 +597,13 @@ namespace EnergyAutomate.Services
 
             lock (TibberRealTimeMeasurement._syncRoot)
             {
-                var measurements = TibberRealTimeMeasurement.ToList();
+                var measurementsQuery = TibberRealTimeMeasurement;
+                
+                if(ApiSettingAvgPowerLoadSeconds > 0)
+                    measurementsQuery.Where(m => m.Timestamp >= now.AddSeconds(-ApiSettingAvgPowerLoadSeconds));
+
+                var measurements = measurementsQuery.ToList();
+
                 measurements.Add(value);
 
                 var powerConsumptionCompleteMeasurements = measurements.OrderByDescending(m => m.Timestamp).ToList().GetEnumerator();
