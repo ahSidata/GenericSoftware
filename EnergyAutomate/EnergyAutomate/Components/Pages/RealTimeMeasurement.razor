@@ -35,6 +35,8 @@
                                                 @device.DeviceType.ToUpper()
                                                 <small Class="mb-2 text-muted">(@device.DeviceSn)</small>
                                                 <small Class="mb-2 text-muted">@(device.IsOfflineSince.HasValue ? $"Offline since {device.IsOfflineSince}" : "Online")</small>
+                                                <br />
+                                                <small Class="mb-2 text-muted">@($"Last update {ApiService.GrowattGetNoahInfoPerDevice(device.DeviceSn)?.LastUpdateTimeText}")</small>
                                             </CardTitle>
                                             <ul class="list-group list-group-flush">
                                                 <li class="list-group-item d-flex align-items-center">
@@ -254,10 +256,10 @@
                             </CardBody>
                             <CardBody>
                                 <div>
-                                    AvgPowerOffset <RangeInput TValue="int" @bind-Value="ApiService.ApiSettingAvgPowerOffset" Min="-25" Max="75" TickMarks="ApiOffsetAvgTickList" Step="5" />
+                                    AvgPowerOffset <RangeInput TValue="int" @bind-Value="ApiService.ApiSettingAvgPowerOffset" Min="-25" Max="150" TickMarks="ApiOffsetAvgTickList" Step="5" />
                                 </div>
                                 <div>
-                                    AvgPowerHysteresis <RangeInput TValue="int" @bind-Value="ApiService.ApiSettingAvgPowerHysteresis" Min="0" Max="100" TickMarks="ApiToleranceAvgTickList" Step="5" />
+                                    AvgPowerHysteresis <RangeInput TValue="int" @bind-Value="ApiService.ApiSettingAvgPowerHysteresis" Min="0" Max="300" TickMarks="ApiToleranceAvgTickList" Step="10" />
                                 </div>
                                 <div>
                                     AvgPowerLoadSeconds <RangeInput TValue="int" @bind-Value="ApiService.ApiSettingAvgPowerLoadSeconds" Min="5" Max="180" TickMarks="AvgPowerLoadSecondsTickList" Step="5" />

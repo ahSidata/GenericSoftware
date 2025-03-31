@@ -1,7 +1,6 @@
 using EnergyAutomate.Definitions;
 using Growatt.OSS;
 using Growatt.Sdk;
-using Microsoft.CodeAnalysis;
 using Microsoft.EntityFrameworkCore;
 using System.Diagnostics;
 using Tibber.Sdk;
@@ -36,21 +35,23 @@ namespace EnergyAutomate.Services
 
         public event EventHandler? StateHasChanged;
 
-        public Dictionary<string, int> ApiSettingDataReadsDelaySec { get; set; } = new Dictionary<string, int>() {
-            { nameof(DeviceNoahInfoQuery), 60 } ,
-            { nameof(DeviceNoahLastDataQuery), 60 } ,
-            { nameof(DeviceNoahSetPowerQuery), 60 } ,
-            { nameof(DeviceNoahTimeSegmentQuery), 60 } ,
-            { nameof(DeviceListQuery), 60 }
-        };
+        #endregion Events
+
+        #region Properties
 
         public bool ApiSettingAutoMode { get; set; }
         public bool ApiSettingAutoModeRestriction { get; set; } = false;
         public List<APiTraceValue> ApiSettingAvgPowerAdjustmentTraceValues { get; set; } = [];
         public int ApiSettingAvgPowerHysteresis { get; set; } = 50;
-        public int ApiSettingAvgPowerLoadSeconds { get; set; } = 30;
-        public int ApiSettingAvgPowerOffset { get; set; } = 25;
-
+        public int ApiSettingAvgPowerLoadSeconds { get; set; } = 180;
+        public int ApiSettingAvgPowerOffset { get; set; } = 75;
+        public Dictionary<string, int> ApiSettingDataReadsDelaySec { get; set; } = new Dictionary<string, int>() {
+            { nameof(DeviceNoahInfoQuery), 60 } ,
+            { nameof(DeviceNoahLastDataQuery), 10 } ,
+            { nameof(DeviceNoahSetPowerQuery), 60 } ,
+            { nameof(DeviceNoahTimeSegmentQuery), 60 } ,
+            { nameof(DeviceListQuery), 60 }
+        };
         public bool ApiSettingLoadBalanced { get; set; } = false;
         public int ApiSettingLockSeconds { get; set; } = 600;
         public int ApiSettingMaxPower { get; set; } = 840;
@@ -132,11 +133,6 @@ namespace EnergyAutomate.Services
         {
         }
 
-        public async Task GrowattSetProgramActive(GrowattProgram growattProgram)
-        {
-            await Task.CompletedTask;
-        }
-
         public bool GrowattDataReadsDoRefresh(string queryType, int? delay = null)
         {
             return !GrowattDataReads.Where(x => x.MethodeName == queryType && x.TimeStamp > DateTime.Now.AddSeconds(-(delay ?? ApiSettingDataReadsDelaySec[queryType]))).Any();
@@ -147,12 +143,14 @@ namespace EnergyAutomate.Services
             return GrowattDeviceQueryQueueWatchdog.Count;
         }
 
-        public void GrowattGetDevice()
+        public Task GrowattGetDevice()
         {
             GrowattDeviceQueryQueueWatchdog.Enqueue(new DeviceListQuery());
+
+            return Task.CompletedTask;
         }
 
-        public void GrowattGetDeviceNoahInfo()
+        public Task GrowattGetDeviceNoahInfo(bool force = false)
         {
             var devices = GrowattDevices.Where(x => x.DeviceType == "noah").ToList();
 
@@ -160,12 +158,15 @@ namespace EnergyAutomate.Services
             {
                 var deviceSnList = string.Join(",", devices.Select(x => x.DeviceSn).ToList());
 
-                GrowattDeviceQueryQueueWatchdog.Enqueue(new DeviceNoahLastDataQuery()
+                GrowattDeviceQueryQueueWatchdog.Enqueue(new DeviceNoahInfoQuery()
                 {
+                    Force = false,
                     DeviceType = "noah",
                     DeviceSn = deviceSnList,
                 });
             }
+
+            return Task.CompletedTask;
         }
 
         public void GrowattGetDeviceNoahLastData()
@@ -234,7 +235,9 @@ namespace EnergyAutomate.Services
 
         public async Task GrowattInvokeClearDeviceNoahTimeSegments()
         {
-            await GrowattSetNoDeviceNoahTimeSegmentsAsync();
+            await GrowattGetDeviceNoahInfo(true);
+            await Task.Delay(5000);
+            await GrowattSetNoDeviceNoahTimeSegments();
         }
 
         public async Task GrowattInvokeLoadPriorityDeviceNoah()
@@ -282,6 +285,11 @@ namespace EnergyAutomate.Services
         {
             lock (GrowattDeviceNoahLastData._syncRoot)
                 return GrowattDeviceNoahLastData.ToList();
+        }
+
+        public async Task GrowattSetProgramActive(GrowattProgram growattProgram)
+        {
+            await Task.CompletedTask;
         }
 
         public async Task TibberGetDataFromWeb()
@@ -561,7 +569,7 @@ namespace EnergyAutomate.Services
         private async Task ApiEnableAutoMode(RealTimeMeasurementExtention value)
         {
             GrowattGetDeviceNoahLastData();
-            await GrowattSetNoDeviceNoahTimeSegmentsAsync();
+            await GrowattSetNoDeviceNoahTimeSegments();
         }
 
         private ApplicationDbContext ApiGetDbContext()
@@ -604,11 +612,9 @@ namespace EnergyAutomate.Services
             }
         }
 
-        private Task GrowattClearDeviceNoahTimeSegmentsAsync(Queue<IDeviceQuery> DeviceTimeSegmentQueue)
+        private Task GrowattClearDeviceNoahTimeSegments(Queue<IDeviceQuery> DeviceTimeSegmentQueue)
         {
             var deviceSnList = GrowattDevices.Where(x => x.DeviceType == "noah").Select(x => x.DeviceSn).ToList();
-
-            GrowattGetDeviceNoahInfo();
 
             foreach (var deviceSn in deviceSnList)
             {
@@ -675,7 +681,7 @@ namespace EnergyAutomate.Services
             switch (item)
             {
                 case DeviceNoahSetPowerQuery setPowerQuery:
-                    if (setPowerQuery != null && !string.IsNullOrWhiteSpace(setPowerQuery.DeviceType) && !string.IsNullOrWhiteSpace(setPowerQuery.DeviceSn))
+                    if (setPowerQuery.Force || (setPowerQuery != null && !string.IsNullOrWhiteSpace(setPowerQuery.DeviceType) && !string.IsNullOrWhiteSpace(setPowerQuery.DeviceSn)))
                     {
                         device = GrowattDevices.FirstOrDefault(x => x.DeviceSn == setPowerQuery.DeviceSn);
                         if (setPowerQuery.TS.HasValue)
@@ -738,7 +744,7 @@ namespace EnergyAutomate.Services
                     return default;
                 case DeviceNoahLastDataQuery lastDataQuery:
 
-                    if (lastDataQuery != null && !string.IsNullOrWhiteSpace(lastDataQuery.DeviceType) && !string.IsNullOrWhiteSpace(lastDataQuery.DeviceSn))
+                    if (lastDataQuery.Force || (lastDataQuery != null && !string.IsNullOrWhiteSpace(lastDataQuery.DeviceType) && !string.IsNullOrWhiteSpace(lastDataQuery.DeviceSn)))
                     {
                         try
                         {
@@ -765,7 +771,7 @@ namespace EnergyAutomate.Services
                     return default;
                 case DeviceNoahInfoQuery infoQuery:
 
-                    if (item != null && !string.IsNullOrWhiteSpace(item.DeviceType) && !string.IsNullOrWhiteSpace(item.DeviceSn))
+                    if (infoQuery.Force || ( item != null && !string.IsNullOrWhiteSpace(item.DeviceType) && !string.IsNullOrWhiteSpace(item.DeviceSn)))
                     {
                         try
                         {
@@ -836,8 +842,12 @@ namespace EnergyAutomate.Services
 
             foreach (var deviceList in deviceLists)
             {
-                lock(GrowattDevices._syncRoot)
+                lock (GrowattDevices._syncRoot)
+                {
+                    var apiServiceDeviceNoah = GrowattDevices.FirstOrDefault(x => x.DeviceSn == deviceList.DeviceSn);
+                    if (apiServiceDeviceNoah != null) GrowattDevices.Remove(apiServiceDeviceNoah);
                     GrowattDevices.Add(deviceList);
+                }
 
                 var existingDevice = await dbContext.Devices.FindAsync(deviceList.DeviceSn);
                 if (existingDevice != null)
@@ -858,25 +868,32 @@ namespace EnergyAutomate.Services
 
             foreach (var deviceNoahInfo in deviceNoahInfos)
             {
-                var deviceApiService = GrowattDevices.FirstOrDefault(x => x.DeviceType == "noah" && x.DeviceSn == deviceNoahInfo.DeviceSn);
-                var deviceDbContext = dbContext.Devices.FirstOrDefault(x => x.DeviceType == "noah" && x.DeviceSn == deviceNoahInfo.DeviceSn);
+                lock (GrowattDevices._syncRoot)
+                {
+                    var deviceApiService = GrowattDevices.FirstOrDefault(x => x.DeviceType == "noah" && x.DeviceSn == deviceNoahInfo.DeviceSn);
+                    if (deviceApiService != null)
+                    {
+                        deviceApiService.IsOfflineSince = deviceNoahInfo.Lost ? new DateTime(deviceNoahInfo.LastUpdateTime) : null;
+                    }
+                }
 
+                lock (GrowattDeviceNoahInfo._syncRoot)
+                {
+                    var apiServiceDeviceNoahInfo = GrowattDeviceNoahInfo.FirstOrDefault(x => x.DeviceSn == deviceNoahInfo.DeviceSn);
+                    if (apiServiceDeviceNoahInfo != null) GrowattDeviceNoahInfo.Remove(apiServiceDeviceNoahInfo);
+                    GrowattDeviceNoahInfo.Add(deviceNoahInfo);
+                }
+
+                var deviceDbContext = dbContext.Devices.FirstOrDefault(x => x.DeviceType == "noah" && x.DeviceSn == deviceNoahInfo.DeviceSn);
                 if (deviceDbContext != null)
                 {
                     deviceDbContext.IsOfflineSince = deviceNoahInfo.Lost ? new DateTime(deviceNoahInfo.LastUpdateTime) : null;
                 }
 
-                if (deviceApiService != null)
+                var dbContextDeviceNoahInfo = await dbContext.DeviceNoahInfo.FindAsync(deviceNoahInfo.DeviceSn);
+                if (dbContextDeviceNoahInfo != null)
                 {
-                    deviceApiService.IsOfflineSince = deviceNoahInfo.Lost ? new DateTime(deviceNoahInfo.LastUpdateTime) : null;
-                }
-
-                GrowattDeviceNoahInfo.Add(deviceNoahInfo);
-
-                var existingDeviceNoahInfo = await dbContext.DeviceNoahInfo.FindAsync(deviceNoahInfo.DeviceSn);
-                if (existingDeviceNoahInfo != null)
-                {
-                    dbContext.Entry(existingDeviceNoahInfo).CurrentValues.SetValues(deviceNoahInfo);
+                    dbContext.Entry(dbContextDeviceNoahInfo).CurrentValues.SetValues(deviceNoahInfo);
                 }
                 else
                 {
@@ -893,11 +910,19 @@ namespace EnergyAutomate.Services
 
             foreach (var item in deviceNoahLastDatas)
             {
-                var device = GrowattDevices.FirstOrDefault(x => x.DeviceSn == item.deviceSn);
-                if (device != null)
+                lock (GrowattDevices._syncRoot)
                 {
-                    device.PowerValueRequested = (int)item.pac;
-                    device.PowerValueCommited = (int)item.pac;
+                    var device = GrowattDevices.FirstOrDefault(x => x.DeviceSn == item.deviceSn);
+                    if (device != null)
+                    {
+                        device.PowerValueRequested = (int)item.pac;
+                        device.PowerValueCommited = (int)item.pac;
+                    }
+                }
+
+                lock (GrowattDeviceNoahLastData._syncRoot)
+                {
+                    GrowattDeviceNoahLastData.Add(item);
                 }
 
                 var deviceDbContext = await dbContext.Devices.FindAsync(item.deviceSn);
@@ -907,12 +932,10 @@ namespace EnergyAutomate.Services
                     deviceDbContext.PowerValueCommited = (int)item.pac;
                 }
 
-                GrowattDeviceNoahLastData.Add(item);
-
-                var existingDeviceNoahLastData = await dbContext.DeviceNoahLastData.FindAsync(item.deviceSn, item.time);
-                if (existingDeviceNoahLastData != null)
+                var dbContextDeviceNoahLastData = await dbContext.DeviceNoahLastData.FindAsync(item.deviceSn, item.time);
+                if (dbContextDeviceNoahLastData != null)
                 {
-                    dbContext.Entry(existingDeviceNoahLastData).CurrentValues.SetValues(item);
+                    dbContext.Entry(dbContextDeviceNoahLastData).CurrentValues.SetValues(item);
                 }
                 else
                 {
@@ -929,7 +952,7 @@ namespace EnergyAutomate.Services
         {
             Queue<IDeviceQuery> DeviceTimeSegmentQueue = new();
 
-            await GrowattClearDeviceNoahTimeSegmentsAsync(DeviceTimeSegmentQueue);
+            await GrowattClearDeviceNoahTimeSegments(DeviceTimeSegmentQueue);
 
             var deviceSnList = GrowattDevices.Where(x => x.DeviceType == "noah").Select(x => x.DeviceSn).ToList();
 
@@ -956,7 +979,7 @@ namespace EnergyAutomate.Services
         {
             Queue<IDeviceQuery> DeviceTimeSegmentQueue = new();
 
-            await GrowattClearDeviceNoahTimeSegmentsAsync(DeviceTimeSegmentQueue);
+            await GrowattClearDeviceNoahTimeSegments(DeviceTimeSegmentQueue);
 
             var deviceSnList = GrowattDevices.Where(x => x.DeviceType == "noah").Select(x => x.DeviceSn).ToList();
 
@@ -979,13 +1002,15 @@ namespace EnergyAutomate.Services
             GrowattDeviceQueryQueueWatchdog.Enqueue(DeviceTimeSegmentQueue);
         }
 
-        private async Task GrowattSetNoDeviceNoahTimeSegmentsAsync()
+        private Task GrowattSetNoDeviceNoahTimeSegments()
         {
             Queue<IDeviceQuery> DeviceTimeSegmentQueue = new();
 
-            await GrowattClearDeviceNoahTimeSegmentsAsync(DeviceTimeSegmentQueue);
+            GrowattClearDeviceNoahTimeSegments(DeviceTimeSegmentQueue);
 
             GrowattDeviceQueryQueueWatchdog.Enqueue(DeviceTimeSegmentQueue);
+
+            return Task.CompletedTask;
         }
 
         private async Task TibberDoRealTimeMeasurement(RealTimeMeasurementExtention value)

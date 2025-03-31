@@ -103,6 +103,7 @@ public class DeviceNoahInfo
     public int Time9Mode { get; set; }
     public int Time9Power { get; set; }
     public string Time9Start { get; set; }
+
     [JsonIgnore]
     public List<DeviceNoahTimeSegmentQuery> TimeSegments
     {
