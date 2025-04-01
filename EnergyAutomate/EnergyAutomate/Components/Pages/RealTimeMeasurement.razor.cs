@@ -277,7 +277,7 @@ namespace EnergyAutomate.Components.Pages
                     new LineChartDataset()
                     {
                         Label = "UpperLimit",
-                        Data = dataSource.Select(x => (double?)x.SettingOffSetAvg + (x.SettingToleranceAvg/2)).ToList(),
+                        Data = dataSource.Select(x => (double?)x.SettingOffSetAvg + (x.SettingAvgPowerHysteresis/2)).ToList(),
                         BackgroundColor= "rgb(255, 0, 0)",
                         BorderColor = "rgb(255, 0, 0)",
                         BorderWidth = 2,
@@ -288,7 +288,7 @@ namespace EnergyAutomate.Components.Pages
                     new LineChartDataset()
                     {
                         Label = "LowerLimit",
-                        Data = dataSource.Select(x => (double?)x.SettingOffSetAvg - (x.SettingToleranceAvg/2)).ToList(),
+                        Data = dataSource.Select(x => (double?)x.SettingOffSetAvg - (x.SettingAvgPowerHysteresis/2)).ToList(),
                         BackgroundColor= "rgb(255, 0, 0)",
                         BorderColor = "rgb(255, 0, 0)",
                         BorderWidth = 2,

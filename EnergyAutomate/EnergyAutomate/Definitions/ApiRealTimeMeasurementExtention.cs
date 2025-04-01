@@ -54,13 +54,13 @@ namespace EnergyAutomate.Definitions
 
         public int? RequestedPowerValue { get; set; }
 
-        public int SettingLockSeconds { get; set; }
+        public int PenaltyFrequentlyAccess { get; set; }
 
         public int SettingOffSetAvg { get; set; }
 
         public int SettingPowerLoadSeconds { get; set; }
 
-        public int SettingToleranceAvg { get; set; }
+        public int SettingAvgPowerHysteresis { get; set; }
 
         public bool SettingAutoModeRestriction { get; set; }
 

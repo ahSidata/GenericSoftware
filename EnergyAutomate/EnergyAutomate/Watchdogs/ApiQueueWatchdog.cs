@@ -7,12 +7,6 @@ namespace EnergyAutomate.Watchdogs
 {
     public class ApiQueueWatchdog<T> where T : class, IDeviceQuery
     {
-        #region Fields
-
-        private int penaltyFrequentlyAccess = 0;
-
-        #endregion Fields
-
         #region Public Constructors
 
         public ApiQueueWatchdog(IServiceProvider serviceProvider)
@@ -32,6 +26,8 @@ namespace EnergyAutomate.Watchdogs
 
         #region Properties
 
+        public int PenaltyFrequentlyAccess { get; set; } = 0;
+
         public ObservableCollection<T> Collection { get; set; } = new();
 
         public int Count => Collection.Count;
@@ -41,8 +37,6 @@ namespace EnergyAutomate.Watchdogs
         private ILogger<ApiQueueWatchdog<T>> Logger => ServiceProvider.GetRequiredService<ILogger<ApiQueueWatchdog<T>>>();
 
         private IServiceProvider ServiceProvider { get; init; }
-
-        private int TotalDelay => ServiceProvider.GetRequiredService<ApiService>().ApiSettingLockSeconds + penaltyFrequentlyAccess;
 
         #endregion Properties
 
@@ -117,10 +111,10 @@ namespace EnergyAutomate.Watchdogs
 
                     item = null;
 
-                    if (penaltyFrequentlyAccess >= 100)
-                        penaltyFrequentlyAccess -= 100;
+                    if (PenaltyFrequentlyAccess >= 100)
+                        PenaltyFrequentlyAccess -= 100;
 
-                    await Task.Delay(TotalDelay);
+                    await Task.Delay(PenaltyFrequentlyAccess);
                 }
                 catch (ApiException ex)
                 {
@@ -134,9 +128,9 @@ namespace EnergyAutomate.Watchdogs
                     if (item != null && !item.Force)
                         item = null;
 
-                    penaltyFrequentlyAccess += 100;
+                    PenaltyFrequentlyAccess += 100;
 
-                    await Task.Delay(TotalDelay);
+                    await Task.Delay(PenaltyFrequentlyAccess);
                 }
             }
 

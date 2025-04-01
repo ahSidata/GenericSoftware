@@ -12,7 +12,6 @@ namespace EnergyAutomate.Services
         #region Fields
 
         private readonly Lock lockAdjustPower = new();
-
         private readonly int timerPenalty = 0;
         private bool isRealTimeMeasurementAutoModeRunning = false;
         private bool isRealTimeMeasurementRestrictionRunning = false;
@@ -46,18 +45,18 @@ namespace EnergyAutomate.Services
         public bool ApiSettingAutoModeRestriction { get; set; } = false;
         public bool ApiSettingAutoModeRestrictionCurrentState { get; set; } = false;
         public List<APiTraceValue> ApiSettingAvgPowerAdjustmentTraceValues { get; set; } = [];
-        public int ApiSettingAvgPowerHysteresis { get; set; } = 100;
-        public int ApiSettingAvgPowerLoadSeconds { get; set; } = 90;
-        public int ApiSettingAvgPowerOffset { get; set; } = 75;
+        public int ApiSettingAvgPowerHysteresis { get; set; } = 50;
+        public int ApiSettingAvgPowerLoadSeconds { get; set; } = 0;
+        public int ApiSettingAvgPowerOffset { get; set; } = 25;
         public Dictionary<string, int> ApiSettingDataReadsDelaySec { get; set; } = new Dictionary<string, int>() {
-            { nameof(DeviceNoahInfoQuery), 60 } ,
+            { nameof(DeviceNoahInfoQuery), 60 * 60 } ,
             { nameof(DeviceNoahLastDataQuery), 60 } ,
             { nameof(DeviceNoahSetPowerQuery), 60 } ,
             { nameof(DeviceNoahTimeSegmentQuery), 60 } ,
             { nameof(DeviceListQuery), 60 }
         };
         public bool ApiSettingLoadBalanced { get; set; } = false;
-        public int ApiSettingLockSeconds { get; set; } = 600;
+
         public int ApiSettingMaxPower { get; set; } = 840;
         public TimeOnly SunRise { get; set; } = new TimeOnly(8, 0);
         public TimeOnly SunSet { get; set; } = new TimeOnly(16, 0);
@@ -1117,6 +1116,7 @@ namespace EnergyAutomate.Services
                 }
             }
 
+            await GrowattGetDevice();
             await GrowattGetDeviceNoahInfo();
             await GrowattGetDeviceNoahLastData();
         }
@@ -1216,10 +1216,10 @@ namespace EnergyAutomate.Services
                 if (realTimeMeasurementExtention.RequestedPowerValue.HasValue)
                     Logger.LogDebug($"RequestedPowerValue: {realTimeMeasurementExtention.RequestedPowerValue}");
 
-                realTimeMeasurementExtention.SettingLockSeconds = ApiSettingLockSeconds;
+                realTimeMeasurementExtention.PenaltyFrequentlyAccess = GrowattDeviceQueryQueueWatchdog.PenaltyFrequentlyAccess;
                 realTimeMeasurementExtention.SettingPowerLoadSeconds = ApiSettingAvgPowerLoadSeconds;
                 realTimeMeasurementExtention.SettingOffSetAvg = ApiSettingAvgPowerOffset;
-                realTimeMeasurementExtention.SettingToleranceAvg = ApiSettingAvgPowerHysteresis;
+                realTimeMeasurementExtention.SettingAvgPowerHysteresis = ApiSettingAvgPowerHysteresis;
 
                 await dbContext.SaveChangesAsync(); // Änderungen speichern
             }
