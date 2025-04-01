@@ -219,7 +219,7 @@ namespace Tibber.Sdk
 #endif
             await _wssClient.ConnectAsync(websocketSubscriptionUrl, cancellationToken);
 
-            Trace.WriteLine("web socket connected");
+            Trace.WriteLine("web socket connected", "Tibber");
 
             var connectionInitMessage = new WebSocketConnectionInitMessage { Payload = connectionInitPayload };
             var json = JsonConvert.SerializeObject(connectionInitMessage, TibberApiClient.JsonSerializerSettings);
@@ -227,7 +227,7 @@ namespace Tibber.Sdk
 
             await _wssClient.SendAsync(init, WebSocketMessageType.Text, true, cancellationToken);
 
-            Trace.WriteLine("web socket initialization message sent");
+            Trace.WriteLine("web socket initialization message sent", "Tibber");
 
             var result = await _wssClient.ReceiveAsync(_receiveBuffer, cancellationToken);
             if (result.CloseStatus.HasValue)
@@ -240,7 +240,7 @@ namespace Tibber.Sdk
 
             _isInitialized = true;
 
-            Trace.WriteLine("web socket initialization completed");
+            Trace.WriteLine("web socket initialization completed", "Tibber");
         }
 
         private async void StartListening()
@@ -266,7 +266,7 @@ namespace Tibber.Sdk
                 }
                 catch (OperationCanceledException)
                 {
-                    Trace.WriteLine("web socket operation canceled");
+                    Trace.WriteLine("web socket operation canceled", "Tibber");
                     return;
                 }
                 catch (Exception exception)
@@ -290,7 +290,7 @@ namespace Tibber.Sdk
 
                             if (!_cancellationTokenSource.IsCancellationRequested)
                             {
-                                Trace.WriteLine("connection re-established; re-initialize data streams");
+                                Trace.WriteLine("connection re-established; re-initialize data streams", "Tibber");
                                 ResubscribeStreams(c => true);
                                 continue;
                             }
@@ -385,7 +385,7 @@ namespace Tibber.Sdk
                 if (_isDisposed)
                     return;
 
-                Trace.WriteLine("listener disposal started");
+                Trace.WriteLine("listener disposal started", "Tibber");
 
                 _isDisposed = true;
 
@@ -413,7 +413,7 @@ namespace Tibber.Sdk
             _wssClient.Dispose();
             _cancellationTokenSource.Dispose();
 
-            Trace.WriteLine("listener disposal finished");
+            Trace.WriteLine("listener disposal finished", "Tibber");
         }
 
         private void CheckObjectNotDisposed()
@@ -447,11 +447,11 @@ namespace Tibber.Sdk
                     Trace.WriteLine($"retrying to connect in {delay.TotalSeconds} seconds");
                     await Task.Delay(delay, _cancellationTokenSource.Token);
 
-                    Trace.WriteLine("check there is a valid real time device");
+                    Trace.WriteLine("check there is a valid real time device", "Tibber");
                     var homes = await _tibberApiClient.ValidateRealtimeDevice();
                     _websocketSubscriptionUrl = new Uri(homes.Data.Viewer.WebsocketSubscriptionUrl);
 
-                    Trace.WriteLine("retrying to connect in...");
+                    Trace.WriteLine("retrying to connect in...", "Tibber");
                     await Initialize(_websocketSubscriptionUrl, _cancellationTokenSource.Token);
                     return;
                 }
