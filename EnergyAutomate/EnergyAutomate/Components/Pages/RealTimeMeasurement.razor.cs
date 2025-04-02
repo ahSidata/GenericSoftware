@@ -234,7 +234,7 @@ namespace EnergyAutomate.Components.Pages
                     new LineChartDataset()
                     {
                         Label = "Production",
-                        Data = dataSource.Select(x => (double?)x.PowerProduction).Select(s => s *(-1)).ToList(),
+                        Data = dataSource.Select(x => (double?)x.PowerProduction).Select(s => -s).ToList(),
                         BackgroundColor = "rgb(255, 166, 0)",
                         BorderColor = "rgb(255, 166, 0)",
                         BorderWidth = 2,
@@ -256,7 +256,7 @@ namespace EnergyAutomate.Components.Pages
                     new LineChartDataset()
                     {
                         Label = "AvgPowerProduction",
-                        Data = dataSource.Select(x => (double?)x.AvgPowerProduction).ToList(),
+                        Data = dataSource.Select(x => (double?)x.AvgPowerProduction).Select(s => -s).ToList(),
                         BackgroundColor = "rgb(0, 0, 0)",
                         BorderColor = "rgb(0, 0, 0)",
                         BorderWidth = 2,

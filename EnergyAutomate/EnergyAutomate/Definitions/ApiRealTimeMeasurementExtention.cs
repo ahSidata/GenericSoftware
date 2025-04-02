@@ -62,7 +62,13 @@ namespace EnergyAutomate.Definitions
 
         public int SettingAvgPowerHysteresis { get; set; }
 
-        public bool SettingAutoModeRestriction { get; set; }
+        public bool SettingAutoMode { get; set; }
+
+        public bool SettingRestrictionMode { get; set; }
+
+        public bool SettingRestrictionState { get; set; }
+
+        public bool SettingBatteryPriorityMode { get; set; }
 
         [NotMapped]
         public int TotalPower => Power > 0 ? (int)Power : -(int)(PowerProduction ?? 0);

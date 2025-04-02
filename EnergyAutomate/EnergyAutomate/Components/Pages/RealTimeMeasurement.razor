@@ -36,7 +36,17 @@
                                                 <small Class="mb-2 text-muted">(@device.DeviceSn)</small>
                                                 <small Class="mb-2 text-muted">@(device.IsOfflineSince.HasValue ? $"Offline since {device.IsOfflineSince}" : "Online")</small>
                                                 <br />
-                                                <small Class="mb-2 text-muted">@($"Last update {ApiService.GrowattGetNoahInfoPerDevice(device.DeviceSn)?.LastUpdateTimeText}")</small>
+                                                <small Class="mb-2 text-muted">@($"Last NoahInfo update {ApiService.GrowattGetNoahInfoPerDevice(device.DeviceSn)?.LastUpdateTimeText}")</small>
+                                                @{
+                                                    string lastUpdate = string.Empty;
+                                                    var lastItem = ApiService.GrowattGetNoahLastDataPerDevice(device.DeviceSn);
+                                                    if (lastItem != null)
+                                                    {
+                                                        var ts = new DateTime(lastItem.time);
+                                                        lastUpdate = ts.ToString();
+                                                    }    
+                                                }
+                                                <small Class="mb-2 text-muted">@($"Last NoahData update {lastUpdate}")</small>
                                             </CardTitle>
                                             <ul class="list-group list-group-flush">
                                                 <li class="list-group-item d-flex align-items-center">
@@ -255,10 +265,10 @@
                                         <Switch @bind-Value="ApiService.ApiSettingAutoMode" Label="AutoMode (zero injection on low soc)" />
                                     </div>
                                     <div>
-                                        <Switch @bind-Value="ApiService.ApiSettingAutoModeRestriction" Label="AutoMode Restriction (only if current price is over avg price)" />
+                                        <Switch @bind-Value="ApiService.ApiSettingRestrictionMode" Label="AutoMode Restriction (only if current price is over avg price)" />
                                     </div>
                                     <div>
-                                        <Switch @bind-Value="ApiService.ApiSettingLoadBalanced" Label="LoadBalanced (zero injection on low soc)" />
+                                        <Switch @bind-Value="ApiService.ApiSettingBatteryPriorityMode" Label="LoadBalanced (zero injection on low soc)" />
                                     </div>
                                 </CardBody>
                             </Card>
