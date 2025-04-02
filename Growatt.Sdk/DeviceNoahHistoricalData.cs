@@ -1,4 +1,6 @@
-﻿namespace Growatt.OSS
+﻿using Newtonsoft.Json;
+
+namespace Growatt.OSS
 {
     public class DeviceNoahHistoricalData
     {
@@ -151,6 +153,9 @@
         public int WarnCode1 { get; set; }
         public string WarnText { get; set; }
         public bool WithTime { get; set; }
+
+        [JsonIgnore]
+        public DateTimeOffset TS { get; set; }
 
         #endregion Properties
     }

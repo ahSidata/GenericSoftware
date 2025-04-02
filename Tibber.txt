@@ -1,5 +1,8 @@
 
-
 //Regex to replace Trace.WriteLine("...") with Trace.WriteLine("...", "<Category>")
 Trace\.WriteLine\("([^"]*)"\)
-Trace.WriteLine("$1", "<Category>")
+Trace.WriteLine("$1", "Tibber")
+
+//Regex to replace Trace.WriteLine($"...") with Trace.WriteLine($"...", "<Category>")
+Trace\.WriteLine\(\$"([^"]*)"\)
+Trace.WriteLine($"$1", "Tibber")

@@ -139,5 +139,8 @@ public class DeviceNoahInfo
         }
     }
 
+    [JsonIgnore]
+    public DateTimeOffset TS { get; set; }
+
     #endregion Properties
 }

@@ -49,11 +49,11 @@ namespace EnergyAutomate.Services
         public int ApiSettingAvgPowerOffset { get; set; } = 25;
         public DateTime ApiSettingCurrentHour => DateTime.Now.AddHours(ApiSettingTimeOffset);
         public Dictionary<string, int> ApiSettingDataReadsDelaySec { get; set; } = new Dictionary<string, int>() {
-            { nameof(DeviceNoahInfoQuery), 60 } ,
+            { nameof(DeviceNoahInfoQuery), 60 * 2} ,
             { nameof(DeviceNoahLastDataQuery), 60 } ,
             { nameof(DeviceNoahSetPowerQuery), 60 } ,
             { nameof(DeviceNoahTimeSegmentQuery), 60 } ,
-            { nameof(DeviceListQuery), 60 }
+            { nameof(DeviceListQuery), 60 * 5 }
         };
         public bool ApiSettingBatteryPriorityMode { get; set; } = false;
         public int ApiSettingMaxPower { get; set; } = 840;
@@ -138,7 +138,7 @@ namespace EnergyAutomate.Services
 
         public bool GrowattDataReadsDoRefresh(string queryType, int? delay = null)
         {
-            return !GrowattDataReads.Where(x => x.MethodeName == queryType && x.TimeStamp > ApiSettingCurrentHour.AddSeconds(-(delay ?? ApiSettingDataReadsDelaySec[queryType] * 60))).Any();
+            return !GrowattDataReads.Where(x => x.MethodeName == queryType && x.TimeStamp > ApiSettingCurrentHour.AddSeconds(-(delay ?? ApiSettingDataReadsDelaySec[queryType]))).Any();
         }
 
         public int GrowattDeviceQueryQueueWatchdogCount()
@@ -948,6 +948,10 @@ namespace EnergyAutomate.Services
 
             foreach (var deviceNoahInfo in deviceNoahInfos)
             {
+                var dateTime = DateTimeOffset.FromUnixTimeMilliseconds(deviceNoahInfo.LastUpdateTime).DateTime;
+                var offset = TimeSpan.FromHours(-6); // Beispiel: Offset von 2 Stunden
+                deviceNoahInfo.TS = new DateTimeOffset(dateTime, offset);
+
                 lock (GrowattDevices._syncRoot)
                 {
                     var deviceApiService = GrowattDevices.FirstOrDefault(x => x.DeviceType == "noah" && x.DeviceSn == deviceNoahInfo.DeviceSn);
@@ -990,38 +994,42 @@ namespace EnergyAutomate.Services
         {
             var dbContext = ApiGetDbContext();
 
-            foreach (var item in deviceNoahLastDatas)
+            foreach (var deviceNoahLastData in deviceNoahLastDatas)
             {
+                var dateTime = DateTimeOffset.FromUnixTimeMilliseconds(deviceNoahLastData.time).DateTime;
+                var offset = TimeSpan.FromHours(-6); // Beispiel: Offset von 2 Stunden
+                deviceNoahLastData.TS = new DateTimeOffset(dateTime, offset);
+
                 lock (GrowattDevices._syncRoot)
                 {
-                    var device = GrowattDevices.FirstOrDefault(x => x.DeviceSn == item.deviceSn);
+                    var device = GrowattDevices.FirstOrDefault(x => x.DeviceSn == deviceNoahLastData.deviceSn);
                     if (device != null)
                     {
-                        device.PowerValueRequested = (int)item.pac;
-                        device.PowerValueCommited = (int)item.pac;
+                        device.PowerValueRequested = (int)deviceNoahLastData.pac;
+                        device.PowerValueCommited = (int)deviceNoahLastData.pac;
                     }
                 }
 
                 lock (GrowattDeviceNoahLastData._syncRoot)
                 {
-                    GrowattDeviceNoahLastData.Add(item);
+                    GrowattDeviceNoahLastData.Add(deviceNoahLastData);
                 }
 
-                var deviceDbContext = await dbContext.Devices.FindAsync(item.deviceSn);
+                var deviceDbContext = await dbContext.Devices.FindAsync(deviceNoahLastData.deviceSn);
                 if (deviceDbContext != null)
                 {
-                    deviceDbContext.PowerValueRequested = (int)item.pac;
-                    deviceDbContext.PowerValueCommited = (int)item.pac;
+                    deviceDbContext.PowerValueRequested = (int)deviceNoahLastData.pac;
+                    deviceDbContext.PowerValueCommited = (int)deviceNoahLastData.pac;
                 }
 
-                var dbContextDeviceNoahLastData = await dbContext.DeviceNoahLastData.FindAsync(item.deviceSn, item.time);
+                var dbContextDeviceNoahLastData = await dbContext.DeviceNoahLastData.FindAsync(deviceNoahLastData.deviceSn, deviceNoahLastData.time);
                 if (dbContextDeviceNoahLastData != null)
                 {
-                    dbContext.Entry(dbContextDeviceNoahLastData).CurrentValues.SetValues(item);
+                    dbContext.Entry(dbContextDeviceNoahLastData).CurrentValues.SetValues(deviceNoahLastData);
                 }
                 else
                 {
-                    dbContext.DeviceNoahLastData.Add(item);
+                    dbContext.DeviceNoahLastData.Add(deviceNoahLastData);
                 }
             }
 

@@ -1,3 +1,5 @@
+using Newtonsoft.Json;
+
 /// <summary>Represents the last data of a Noah device.</summary>
 public class DeviceNoahLastData
 {
@@ -205,6 +207,9 @@ public class DeviceNoahLastData
     public float totalHouseholdLoad { get; set; }
     /// <summary>Current time period working mode.</summary>
     public int workMode { get; set; }
+
+    [JsonIgnore]
+    public DateTimeOffset TS { get; set; }
 
     #endregion Properties
 }

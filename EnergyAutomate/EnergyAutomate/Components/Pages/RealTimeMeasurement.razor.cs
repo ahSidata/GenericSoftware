@@ -18,7 +18,7 @@ namespace EnergyAutomate.Components.Pages
         private readonly IEnumerable<TickMark> ApiOffsetAvgTickList = GenerateTickTickMarks(-25, 150, 5);
         private readonly IEnumerable<TickMark> ApiToleranceAvgTickList = GenerateTickTickMarks(0, 300, 10);
         private readonly IEnumerable<TickMark> AvgPowerLoadSecondsTickList = GenerateTickTickMarks(0, 180, 5);
-        private readonly IEnumerable<TickMark> ApiDataReadsDelaySecTickList = GenerateTickTickMarks(0, 90, 10);
+        private readonly IEnumerable<TickMark> ApiDataReadsDelaySecTickList = GenerateTickTickMarks(0, 600, 60);
         private Tabs tabsMainRef = default!;
 
         #endregion Fields

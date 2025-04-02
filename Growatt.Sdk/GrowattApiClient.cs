@@ -146,7 +146,7 @@ namespace Growatt.OSS
                 response.EnsureSuccessStatusCode();
 
                 var responseString = await response.Content.ReadAsStringAsync();
-                var result = JsonConvert.DeserializeObject<HistoricalDataResponse>(responseString);
+                var result = JsonConvert.DeserializeObject<DeviceNoahHistoricalDataResponse>(responseString);
 
                 if (result != null && result.Code == 0)
                 {

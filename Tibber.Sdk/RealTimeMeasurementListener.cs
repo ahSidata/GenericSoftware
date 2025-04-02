@@ -178,7 +178,7 @@ namespace Tibber.Sdk
 
         private async Task SubscribeStream(Guid homeId, int subscriptionId, CancellationToken cancellationToken, TibberApiSubscriptionQueryBuilder queryBuilder = null)
         {
-            Trace.WriteLine($"subscribe to home id {homeId} with subscription id {subscriptionId}");
+            Trace.WriteLine($"subscribe to home id {homeId} with subscription id {subscriptionId}", "Tibber");
 
             queryBuilder ??= new TibberApiSubscriptionQueryBuilder().WithLiveMeasurement(new LiveMeasurementQueryBuilder().WithAllScalarFields(), homeId);
             var query = queryBuilder.Build().Replace(@"""", @"\""");
@@ -192,13 +192,13 @@ namespace Tibber.Sdk
 
         private async Task UnsubscribeStream(int subscriptionId, CancellationToken cancellationToken)
         {
-            Trace.WriteLine($"unsubscribe subscription with id {subscriptionId}");
+            Trace.WriteLine($"unsubscribe subscription with id {subscriptionId}", "Tibber");
             await ExecuteStreamRequest($@"{{""type"":""complete"",""id"":""{subscriptionId}""}}", cancellationToken);
         }
 
         private Task ExecuteStreamRequest(string request, CancellationToken cancellationToken)
         {
-            Trace.WriteLine($"send message; client state {_wssClient.State} {_wssClient.CloseStatus} {_wssClient.CloseStatusDescription} {request}");
+            Trace.WriteLine($"send message; client state {_wssClient.State} {_wssClient.CloseStatus} {_wssClient.CloseStatusDescription} {request}", "Tibber");
             var requestBytes = new ArraySegment<byte>(Encoding.ASCII.GetBytes(request));
             return _wssClient.SendAsync(requestBytes, WebSocketMessageType.Text, true, cancellationToken);
         }
@@ -258,7 +258,7 @@ namespace Tibber.Sdk
 
                     do
                     {
-                        Trace.WriteLine($"receive message; client state {_wssClient.State} {_wssClient.CloseStatus} {_wssClient.CloseStatusDescription}");
+                        Trace.WriteLine($"receive message; client state {_wssClient.State} {_wssClient.CloseStatus} {_wssClient.CloseStatusDescription}", "Tibber");
                         result = await _wssClient.ReceiveAsync(_receiveBuffer, _cancellationTokenSource.Token);
                         var json = Encoding.ASCII.GetString(_receiveBuffer.Array, 0, result.Count);
                         stringBuilder.Append(json);
@@ -444,7 +444,7 @@ namespace Tibber.Sdk
                 try
                 {
                     var delay = GetDelay(failures);
-                    Trace.WriteLine($"retrying to connect in {delay.TotalSeconds} seconds");
+                    Trace.WriteLine($"retrying to connect in {delay.TotalSeconds} seconds", "Tibber");
                     await Task.Delay(delay, _cancellationTokenSource.Token);
 
                     Trace.WriteLine("check there is a valid real time device", "Tibber");

@@ -29,6 +29,10 @@
                             <div class="row">
                                 @foreach (var device in ApiService.GrowattListDevices().Where(x => x.DeviceType == "noah"))
                                 {
+                                    var lastDeviceItem = ApiService.GrowattListDevices().FirstOrDefault(x => x.DeviceSn == device.DeviceSn);
+                                    var lastInfoItem = ApiService.GrowattGetNoahInfoPerDevice(device.DeviceSn);
+                                    var lastDataItem = ApiService.GrowattGetNoahLastDataPerDevice(device.DeviceSn);
+
                                     <Card Class="col-12 col-xl-6 col-xxl-4">
                                         <CardBody>
                                             <CardTitle>
@@ -36,17 +40,9 @@
                                                 <small Class="mb-2 text-muted">(@device.DeviceSn)</small>
                                                 <small Class="mb-2 text-muted">@(device.IsOfflineSince.HasValue ? $"Offline since {device.IsOfflineSince}" : "Online")</small>
                                                 <br />
-                                                <small Class="mb-2 text-muted">@($"Last NoahInfo update {ApiService.GrowattGetNoahInfoPerDevice(device.DeviceSn)?.LastUpdateTimeText}")</small>
-                                                @{
-                                                    string lastUpdate = string.Empty;
-                                                    var lastItem = ApiService.GrowattGetNoahLastDataPerDevice(device.DeviceSn);
-                                                    if (lastItem != null)
-                                                    {
-                                                        var ts = new DateTime(lastItem.time);
-                                                        lastUpdate = ts.ToString();
-                                                    }    
-                                                }
-                                                <small Class="mb-2 text-muted">@($"Last NoahData update {lastUpdate}")</small>
+                                                <small Class="mb-2 text-muted">@($"Last NoahInfo update {lastInfoItem?.TS.ToLocalTime()}")</small>
+                                                <br />
+                                                <small Class="mb-2 text-muted">@($"Last NoahData update {lastDataItem?.TS.ToLocalTime()}")</small>
                                             </CardTitle>
                                             <ul class="list-group list-group-flush">
                                                 <li class="list-group-item d-flex align-items-center">
@@ -54,19 +50,19 @@
                                                         <div class="col-md-4">
                                                             <Icon Name="IconName.SunsetFill" Size="IconSize.None" />
                                                             <span class="mx-3">
-                                                                @((int)(ApiService.GrowattGetNoahLastDataPerDevice(device.DeviceSn)?.ppv ?? 0)) W
+                                                                @((int)(lastDataItem?.ppv ?? 0)) W
                                                             </span>
                                                         </div>
                                                         <div class="col-md-4">
                                                             <Icon Name="IconName.Sunset" Size="IconSize.None" />
                                                             <span class="mx-3">
-                                                                @((int)(ApiService.GrowattGetNoahLastDataPerDevice(device.DeviceSn)?.pv1Current ?? 0) * (int)(ApiService.GrowattGetNoahLastDataPerDevice(device.DeviceSn)?.pv1Voltage ?? 0)) W
+                                                                @((int)(lastDataItem?.pv1Current ?? 0) * (int)(lastDataItem?.pv1Voltage ?? 0)) W
                                                             </span>
                                                         </div>
                                                         <div class="col-md-4">
                                                             <Icon Name="IconName.Sunset" Size="IconSize.None" />
                                                             <span class="mx-3">
-                                                                @((int)(ApiService.GrowattGetNoahLastDataPerDevice(device.DeviceSn)?.pv2Current ?? 0) * (int)(ApiService.GrowattGetNoahLastDataPerDevice(device.DeviceSn)?.pv2Voltage ?? 0)) W
+                                                                @((int)(lastDataItem?.pv2Current ?? 0) * (int)(lastDataItem?.pv2Voltage ?? 0)) W
                                                             </span>
                                                         </div>
                                                     </div>
@@ -76,13 +72,13 @@
                                                         <div class="col-md-4">
                                                             <Icon Name="IconName.Plugin" Size="IconSize.None" />
                                                             <span class="mx-3">
-                                                                @((int)(ApiService.GrowattListDevices().FirstOrDefault(x => x.DeviceSn == device.DeviceSn)?.PowerValueCommited ?? 0)) W
+                                                                @((int)(lastDeviceItem?.PowerValueCommited ?? 0)) W
                                                             </span>
                                                         </div>
                                                         <div class="col-md-4">
                                                             <Icon Name="IconName.Plug" Size="IconSize.None" />
                                                             <span class="mx-3">
-                                                                <strong>@(ApiService.GrowattListDevices().FirstOrDefault(x => x.DeviceSn == device.DeviceSn)?.PowerValueRequested ?? 0) W</strong>
+                                                                <strong>@(lastDeviceItem?.PowerValueRequested ?? 0) W</strong>
                                                             </span>
                                                         </div>
                                                     </div>
@@ -92,14 +88,14 @@
                                                         <div class="col-md-4">
                                                             <Icon Name="IconName.BatteryCharging" Size="IconSize.None" />
                                                             <span class="mx-3">
-                                                                @((int)(ApiService.GrowattGetNoahLastDataPerDevice(device.DeviceSn)?.totalBatteryPackChargingPower ?? 0)) W
+                                                                @((int)(lastDataItem?.totalBatteryPackChargingPower ?? 0)) W
                                                             </span>
                                                         </div>
                                                         <div class="col-md-4">
                                                             <Icon Name="IconName.Battery" Size="IconSize.None" />
                                                             <span class="mx-3">
                                                                 <small>
-                                                                    @((ApiService.GrowattGetNoahLastDataPerDevice(device.DeviceSn)?.totalBatteryPackChargingStatus) switch
+                                                                    @((lastDataItem?.totalBatteryPackChargingStatus) switch
                                                                     {
                                                                         0 => "Nothing",
                                                                         1 => "Charging",
@@ -112,7 +108,7 @@
                                                         <div class="col-md-4">
                                                             <Icon Name="IconName.BatteryHalf" Size="IconSize.None" />
                                                             <span class="mx-3">
-                                                                @ApiService.GrowattGetNoahLastDataPerDevice(device.DeviceSn)?.battery1Soc %
+                                                                @lastDataItem?.battery1Soc %
                                                             </span>
                                                         </div>
                                                     </div>
@@ -122,24 +118,24 @@
                                                         <div class="col-md-4">
                                                             <Icon Name="IconName.Thermometer" Size="IconSize.None" />
                                                             <span class="mx-3">
-                                                                @ApiService.GrowattGetNoahLastDataPerDevice(device.DeviceSn)?.battery1Temp °C
+                                                                @lastDataItem?.battery1Temp °C
                                                             </span>
                                                         </div>
                                                         <div class="col-md-4">
                                                             <Icon Name="IconName.Battery" Size="IconSize.None" />
                                                             <span class="mx-3">
-                                                                @ApiService.GrowattGetNoahLastDataPerDevice(device.DeviceSn)?.dischargeSocLimit %
+                                                                @lastDataItem?.dischargeSocLimit %
                                                             </span>
                                                         </div>
                                                         <div class="col-md-4">
                                                             <Icon Name="IconName.BatteryFull" Size="IconSize.None" />
                                                             <span class="mx-3">
-                                                                @ApiService.GrowattGetNoahLastDataPerDevice(device.DeviceSn)?.chargeSocLimit %
+                                                                @lastDataItem?.chargeSocLimit %
                                                             </span>
                                                         </div>
                                                     </div>
                                                 </li>
-                                                @if (ApiService.GrowattGetNoahInfoPerDevice(device.DeviceSn)!.TimeSegments.Where(x => x.Enable == "1").Any())
+                                                @if (lastInfoItem!.TimeSegments.Where(x => x.Enable == "1").Any())
                                                 {
                                                     <li class="list-group-item d-flex align-items-center">
                                                         <div class="row w-100">
@@ -158,7 +154,7 @@
                                                         </div>
                                                     </li>
                                                 }
-                                                @foreach (var segment in ApiService.GrowattGetNoahInfoPerDevice(device.DeviceSn)!.TimeSegments.Where(x => x.Enable == "1").OrderBy(x => x.StartTime))
+                                                @foreach (var segment in lastInfoItem!.TimeSegments.Where(x => x.Enable == "1").OrderBy(x => x.StartTime))
                                                 {
                                                     <li class="list-group-item d-flex align-items-center">
                                                         <div class="row w-100">
@@ -281,10 +277,10 @@
                                         ApiTimeOffset <RangeInput TValue="int" @bind-Value="ApiService.ApiSettingTimeOffset" Min="-12" Max="12" TickMarks="ApiSettingTimeOffsetTickList" Step="1" />
                                     </div>
                                     <div>
-                                        DataReadsDelaySec DeviceNoah InfoQuery <RangeInput TValue="int" @bind-Value="ApiSettingDataReadsDelaySec_DeviceNoahInfoQuery" Min="0" Max="90" TickMarks="ApiDataReadsDelaySecTickList" Step="10" />
+                                        DataReadsDelaySec DeviceNoah InfoQuery <RangeInput TValue="int" @bind-Value="ApiSettingDataReadsDelaySec_DeviceNoahInfoQuery" Min="0" Max="600" TickMarks="ApiDataReadsDelaySecTickList" Step="60" />
                                     </div>
                                     <div>
-                                        DataReadsDelaySec DeviceNoah LastDataQuery <RangeInput TValue="int" @bind-Value="ApiSettingDataReadsDelaySec_DeviceNoahLastDataQuery" Min="0" Max="90" TickMarks="ApiDataReadsDelaySecTickList" Step="10" />
+                                        DataReadsDelaySec DeviceNoah LastDataQuery <RangeInput TValue="int" @bind-Value="ApiSettingDataReadsDelaySec_DeviceNoahLastDataQuery" Min="0" Max="600" TickMarks="ApiDataReadsDelaySecTickList" Step="60" />
                                     </div>
                                 </CardBody>
                             </Card>
@@ -348,7 +344,7 @@
                               Responsive="true">
 
                             <GridColumns>
-                                <GridColumn TItem="GrowattProgram" HeaderText="Name" PropertyName="Name" >
+                                <GridColumn TItem="GrowattProgram" HeaderText="Name" PropertyName="Name">
                                     @context.Name
                                 </GridColumn>
                                 <GridColumn TItem="GrowattProgram" HeaderText="IsActive" PropertyName="IsActive">
