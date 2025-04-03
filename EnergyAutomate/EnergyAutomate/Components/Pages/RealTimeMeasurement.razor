@@ -20,81 +20,87 @@
                     <Content>
                         @if (!ApiService.TibberListRealTimeMeasurement().Any())
                         {
-                                <p>Loading...</p>
+                            <p>Loading...</p>
                         }
                         else
                         {
-                                <LineChart @ref="realTimeMeasurementChart" Class="tibberLineChart" Height="40" HeightUnit="Unit.Vh" />
-                                <LineChart @ref="deviceChart" Class="tibberLineChart" Height="20" HeightUnit="Unit.Vh" />
-                                <div class="row">
+                            <LineChart @ref="realTimeMeasurementChart" Class="tibberLineChart" Height="40" HeightUnit="Unit.Vh" />
+                            <LineChart @ref="deviceChart" Class="tibberLineChart" Height="20" HeightUnit="Unit.Vh" />
+                            <div class="row">
                                 @foreach (var device in ApiService.GrowattListDevices().Where(x => x.DeviceType == "noah"))
                                 {
                                     var lastDeviceItem = ApiService.GrowattListDevices().FirstOrDefault(x => x.DeviceSn == device.DeviceSn);
                                     var lastInfoItem = ApiService.GrowattGetNoahInfoPerDevice(device.DeviceSn);
                                     var lastDataItem = ApiService.GrowattGetNoahLastDataPerDevice(device.DeviceSn);
 
-                                            <Card Class="col-12 col-xl-6 col-xxl-4">
-                                                <CardBody>
-                                                    <CardTitle>
+                                    <Card Class="col-12 col-xl-6 col-xxl-4">
+                                        <CardBody>
+                                            <CardTitle>
                                                 @device.DeviceType.ToUpper()
-                                                        <small Class="mb-2 text-muted">(@device.DeviceSn)</small>
-                                                        <small Class="mb-2 text-muted">@(device.IsOfflineSince.HasValue ? $"Offline since {device.IsOfflineSince}" : "Online")</small>
-                                                        <br />
-                                                        <small Class="mb-2 text-muted">@($"Last NoahInfo update {lastInfoItem?.TS.LocalDateTime}")</small>
-                                                        <br />
-                                                        <small Class="mb-2 text-muted">@($"Last NoahData update {lastDataItem?.TS.LocalDateTime}")</small>
-                                                    </CardTitle>
-                                                    <ul class="list-group list-group-flush">
-                                                        <li class="list-group-item d-flex align-items-center">
-                                                            <div class="row w-100">
-                                                                <div class="col-md-4">
-                                                                    <Icon Name="IconName.SunsetFill" Size="IconSize.None" />
-                                                                    <span class="mx-3">
+                                                <small Class="mb-2 text-muted">(@device.DeviceSn)</small>
+                                                <small Class="mb-2 text-muted">@(device.IsOfflineSince.HasValue ? $"Offline since {device.IsOfflineSince}" : "Online")</small>
+                                                <br />
+                                                <small Class="mb-2 text-muted">@($"Last NoahInfo update {lastInfoItem?.TS.LocalDateTime}")</small>
+                                                <br />
+                                                <small Class="mb-2 text-muted">@($"Last NoahData update {lastDataItem?.TS.LocalDateTime}")</small>
+                                            </CardTitle>
+                                            <ul class="list-group list-group-flush">
+                                                <li class="list-group-item d-flex align-items-center">
+                                                    <div class="row w-100">
+                                                        <div class="col-md-4">
+                                                            <Icon Name="IconName.SunsetFill" Size="IconSize.None" />
+                                                            <span class="mx-3">
                                                                 @((int)(lastDataItem?.ppv ?? 0)) W
-                                                                    </span>
-                                                                </div>
-                                                                <div class="col-md-4">
-                                                                    <Icon Name="IconName.Sunset" Size="IconSize.None" />
-                                                                    <span class="mx-3">
+                                                            </span>
+                                                        </div>
+                                                        <div class="col-md-4">
+                                                            <Icon Name="IconName.Sunset" Size="IconSize.None" />
+                                                            <span class="mx-3">
                                                                 @((int)(lastDataItem?.pv1Current ?? 0) * (int)(lastDataItem?.pv1Voltage ?? 0)) W
-                                                                    </span>
-                                                                </div>
-                                                                <div class="col-md-4">
-                                                                    <Icon Name="IconName.Sunset" Size="IconSize.None" />
-                                                                    <span class="mx-3">
+                                                            </span>
+                                                        </div>
+                                                        <div class="col-md-4">
+                                                            <Icon Name="IconName.Sunset" Size="IconSize.None" />
+                                                            <span class="mx-3">
                                                                 @((int)(lastDataItem?.pv2Current ?? 0) * (int)(lastDataItem?.pv2Voltage ?? 0)) W
-                                                                    </span>
-                                                                </div>
-                                                            </div>
-                                                        </li>
-                                                        <li class="list-group-item">
-                                                            <div class="row w-100">
-                                                                <div class="col-md-4">
-                                                                    <Icon Name="IconName.Plugin" Size="IconSize.None" />
-                                                                    <span class="mx-3">
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                </li>
+                                                <li class="list-group-item">
+                                                    <div class="row w-100">
+                                                        <div class="col-md-4">
+                                                            <Icon Name="IconName.Gear" Size="IconSize.None" />
+                                                            <span class="mx-3">
+                                                                @((int)(lastInfoItem?.DefaultPower ?? 0)) W
+                                                            </span>
+                                                        </div>
+                                                        <div class="col-md-4">
+                                                            <Icon Name="IconName.Plugin" Size="IconSize.None" />
+                                                            <span class="mx-3">
                                                                 @((int)(lastDeviceItem?.PowerValueCommited ?? 0)) W
-                                                                    </span>
-                                                                </div>
-                                                                <div class="col-md-4">
-                                                                    <Icon Name="IconName.Plug" Size="IconSize.None" />
-                                                                    <span class="mx-3">
-                                                                        <strong>@(lastDeviceItem?.PowerValueRequested ?? 0) W</strong>
-                                                                    </span>
-                                                                </div>
-                                                            </div>
-                                                        </li>
-                                                        <li class="list-group-item">
-                                                            <div class="row w-100">
-                                                                <div class="col-md-4">
-                                                                    <Icon Name="IconName.BatteryCharging" Size="IconSize.None" />
-                                                                    <span class="mx-3">
+                                                            </span>
+                                                        </div>
+                                                        <div class="col-md-4">
+                                                            <Icon Name="IconName.Plug" Size="IconSize.None" />
+                                                            <span class="mx-3">
+                                                                <strong>@(lastDeviceItem?.PowerValueRequested ?? 0) W</strong>
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                </li>
+                                                <li class="list-group-item">
+                                                    <div class="row w-100">
+                                                        <div class="col-md-4">
+                                                            <Icon Name="IconName.BatteryCharging" Size="IconSize.None" />
+                                                            <span class="mx-3">
                                                                 @((int)(lastDataItem?.totalBatteryPackChargingPower ?? 0)) W
-                                                                    </span>
-                                                                </div>
-                                                                <div class="col-md-4">
-                                                                    <Icon Name="IconName.Battery" Size="IconSize.None" />
-                                                                    <span class="mx-3">
-                                                                        <small>
+                                                            </span>
+                                                        </div>
+                                                        <div class="col-md-4">
+                                                            <Icon Name="IconName.Battery" Size="IconSize.None" />
+                                                            <span class="mx-3">
+                                                                <small>
                                                                     @((lastDataItem?.totalBatteryPackChargingStatus) switch
                                                                     {
                                                                         0 => "Nothing",
@@ -102,116 +108,116 @@
                                                                         2 => "Discharging",
                                                                         _ => "Unknown"
                                                                     })
-                                                                        </small>
-                                                                    </span>
-                                                                </div>
-                                                                <div class="col-md-4">
-                                                                    <Icon Name="IconName.BatteryHalf" Size="IconSize.None" />
-                                                                    <span class="mx-3">
+                                                                </small>
+                                                            </span>
+                                                        </div>
+                                                        <div class="col-md-4">
+                                                            <Icon Name="IconName.BatteryHalf" Size="IconSize.None" />
+                                                            <span class="mx-3">
                                                                 @lastDataItem?.battery1Soc %
-                                                                    </span>
-                                                                </div>
-                                                            </div>
-                                                        </li>
-                                                        <li class="list-group-item d-flex align-items-center">
-                                                            <div class="row w-100">
-                                                                <div class="col-md-4">
-                                                                    <Icon Name="IconName.Thermometer" Size="IconSize.None" />
-                                                                    <span class="mx-3">
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                </li>
+                                                <li class="list-group-item d-flex align-items-center">
+                                                    <div class="row w-100">
+                                                        <div class="col-md-4">
+                                                            <Icon Name="IconName.Thermometer" Size="IconSize.None" />
+                                                            <span class="mx-3">
                                                                 @lastDataItem?.battery1Temp °C
-                                                                    </span>
-                                                                </div>
-                                                                <div class="col-md-4">
-                                                                    <Icon Name="IconName.Battery" Size="IconSize.None" />
-                                                                    <span class="mx-3">
+                                                            </span>
+                                                        </div>
+                                                        <div class="col-md-4">
+                                                            <Icon Name="IconName.Battery" Size="IconSize.None" />
+                                                            <span class="mx-3">
                                                                 @lastDataItem?.dischargeSocLimit %
-                                                                    </span>
-                                                                </div>
-                                                                <div class="col-md-4">
-                                                                    <Icon Name="IconName.BatteryFull" Size="IconSize.None" />
-                                                                    <span class="mx-3">
+                                                            </span>
+                                                        </div>
+                                                        <div class="col-md-4">
+                                                            <Icon Name="IconName.BatteryFull" Size="IconSize.None" />
+                                                            <span class="mx-3">
                                                                 @lastDataItem?.chargeSocLimit %
-                                                                    </span>
-                                                                </div>
-                                                            </div>
-                                                        </li>
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                </li>
                                                 @if (lastInfoItem!.TimeSegments.Where(x => x.Enable == "1").Any())
                                                 {
-                                                                <li class="list-group-item d-flex align-items-center">
-                                                                    <div class="row w-100">
-                                                                        <div class="col-md-2">
-                                                                            Start
-                                                                        </div>
-                                                                        <div class="col-md-2">
-                                                                            End
-                                                                        </div>
-                                                                        <div class="col-md-2">
-                                                                            Power
-                                                                        </div>
-                                                                        <div class="col-md-2">
-                                                                            Prio
-                                                                        </div>
-                                                                    </div>
-                                                                </li>
+                                                    <li class="list-group-item d-flex align-items-center">
+                                                        <div class="row w-100">
+                                                            <div class="col-md-2">
+                                                                Start
+                                                            </div>
+                                                            <div class="col-md-2">
+                                                                End
+                                                            </div>
+                                                            <div class="col-md-2">
+                                                                Power
+                                                            </div>
+                                                            <div class="col-md-2">
+                                                                Prio
+                                                            </div>
+                                                        </div>
+                                                    </li>
                                                 }
                                                 @foreach (var segment in lastInfoItem!.TimeSegments.Where(x => x.Enable == "1").OrderBy(x => x.StartTime))
                                                 {
-                                                                <li class="list-group-item d-flex align-items-center">
-                                                                    <div class="row w-100">
-                                                                        <div class="row w-100">
-                                                                            <div class="col-md-2">
+                                                    <li class="list-group-item d-flex align-items-center">
+                                                        <div class="row w-100">
+                                                            <div class="row w-100">
+                                                                <div class="col-md-2">
                                                                     @segment.StartTime
-                                                                            </div>
-                                                                            <div class="col-md-2">
+                                                                </div>
+                                                                <div class="col-md-2">
                                                                     @segment.EndTime
-                                                                            </div>
-                                                                            <div class="col-md-2">
+                                                                </div>
+                                                                <div class="col-md-2">
                                                                     @(segment.Mode == "0" ? "Load" : "Batt")
-                                                                            </div>
-                                                                            <div class="col-md-2">
+                                                                </div>
+                                                                <div class="col-md-2">
                                                                     @segment.Power W
-                                                                            </div>
-                                                                        </div>
-                                                                    </div>
-                                                                </li>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </li>
                                                 }
-                                                    </ul>
-                                                </CardBody>
-                                            </Card>
+                                            </ul>
+                                        </CardBody>
+                                    </Card>
                                 }
-                                    <Card Class="col-12 col-xl-6 col-xxl-4">
-                                        <CardBody>
-                                            <CardTitle>
-                                                Last Indicator Values
-                                                <Button Color="ButtonColor.Primary" @onclick="ApiService.GrowattInvokeRefreshNoahsLastData">Refresh</Button>
-                                                <p>
-                                                    AutoModeRestriction: @ApiService.ApiSettingAutoModeRestrictionCurrentState
-                                                </p>
-                                                <p>
-                                                    CurrentHour: @ApiService.CurrentState.Now
-                                                </p>
-                                            </CardTitle>
-                                            <ul class="list-group list-group-flush">
-                                                <li class="list-group-item">
-                                                    <div class="row w-100">
-                                                        <div class="col-md-6">
-                                                            Offset: @ApiService.ApiSettingAvgPowerOffset
-                                                        </div>
-                                                        <div class="col-md-6">
-                                                            Hysteresis: @ApiService.ApiSettingAvgPowerHysteresis
-                                                        </div>
+                                <Card Class="col-12 col-xl-6 col-xxl-4">
+                                    <CardBody>
+                                        <CardTitle>
+                                            Last Indicator Values
+                                            <Button Color="ButtonColor.Primary" @onclick="ApiService.GrowattInvokeRefreshNoahsLastData">Refresh</Button>
+                                            <p>
+                                                AutoModeRestriction: @ApiService.ApiSettingAutoModeRestrictionCurrentState
+                                            </p>
+                                            <p>
+                                                CurrentHour: @ApiService.CurrentState.Now
+                                            </p>
+                                        </CardTitle>
+                                        <ul class="list-group list-group-flush">
+                                            <li class="list-group-item">
+                                                <div class="row w-100">
+                                                    <div class="col-md-6">
+                                                        Offset: @ApiService.ApiSettingAvgPowerOffset
                                                     </div>
-                                                </li>
-                                                <li class="list-group-item">
-                                                    <div class="row w-100">
-                                                        <div class="col-md-6">
-                                                            LoadSeconds: @ApiService.ApiSettingAvgPowerLoadSeconds
-                                                        </div>
-                                                        <div class="col-md-6">
-                                                            DeviceQueryQueue: @ApiService.GrowattDeviceQueryQueueWatchdogCount()
-                                                        </div>
+                                                    <div class="col-md-6">
+                                                        Hysteresis: @ApiService.ApiSettingAvgPowerHysteresis
                                                     </div>
-                                                </li>
+                                                </div>
+                                            </li>
+                                            <li class="list-group-item">
+                                                <div class="row w-100">
+                                                    <div class="col-md-6">
+                                                        LoadSeconds: @ApiService.ApiSettingAvgPowerLoadSeconds
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        DeviceQueryQueue: @ApiService.GrowattDeviceQueryQueueWatchdogCount()
+                                                    </div>
+                                                </div>
+                                            </li>
                                             @{
                                                 var enumerator = ApiService.ApiSettingAvgPowerAdjustmentTraceValues.GetEnumerator();
                                             }
@@ -227,25 +233,25 @@
 
                                                 }
 
-                                                        <li class="list-group-item">
-                                                            <div class="row w-100">
-                                                                <div class="col-md-6">
+                                                <li class="list-group-item">
+                                                    <div class="row w-100">
+                                                        <div class="col-md-6">
                                                             @firstEntry.Key: @firstEntry.Value
-                                                                </div>
+                                                        </div>
                                                         @if (secondEntry != null)
                                                         {
-                                                                        <div class="col-md-6">
+                                                            <div class="col-md-6">
                                                                 @secondEntry.Key: @secondEntry.Value
-                                                                        </div>
-                                                        }
                                                             </div>
-                                                        </li>
+                                                        }
+                                                    </div>
+                                                </li>
                                             }
-                                            </ul>
-                                        </CardBody>
-                                    </Card>
-                                </div>
-                                <LineChart @ref="priceChart" Class="tibberLineChart" Height="40" HeightUnit="Unit.Vh" />
+                                        </ul>
+                                    </CardBody>
+                                </Card>
+                            </div>
+                            <LineChart @ref="priceChart" Class="tibberLineChart" Height="40" HeightUnit="Unit.Vh" />
                         }
                     </Content>
                 </Tab>
@@ -356,7 +362,7 @@
                         </Grid>
                         @if (GrowattSelectedPrograms != null && (GrowattSelectedPrograms?.Count ?? 0) > 0)
                         {
-                                <Button Color="ButtonColor.Primary" @onclick="@(async () => {await GrowattSetProgramActive(GrowattSelectedPrograms?.FirstOrDefault());})">Set "@GrowattSelectedPrograms?.FirstOrDefault()?.Name" as new active program</Button>
+                            <Button Color="ButtonColor.Primary" @onclick="@(async () => {await GrowattSetProgramActive(GrowattSelectedPrograms?.FirstOrDefault());})">Set "@GrowattSelectedPrograms?.FirstOrDefault()?.Name" as new active program</Button>
                         }
                     </CardBody>
                 </Card>
@@ -376,16 +382,16 @@
                 <CardBody>
                     @if (ApiService.GrowattListDevices() == null || !ApiService.GrowattListDevices().Any())
                     {
-                            <p>Loading...</p>
+                        <p>Loading...</p>
                     }
                     else
                     {
-                            <ul>
+                        <ul>
                             @foreach (var device in ApiService.GrowattListDevices())
                             {
-                                        <li>@device.DeviceType : @device.DeviceSn </li>
+                                <li>@device.DeviceType : @device.DeviceSn </li>
                             }
-                            </ul>
+                        </ul>
                     }
 
                     <Button Color="ButtonColor.Primary" @onclick="ApiService.GrowattInvokeRefreshNoahs">Refresh Noah Devices</Button>
@@ -393,40 +399,40 @@
 
                     Growatt    @if (!ApiService.GrowattListNoahInfos().Any())
                     {
-                            <p>Loading...</p>
+                        <p>Loading...</p>
                     }
                     else
                     {
-                            <Tabs @ref="tabsGrowattRef">
+                        <Tabs @ref="tabsGrowattRef">
                             @foreach (var deviceInfo in ApiService.GrowattListNoahInfos())
                             {
-                                        <Tab Title="@($"{deviceInfo.Model} : {deviceInfo.DeviceSn}")">
-                                            <Content>
-                                                <div class="mt-3 d-flex">
-                                                    <div class="flex-column">
-                                                        <ul>
+                                <Tab Title="@($"{deviceInfo.Model} : {deviceInfo.DeviceSn}")">
+                                    <Content>
+                                        <div class="mt-3 d-flex">
+                                            <div class="flex-column">
+                                                <ul>
                                                     @foreach (var property in deviceInfo.GetType().GetProperties())
                                                     {
-                                                                    <li>@property.Name : @property.GetValue(deviceInfo)</li>
+                                                        <li>@property.Name : @property.GetValue(deviceInfo)</li>
                                                     }
-                                                        </ul>
-                                                    </div>
-                                                    <div class="flex-column ml-3">
-                                                        <ul>
+                                                </ul>
+                                            </div>
+                                            <div class="flex-column ml-3">
+                                                <ul>
                                                     @foreach (var lastData in ApiService.GrowattListNoahLastDatas().Where(x => x != null && x.deviceSn == deviceInfo.DeviceSn))
                                                     {
 
                                                         DateTime time = DateTimeOffset.FromUnixTimeMilliseconds(@lastData.time).DateTime;
 
-                                                                    <li>@time,  Workmode: @lastData.workMode , Power(W): @lastData.ppv, PAC(W): @lastData.pac, ChargingModus: @lastData.totalBatteryPackChargingStatus , Charging(W): @lastData.totalBatteryPackChargingPower , SOC: @lastData.totalBatteryPackSoc</li>
+                                                        <li>@time,  Workmode: @lastData.workMode , Power(W): @lastData.ppv, PAC(W): @lastData.pac, ChargingModus: @lastData.totalBatteryPackChargingStatus , Charging(W): @lastData.totalBatteryPackChargingPower , SOC: @lastData.totalBatteryPackSoc</li>
                                                     }
-                                                        </ul>
-                                                    </div>
-                                                </div>
-                                            </Content>
-                                        </Tab>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    </Content>
+                                </Tab>
                             }
-                            </Tabs>
+                        </Tabs>
                     }
                 </CardBody>
             </Card>
