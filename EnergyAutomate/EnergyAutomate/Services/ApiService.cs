@@ -2,7 +2,6 @@ using EnergyAutomate.Definitions;
 using Growatt.OSS;
 using Growatt.Sdk;
 using Microsoft.EntityFrameworkCore;
-using System;
 using System.Diagnostics;
 using Tibber.Sdk;
 
@@ -15,7 +14,6 @@ namespace EnergyAutomate.Services
         private readonly Lock lockAdjustPower = new();
         private readonly Lock lockLoadBalance = new();
         private readonly int timerPenalty = 0;
-
 
         #endregion Fields
 
@@ -41,16 +39,13 @@ namespace EnergyAutomate.Services
 
         #region Properties
 
-        public ApiState CurrentState { get; set; } 
-
         public bool ApiSettingAutoMode { get; set; }
-        public bool ApiSettingRestrictionMode { get; set; } = false;
         public bool ApiSettingAutoModeRestrictionCurrentState { get; set; } = false;
         public List<APiTraceValue> ApiSettingAvgPowerAdjustmentTraceValues { get; set; } = [];
         public int ApiSettingAvgPowerHysteresis { get; set; } = 50;
         public int ApiSettingAvgPowerLoadSeconds { get; set; } = 0;
         public int ApiSettingAvgPowerOffset { get; set; } = 25;
-
+        public bool ApiSettingBatteryPriorityMode { get; set; } = false;
         public Dictionary<string, int> ApiSettingDataReadsDelaySec { get; set; } = new Dictionary<string, int>() {
             { nameof(DeviceNoahInfoQuery), 60 * 2} ,
             { nameof(DeviceNoahLastDataQuery), 60 } ,
@@ -58,9 +53,10 @@ namespace EnergyAutomate.Services
             { nameof(DeviceNoahTimeSegmentQuery), 60 } ,
             { nameof(DeviceListQuery), 60 * 5 }
         };
-        public bool ApiSettingBatteryPriorityMode { get; set; } = false;
         public int ApiSettingMaxPower { get; set; } = 840;
+        public bool ApiSettingRestrictionMode { get; set; } = false;
         public int ApiSettingTimeOffset { get; set; } = DateTimeOffset.Now.Offset.Hours;
+        public ApiState CurrentState { get; set; }
         public TimeOnly SunRise { get; set; } = new TimeOnly(8, 0);
         public TimeOnly SunSet { get; set; } = new TimeOnly(16, 0);
         private ApiRealTimeMeasurementWatchdog ApiRealTimeMeasurementWatchdog => ServiceProvider.GetRequiredService<ApiRealTimeMeasurementWatchdog>();
@@ -355,7 +351,7 @@ namespace EnergyAutomate.Services
 
         public List<TibberPrice> TibberGetPriceDatas()
         {
-            var items = TibberPrices.OrderByDescending(x=> x.StartsAt).Take(48).ToList();
+            var items = TibberPrices.OrderByDescending(x => x.StartsAt).Take(48).ToList();
             return items.OrderBy(x => x.StartsAt).ToList();
         }
 
@@ -433,223 +429,9 @@ namespace EnergyAutomate.Services
 
         #region Private Methods
 
-        private Task ApiAdjustPower(RealTimeMeasurementExtention value)
-        {
-            int calcPowerValue = 0;
-            int newPowerValue = 0;
-
-            var devices = GrowattDevices.Where(x => x.DeviceType == "noah" && x.IsOfflineSince == null).ToList();
-
-            DeviceList? device = null;
-
-            var last = devices.OrderBy(x => x.PowerValueLastChanged).FirstOrDefault();
-
-            var upperlimit = ApiSettingAvgPowerOffset + (ApiSettingAvgPowerHysteresis / 2);
-            var lowerlimit = ApiSettingAvgPowerOffset - (ApiSettingAvgPowerHysteresis / 2);
-
-            int consumptionDelta = 0;
-            int productionDelta = 0;
-
-            ApiSettingAvgPowerAdjustmentTraceValues.AddOrUpdate(new APiTraceValue() { Index = 4, Key = "DeltaPowerValue", Value = productionDelta.ToString() });
-
-            if (value.TotalPower > 0)
-                device = devices.OrderBy(x => x.PowerValueCommited).FirstOrDefault();
-
-            if (value.TotalPower < 0)
-                device = devices.OrderByDescending(x => x.PowerValueCommited).FirstOrDefault();
-
-            if (device != null)
-            {
-                int lastCommitedPowerValue = device.PowerValueCommited == 0 ? (int)(GrowattGetNoahLastDataPerDevice(device.DeviceSn)?.pac ?? 0) : device.PowerValueCommited;
-                var lastRequestedPowerValue = device.PowerValueRequested;
-                var avgPowerConsumption = value.AvgPowerConsumption;
-                var avgPowerProduction = -value.AvgPowerProduction;
-
-                // If the total power is greater than 0, it indicates power consumption
-                if (value.TotalPower > 0)
-                {
-                    // If the average power consumption is greater than the upper limit
-                    if (avgPowerConsumption > upperlimit)
-                    {
-                        // Calculate the difference between the average power consumption and
-                        // the upper limit
-                        consumptionDelta = Math.Abs(avgPowerConsumption - upperlimit);
-                        // Add or update the trace value for the delta power value
-                        ApiSettingAvgPowerAdjustmentTraceValues.AddOrUpdate(new APiTraceValue() { Index = 4, Key = "DeltaPowerValue", Value = consumptionDelta.ToString() });
-                        // Calculate the new power value based on the consumption delta
-                        // additional half for slower decreasing
-                        calcPowerValue = lastCommitedPowerValue + (consumptionDelta / devices.Count);
-                    }
-                    // If the average power consumption is less than the lower limit
-                    else if (avgPowerConsumption < lowerlimit)
-                    {
-                        // Calculate the difference between the lower limit and the average
-                        // power consumption
-                        consumptionDelta = Math.Abs(lowerlimit - avgPowerConsumption);
-                        // Calculate the new power value based on the consumption delta
-                        calcPowerValue = lastCommitedPowerValue - (consumptionDelta / devices.Count);
-                    }
-                }
-                // If the total power is less than 0, it indicates power production
-                else if (value.TotalPower < 0)
-                {
-                    // If the average power production is less than the lower limit
-                    if (avgPowerProduction < lowerlimit)
-                    {
-                        // Calculate the difference between the average power production and the
-                        // lower limit
-                        productionDelta = Math.Abs(avgPowerProduction - lowerlimit);
-                        // Add or update the trace value for the delta power value
-                        ApiSettingAvgPowerAdjustmentTraceValues.AddOrUpdate(new APiTraceValue() { Index = 4, Key = "DeltaPowerValue", Value = productionDelta.ToString() });
-                        // Calculate the new power value based on the production delta
-                        calcPowerValue = lastCommitedPowerValue - (productionDelta / devices.Count);
-                    }
-                    // If the average power production is greater than the upper limit
-                    else if (avgPowerProduction > upperlimit)
-                    {
-                        // Calculate the difference between the average power production and the
-                        // upper limit
-                        productionDelta = Math.Abs(avgPowerProduction - upperlimit);
-                        // Calculate the new power value based on the production delta
-                        calcPowerValue = lastCommitedPowerValue + (productionDelta / devices.Count);
-                    }
-                }
-
-                var maxPower = ApiSettingMaxPower / devices.Count;
-
-                newPowerValue = calcPowerValue > maxPower ? maxPower : calcPowerValue < 0 ? 0 : calcPowerValue;
-
-                if (newPowerValue <= maxPower && newPowerValue > 0)
-                {
-                    if (newPowerValue != lastRequestedPowerValue)
-                    {
-                        device.PowerValueLastChanged = value.TS;
-                        device.PowerValueRequested = newPowerValue;
-                        value.RequestedPowerValue = newPowerValue;
-
-                        GrowattDeviceQueryQueueWatchdog.Enqueue(new DeviceNoahSetPowerQuery()
-                        {
-                            DeviceType = "noah",
-                            DeviceSn = device.DeviceSn,
-                            Value = newPowerValue,
-                            TS = value.TS
-                        });
-
-                        ApiSettingAvgPowerAdjustmentTraceValues.AddOrUpdate(new APiTraceValue() { Index = 5, Key = "NewPowerValue", Value = newPowerValue.ToString() });
-                    }
-                }
-                else
-                {
-                    if (value.TotalPower > 0)
-                    {
-                        Trace.WriteLine($"TotalPower: {value.TotalPower}, AvgPowerProduction: {avgPowerConsumption}, upperDelta: {consumptionDelta} = {avgPowerConsumption} - {upperlimit}", "ApiService");
-                        Trace.WriteLine($"lastCommitedPowerValue: {lastCommitedPowerValue}, upperDelta: {consumptionDelta} = {avgPowerConsumption} - {upperlimit}, calcPowerValue: {calcPowerValue}, OffSet: {ApiSettingAvgPowerOffset}", "ApiService");
-                    }
-                    if (value.TotalPower < 0)
-                    {
-                        Trace.WriteLine($"TotalPower: {value.TotalPower}, AvgPowerProduction: {avgPowerProduction}, lowerDelta: {productionDelta} = {avgPowerProduction} - {lowerlimit}", "ApiService");
-                        Trace.WriteLine($"lastCommitedPowerValue: {lastCommitedPowerValue} - lowerDelta: {productionDelta}, calcPowerValue: {calcPowerValue}, OffSet: {ApiSettingAvgPowerOffset}", "ApiService");
-                    }
-                }
-
-                ApiInvokeStateHasChanged();
-            }
-
-            return Task.CompletedTask;
-        }
-
-        private void ApiCalcAvgOfLastSeconds(RealTimeMeasurementExtention value)
-        {
-            lock (TibberRealTimeMeasurement._syncRoot)
-            {
-                var measurementsQuery = TibberRealTimeMeasurement;
-
-                if (ApiSettingAvgPowerLoadSeconds > 0)
-                    measurementsQuery.Where(m => m.Timestamp >= CurrentState.Now.AddSeconds(-ApiSettingAvgPowerLoadSeconds));
-
-                var measurements = measurementsQuery.ToList();
-
-                measurements.Add(value);
-
-                var powerConsumptionCompleteMeasurements = measurements.OrderByDescending(m => m.Timestamp).ToList().GetEnumerator();
-
-                List<RealTimeMeasurementExtention> powerConsumptionUntilZero = [];
-
-                while (powerConsumptionCompleteMeasurements.MoveNext())
-                {
-                    if (powerConsumptionCompleteMeasurements.Current.Power == 0) break;
-                    powerConsumptionUntilZero.Add(powerConsumptionCompleteMeasurements.Current);
-                }
-
-                value.AvgPowerConsumption = value.Power > 0 ? (int)powerConsumptionUntilZero.Average(m => m.Power) : 0;
-
-                var powerProductionCompleteMeasurements = measurements.OrderByDescending(m => m.Timestamp).ToList().GetEnumerator();
-
-                List<RealTimeMeasurementExtention> powerProductionUntilZero = [];
-
-                while (powerProductionCompleteMeasurements.MoveNext())
-                {
-                    if (powerProductionCompleteMeasurements.Current.PowerProduction == 0) break;
-                    powerProductionUntilZero.Add(powerProductionCompleteMeasurements.Current);
-                }
-
-                value.AvgPowerProduction = value.PowerProduction > 0 ? (int)powerProductionUntilZero.Average(m => m.PowerProduction ?? 0) : 0;
-            }
-        }
-
-        private void ApiCalcAvgOfLastSeconds2(RealTimeMeasurementExtention value)
-        {
-            var now = DateTimeOffset.Now;
-
-            lock (TibberRealTimeMeasurement._syncRoot)
-            {
-                var resultPower = TibberRealTimeMeasurement
-                    .Where(m => m.Timestamp >= now.AddSeconds(-ApiSettingAvgPowerLoadSeconds) && m.Power > 0)
-                    .Select(m => m.Power);
-
-                value.AvgPowerConsumption = value.Power > 0 ? resultPower.Any() ? (int)resultPower.Average() : 0 : 0;
-
-                var resultPowerProduction = TibberRealTimeMeasurement
-                    .Where(m => m.Timestamp >= now.AddSeconds(-ApiSettingAvgPowerLoadSeconds) && m.PowerProduction != null && m.PowerProduction > 0)
-                    .Select(m => -(int)(m.PowerProduction));
-
-                value.AvgPowerProduction = value.PowerProduction > 0 ? resultPowerProduction.Any() ? (int)resultPowerProduction.Average() : 0 : 0;
-            }
-        }
-
-        private ApplicationDbContext ApiGetDbContext()
-        {
-            return ServiceProvider.CreateScope().ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        }
-
-        private Task ApiLoadBalance(RealTimeMeasurementExtention value)
-        {
-            if (ApiSettingAutoMode && CurrentState.IsGrowattOnline)
-            {
-
-            }
-            else
-            {
-                if (ApiSettingBatteryPriorityMode)
-                {
-
-                }
-                Trace.WriteLine($"AutoMode disabled: Running LoadBalanceRule one time", "ApiService");
-            }
-            return Task.CompletedTask;
-        }
-
-        private async Task ApiAutoModeEnabledLoadBalanceRule()
-        {
-            // If the automatic mode is enabled and the restriction is not active, the power value
-            // is set to 0
-            await GrowattClearPowerSetAsync();
-        }
-
         private async Task ApiAutoModeDisabledLoadBalanceRule()
         {
-            // If the automatic mode is disabled, 
-            // the power value is set to 0
+            // If the automatic mode is disabled, the power value is set to 0
             await GrowattClearPowerSetAsync();
 
             if (ApiSettingBatteryPriorityMode)
@@ -666,6 +448,33 @@ namespace EnergyAutomate.Services
                 // Calc avg power value
                 await GrowattSetLoadPriorityDeviceNoahTimeSegmentsAsync();
             }
+        }
+
+        private async Task ApiAutoModeEnabledLoadBalanceRule()
+        {
+            // If the automatic mode is enabled and the restriction is not active, the power value
+            // is set to 0
+            await GrowattClearPowerSetAsync();
+        }
+
+        private ApplicationDbContext ApiGetDbContext()
+        {
+            return ServiceProvider.CreateScope().ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        }
+
+        private Task ApiLoadBalance(RealTimeMeasurementExtention value)
+        {
+            if (ApiSettingAutoMode && CurrentState.IsGrowattOnline)
+            {
+            }
+            else
+            {
+                if (ApiSettingBatteryPriorityMode)
+                {
+                }
+                Trace.WriteLine($"AutoMode disabled: Running LoadBalanceRule one time", "ApiService");
+            }
+            return Task.CompletedTask;
         }
 
         private string GetGrowattDeviceSnList()
@@ -1081,7 +890,172 @@ namespace EnergyAutomate.Services
             return Task.CompletedTask;
         }
 
-        private async Task TibberDoRealTimeMeasurement(RealTimeMeasurementExtention value)
+        private Task TibberRTMAdjustPower(RealTimeMeasurementExtention value)
+        {
+            int calcPowerValue = 0;
+            int newPowerValue = 0;
+
+            var devices = GrowattDevices.Where(x => x.DeviceType == "noah" && x.IsOfflineSince == null).ToList();
+
+            DeviceList? device = null;
+
+            var last = devices.OrderBy(x => x.PowerValueLastChanged).FirstOrDefault();
+
+            var upperlimit = ApiSettingAvgPowerOffset + (ApiSettingAvgPowerHysteresis / 2);
+            var lowerlimit = ApiSettingAvgPowerOffset - (ApiSettingAvgPowerHysteresis / 2);
+
+            int consumptionDelta = 0;
+            int productionDelta = 0;
+
+            ApiSettingAvgPowerAdjustmentTraceValues.AddOrUpdate(new APiTraceValue() { Index = 4, Key = "DeltaPowerValue", Value = productionDelta.ToString() });
+
+            if (value.TotalPower > 0)
+                device = devices.OrderBy(x => x.PowerValueCommited).FirstOrDefault();
+
+            if (value.TotalPower < 0)
+                device = devices.OrderByDescending(x => x.PowerValueCommited).FirstOrDefault();
+
+            if (device != null)
+            {
+                int lastCommitedPowerValue = device.PowerValueCommited == 0 ? (int)(GrowattGetNoahLastDataPerDevice(device.DeviceSn)?.pac ?? 0) : device.PowerValueCommited;
+                var lastRequestedPowerValue = device.PowerValueRequested;
+                var avgPowerConsumption = value.AvgPowerConsumption;
+                var avgPowerProduction = -value.AvgPowerProduction;
+
+                // If the total power is greater than 0, it indicates power consumption
+                if (value.TotalPower > 0)
+                {
+                    // If the average power consumption is greater than the upper limit
+                    if (avgPowerConsumption > upperlimit)
+                    {
+                        // Calculate the difference between the average power consumption and the
+                        // upper limit
+                        consumptionDelta = Math.Abs(avgPowerConsumption - upperlimit);
+                        // Add or update the trace value for the delta power value
+                        ApiSettingAvgPowerAdjustmentTraceValues.AddOrUpdate(new APiTraceValue() { Index = 4, Key = "DeltaPowerValue", Value = consumptionDelta.ToString() });
+                        // Calculate the new power value based on the consumption delta additional
+                        // half for slower decreasing
+                        calcPowerValue = lastCommitedPowerValue + (consumptionDelta / devices.Count);
+                    }
+                    // If the average power consumption is less than the lower limit
+                    else if (avgPowerConsumption < lowerlimit)
+                    {
+                        // Calculate the difference between the lower limit and the average power consumption
+                        consumptionDelta = Math.Abs(lowerlimit - avgPowerConsumption);
+                        // Calculate the new power value based on the consumption delta
+                        calcPowerValue = lastCommitedPowerValue - (consumptionDelta / devices.Count);
+                    }
+                }
+                // If the total power is less than 0, it indicates power production
+                else if (value.TotalPower < 0)
+                {
+                    // If the average power production is less than the lower limit
+                    if (avgPowerProduction < lowerlimit)
+                    {
+                        // Calculate the difference between the average power production and the
+                        // lower limit
+                        productionDelta = Math.Abs(avgPowerProduction - lowerlimit);
+                        // Add or update the trace value for the delta power value
+                        ApiSettingAvgPowerAdjustmentTraceValues.AddOrUpdate(new APiTraceValue() { Index = 4, Key = "DeltaPowerValue", Value = productionDelta.ToString() });
+                        // Calculate the new power value based on the production delta
+                        calcPowerValue = lastCommitedPowerValue - (productionDelta / devices.Count);
+                    }
+                    // If the average power production is greater than the upper limit
+                    else if (avgPowerProduction > upperlimit)
+                    {
+                        // Calculate the difference between the average power production and the
+                        // upper limit
+                        productionDelta = Math.Abs(avgPowerProduction - upperlimit);
+                        // Calculate the new power value based on the production delta
+                        calcPowerValue = lastCommitedPowerValue + (productionDelta / devices.Count);
+                    }
+                }
+
+                var maxPower = ApiSettingMaxPower / devices.Count;
+
+                newPowerValue = calcPowerValue > maxPower ? maxPower : calcPowerValue < 0 ? 0 : calcPowerValue;
+
+                if (newPowerValue <= maxPower && newPowerValue > 0)
+                {
+                    if (newPowerValue != lastRequestedPowerValue)
+                    {
+                        device.PowerValueLastChanged = value.TS;
+                        device.PowerValueRequested = newPowerValue;
+                        value.RequestedPowerValue = newPowerValue;
+
+                        GrowattDeviceQueryQueueWatchdog.Enqueue(new DeviceNoahSetPowerQuery()
+                        {
+                            DeviceType = "noah",
+                            DeviceSn = device.DeviceSn,
+                            Value = newPowerValue,
+                            TS = value.TS
+                        });
+
+                        ApiSettingAvgPowerAdjustmentTraceValues.AddOrUpdate(new APiTraceValue() { Index = 5, Key = "NewPowerValue", Value = newPowerValue.ToString() });
+                    }
+                }
+                else
+                {
+                    if (value.TotalPower > 0)
+                    {
+                        Trace.WriteLine($"TotalPower: {value.TotalPower}, AvgPowerProduction: {avgPowerConsumption}, upperDelta: {consumptionDelta} = {avgPowerConsumption} - {upperlimit}", "ApiService");
+                        Trace.WriteLine($"lastCommitedPowerValue: {lastCommitedPowerValue}, upperDelta: {consumptionDelta} = {avgPowerConsumption} - {upperlimit}, calcPowerValue: {calcPowerValue}, OffSet: {ApiSettingAvgPowerOffset}", "ApiService");
+                    }
+                    if (value.TotalPower < 0)
+                    {
+                        Trace.WriteLine($"TotalPower: {value.TotalPower}, AvgPowerProduction: {avgPowerProduction}, lowerDelta: {productionDelta} = {avgPowerProduction} - {lowerlimit}", "ApiService");
+                        Trace.WriteLine($"lastCommitedPowerValue: {lastCommitedPowerValue} - lowerDelta: {productionDelta}, calcPowerValue: {calcPowerValue}, OffSet: {ApiSettingAvgPowerOffset}", "ApiService");
+                    }
+                }
+
+                ApiInvokeStateHasChanged();
+            }
+
+            return Task.CompletedTask;
+        }
+
+        private Task TibberRTMCalcAvgOfLastSeconds(RealTimeMeasurementExtention value)
+        {
+            lock (TibberRealTimeMeasurement._syncRoot)
+            {
+                var measurementsQuery = TibberRealTimeMeasurement;
+
+                if (ApiSettingAvgPowerLoadSeconds > 0)
+                    measurementsQuery.Where(m => m.Timestamp >= CurrentState.Now.AddSeconds(-ApiSettingAvgPowerLoadSeconds));
+
+                var measurements = measurementsQuery.ToList();
+
+                measurements.Add(value);
+
+                var powerConsumptionCompleteMeasurements = measurements.OrderByDescending(m => m.Timestamp).ToList().GetEnumerator();
+
+                List<RealTimeMeasurementExtention> powerConsumptionUntilZero = [];
+
+                while (powerConsumptionCompleteMeasurements.MoveNext())
+                {
+                    if (powerConsumptionCompleteMeasurements.Current.Power == 0) break;
+                    powerConsumptionUntilZero.Add(powerConsumptionCompleteMeasurements.Current);
+                }
+
+                value.AvgPowerConsumption = value.Power > 0 ? (int)powerConsumptionUntilZero.Average(m => m.Power) : 0;
+
+                var powerProductionCompleteMeasurements = measurements.OrderByDescending(m => m.Timestamp).ToList().GetEnumerator();
+
+                List<RealTimeMeasurementExtention> powerProductionUntilZero = [];
+
+                while (powerProductionCompleteMeasurements.MoveNext())
+                {
+                    if (powerProductionCompleteMeasurements.Current.PowerProduction == 0) break;
+                    powerProductionUntilZero.Add(powerProductionCompleteMeasurements.Current);
+                }
+
+                value.AvgPowerProduction = value.PowerProduction > 0 ? (int)powerProductionUntilZero.Average(m => m.PowerProduction ?? 0) : 0;
+            }
+
+            return Task.CompletedTask;
+        }
+
+        private async Task TibberRTMProceeding(RealTimeMeasurementExtention value)
         {
             if (ApiSettingAutoMode && CurrentState.IsGrowattOnline)
             {
@@ -1120,7 +1094,7 @@ namespace EnergyAutomate.Services
                         if (ApiSettingBatteryPriorityMode)
                         {
                             Trace.WriteLine($"Not in grace periode: Running LoadBalanceRule one time", "ApiService");
-                            await ApiAdjustPower(value);
+                            await TibberRTMAdjustPower(value);
                         }
                         else
                         {
@@ -1168,7 +1142,7 @@ namespace EnergyAutomate.Services
                     }
                     else
                     {
-                        await ApiAdjustPower(value);
+                        await TibberRTMAdjustPower(value);
                     }
                 }
                 CurrentState.IsRTMAutoModeRunning = true;
@@ -1216,7 +1190,7 @@ namespace EnergyAutomate.Services
 
                 // Prüfe, ob der Datensatz bereits existiert
                 var existingDevice = await dbContext.Prices.FirstOrDefaultAsync(x => x.StartsAt == price.StartsAt);
-                if(existingDevice == null)
+                if (existingDevice == null)
                 {
                     // Füge den neuen Datensatz hinzu
                     dbContext.Prices.Add(price);
@@ -1249,7 +1223,7 @@ namespace EnergyAutomate.Services
 
                 var realTimeMeasurementExtention = new RealTimeMeasurementExtention(value);
 
-                ApiCalcAvgOfLastSeconds(realTimeMeasurementExtention);
+                await TibberRTMCalcAvgOfLastSeconds(realTimeMeasurementExtention);
 
                 ApiSettingAvgPowerAdjustmentTraceValues.AddOrUpdate(new APiTraceValue() { Index = 1, Key = "AvgPowerConsumption", Value = realTimeMeasurementExtention.AvgPowerConsumption.ToString() });
                 ApiSettingAvgPowerAdjustmentTraceValues.AddOrUpdate(new APiTraceValue() { Index = 2, Key = "AvgPowerProduction", Value = realTimeMeasurementExtention.AvgPowerProduction.ToString() });
@@ -1263,7 +1237,7 @@ namespace EnergyAutomate.Services
 
                 await dbContext.SaveChangesAsync(); // Änderungen speichern
 
-                await TibberDoRealTimeMeasurement(realTimeMeasurementExtention);
+                await TibberRTMProceeding(realTimeMeasurementExtention);
 
                 if (realTimeMeasurementExtention.RequestedPowerValue.HasValue)
                     Logger.LogDebug($"RequestedPowerValue: {realTimeMeasurementExtention.RequestedPowerValue}");

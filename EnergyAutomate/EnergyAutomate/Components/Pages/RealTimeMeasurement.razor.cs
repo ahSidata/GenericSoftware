@@ -4,7 +4,6 @@ using EnergyAutomate.Definitions;
 using Microsoft.AspNetCore.Components;
 using System.Collections.Specialized;
 using System.Diagnostics;
-using System.Linq;
 
 namespace EnergyAutomate.Components.Pages
 {
@@ -12,13 +11,13 @@ namespace EnergyAutomate.Components.Pages
     {
         #region Fields
 
-        private readonly IEnumerable<TickMark> ApiSettingTimeOffsetTickList = GenerateTickTickMarks(-12, 12, 1);
+        private readonly IEnumerable<TickMark> ApiDataReadsDelaySecTickList = GenerateTickTickMarks(0, 600, 60);
         private readonly IEnumerable<TickMark> ApiLockSecondsTickList = GenerateTickTickMarks(100, 1000, 50);
         private readonly IEnumerable<TickMark> ApiMaxPowerTickList = GenerateTickTickMarks(700, 900, 10);
         private readonly IEnumerable<TickMark> ApiOffsetAvgTickList = GenerateTickTickMarks(-25, 150, 5);
+        private readonly IEnumerable<TickMark> ApiSettingTimeOffsetTickList = GenerateTickTickMarks(-12, 12, 1);
         private readonly IEnumerable<TickMark> ApiToleranceAvgTickList = GenerateTickTickMarks(0, 300, 10);
         private readonly IEnumerable<TickMark> AvgPowerLoadSecondsTickList = GenerateTickTickMarks(0, 180, 5);
-        private readonly IEnumerable<TickMark> ApiDataReadsDelaySecTickList = GenerateTickTickMarks(0, 600, 60);
         private Tabs tabsMainRef = default!;
 
         #endregion Fields
@@ -121,7 +120,7 @@ namespace EnergyAutomate.Components.Pages
         {
             var dataItems = ApiService.TibberGetPriceDatas();
             var today = DateTimeOffset.UtcNow;
-         
+
             // Offset auslesen
             TimeSpan offset = dataItems.FirstOrDefault()?.StartsAt.Offset ?? new TimeSpan(0);
 
@@ -130,7 +129,6 @@ namespace EnergyAutomate.Components.Pages
 
             // Offset auf UTC-Zeit addieren
             DateTimeOffset currentTime = new DateTimeOffset(DateTime.UtcNow).ToOffset(offset);
-
 
             var hours = dataItems.Select(s => s.StartsAt.Hour);
             var dataPoints = dataItems.Select(x => (double?)x.Total).ToList();
@@ -141,14 +139,14 @@ namespace EnergyAutomate.Components.Pages
             double? avgTomorrow = dataTomorrow.Average(x => (double?)x.Total);
 
             var dataAvgPoints = dataToday.Select(x => (double?)x.Total < avgToday ? (double?)x.Total : avgToday).Concat(dataTomorrow.Select(x => (double?)x.Total < avgTomorrow ? (double?)x.Total : avgTomorrow)).ToList();
-            var dataHighPrices = dataToday.Select(x => (int)(x.Level ?? 0) > 2 ? avgToday : null).Concat(dataTomorrow.Select(x => (int)(x.Level ?? 0) > 2 ? avgTomorrow : null)).ToList(); 
+            var dataHighPrices = dataToday.Select(x => (int)(x.Level ?? 0) > 2 ? avgToday : null).Concat(dataTomorrow.Select(x => (int)(x.Level ?? 0) > 2 ? avgTomorrow : null)).ToList();
 
-            var dataCurrentHour = dataToday.Select((x, index) => 
+            var dataCurrentHour = dataToday.Select((x, index) =>
                 index < 25 &&
-                ( x.StartsAt.Hour == currentTime.Hour || x.StartsAt.Hour == currentTime.Hour + 1)
+                (x.StartsAt.Hour == currentTime.Hour || x.StartsAt.Hour == currentTime.Hour + 1)
                 ? (double?)x.Total : null
-                ).Concat(dataTomorrow.Select(x => (double?)null)).ToList(); 
-  
+                ).Concat(dataTomorrow.Select(x => (double?)null)).ToList();
+
             priceData = new ChartData
             {
                 Labels = hours.Select(x => x.ToString()).ToList(),
@@ -399,40 +397,19 @@ namespace EnergyAutomate.Components.Pages
 
         #region Growatt
 
-        private Tabs tabsGrowattRef = default!;
-
         private Grid<GrowattProgram> gridPrograms = default!;
-
-        private IEnumerable<GrowattProgram>? listPrograms;
-
         private HashSet<GrowattProgram>? GrowattSelectedPrograms;
-
-        private async Task<GridDataProviderResult<GrowattProgram>> GrowattProgramDataProvider(GridDataProviderRequest<GrowattProgram> request)
+        private IEnumerable<GrowattProgram>? listPrograms;
+        private Tabs tabsGrowattRef = default!;
+        private int ApiSettingDataReadsDelaySec_DeviceNoahInfoQuery
         {
-            Console.WriteLine("EmployeesDataProvider called...");
-
-            if (listPrograms is null) // pull employees only one time for client-side filtering, sorting, and paging
-                listPrograms = GrowattGetPrograms(); // call a service or an API to pull the employees
-
-            return await Task.FromResult(request.ApplyTo(listPrograms));
-        }
-
-        private IEnumerable<GrowattProgram> GrowattGetPrograms()
-        {
-            return new List<GrowattProgram>() {
-                new GrowattProgram() { Id = "1", Name = "Program 1", IsActive = true },
-                new GrowattProgram() { Id = "2", Name = "Program 2", IsActive = false },
-                new GrowattProgram() { Id = "3", Name = "Program 3", IsActive = false }
-            };
-        }
-
-        public async Task GrowattSetProgramActive(GrowattProgram? growattProgram)
-        {
-            if (growattProgram != null)
+            get
             {
-                await ApiService.GrowattSetProgramActive(growattProgram);
-                GrowattSelectedPrograms = null;
-                await gridPrograms.RefreshDataAsync();
+                return ApiService.ApiSettingDataReadsDelaySec["DeviceNoahInfoQuery"];
+            }
+            set
+            {
+                ApiService.ApiSettingDataReadsDelaySec["DeviceNoahInfoQuery"] = value;
             }
         }
 
@@ -446,21 +423,37 @@ namespace EnergyAutomate.Components.Pages
             {
                 ApiService.ApiSettingDataReadsDelaySec["DeviceNoahLastDataQuery"] = value;
             }
-        }        
-        
-        private int ApiSettingDataReadsDelaySec_DeviceNoahInfoQuery
+        }
+
+        public async Task GrowattSetProgramActive(GrowattProgram? growattProgram)
         {
-            get
+            if (growattProgram != null)
             {
-                return ApiService.ApiSettingDataReadsDelaySec["DeviceNoahInfoQuery"];
-            }
-            set
-            {
-                ApiService.ApiSettingDataReadsDelaySec["DeviceNoahInfoQuery"] = value;
+                await ApiService.GrowattSetProgramActive(growattProgram);
+                GrowattSelectedPrograms = null;
+                await gridPrograms.RefreshDataAsync();
             }
         }
 
-        #endregion Growatt
+        private IEnumerable<GrowattProgram> GrowattGetPrograms()
+        {
+            return new List<GrowattProgram>() {
+                new GrowattProgram() { Id = "1", Name = "Program 1", IsActive = true },
+                new GrowattProgram() { Id = "2", Name = "Program 2", IsActive = false },
+                new GrowattProgram() { Id = "3", Name = "Program 3", IsActive = false }
+            };
+        }
 
+        private async Task<GridDataProviderResult<GrowattProgram>> GrowattProgramDataProvider(GridDataProviderRequest<GrowattProgram> request)
+        {
+            Console.WriteLine("EmployeesDataProvider called...");
+
+            if (listPrograms is null) // pull employees only one time for client-side filtering, sorting, and paging
+                listPrograms = GrowattGetPrograms(); // call a service or an API to pull the employees
+
+            return await Task.FromResult(request.ApplyTo(listPrograms));
+        }
+
+        #endregion Growatt
     }
 }
