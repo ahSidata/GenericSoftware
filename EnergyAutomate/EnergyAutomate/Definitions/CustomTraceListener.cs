@@ -37,7 +37,7 @@ public class CustomTraceListener : TraceListener
             LogMessages.Add(new CustomTraceLog()
             {
                 Message = message,
-                TS = _serviceProvider.GetRequiredService<ApiService>().ApiSettingCurrentHour,
+                TS = _serviceProvider.GetRequiredService<ApiService>().CurrentState.Now,
                 Category = category
             });
         }

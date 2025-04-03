@@ -4,6 +4,7 @@ using EnergyAutomate.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace EnergyAutomate.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250402182320_TableChange20")]
+    partial class TableChange20
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -665,9 +668,8 @@ namespace EnergyAutomate.Migrations
 
             modelBuilder.Entity("EnergyAutomate.TibberPrice", b =>
                 {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<DateTime>("StartsAt")
+                        .HasColumnType("datetime2");
 
                     b.Property<bool?>("AutoModeRestriction")
                         .HasColumnType("bit");
@@ -675,13 +677,16 @@ namespace EnergyAutomate.Migrations
                     b.Property<int?>("Level")
                         .HasColumnType("int");
 
-                    b.Property<DateTimeOffset>("StartsAt")
+                    b.Property<DateTimeOffset>("StartsAtOffset")
                         .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("StartsAtString")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<decimal?>("Total")
                         .HasColumnType("decimal(18,2)");
 
-                    b.HasKey("Id");
+                    b.HasKey("StartsAt");
 
                     b.ToTable("Prices");
                 });

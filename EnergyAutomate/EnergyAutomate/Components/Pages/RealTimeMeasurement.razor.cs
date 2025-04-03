@@ -119,26 +119,36 @@ namespace EnergyAutomate.Components.Pages
 
         private void GetPriceData()
         {
-            var todayOnly = ApiService.ApiSettingCurrentHour.Hour < 13;
-            var hours = Enumerable.Range(0, todayOnly ? 24 : 48).Select(i => i % 24).ToArray();
-            var dataTodayItems = ApiService.TibberGetPriceTodayDatas();
-            var dataTomorrowItems = ApiService.TibberGetPriceTomorrowDatas();
-            List<double?> dataToday = dataTodayItems.Select(x => (double?)x.Total).ToList();
-            List<double?> dataTomorrow = dataTomorrowItems.Select(x => (double?)x.Total).ToList();
-            double? avgToday = dataToday.Any() ? dataToday.Average() : 0;
-            double? avgTomorrow = dataTomorrow.Any() ? dataTomorrow.Average() : 0;
+            var dataItems = ApiService.TibberGetPriceDatas();
+            var today = DateTimeOffset.UtcNow;
+         
+            // Offset auslesen
+            TimeSpan offset = dataItems.FirstOrDefault()?.StartsAt.Offset ?? new TimeSpan(0);
 
-            var dataPoints = todayOnly ? dataToday : dataToday.Concat(dataTomorrow).ToList();
-            var currentHour = ApiService.ApiSettingCurrentHour.Hour;
+            // Beispiel UTC-Zeit
+            DateTime utcTime = DateTime.UtcNow;
 
-            var dataCurrentHour = dataTodayItems.Concat(dataTomorrowItems).Select((point, index) => index < 23 && point.StartsAt.Hour == currentHour || point.StartsAt.Hour == currentHour + 1 ? (double?)point.Total : null).ToList();
-            var dataAvgPoints = dataToday.Select(point => point > avgToday ? avgToday : point).Concat(dataTomorrow.Select(point => point > avgTomorrow ? avgTomorrow : point)).ToList();
-            var dataAvgLinePoints = Enumerable.Repeat(avgToday, dataToday.Count).Concat(Enumerable.Repeat(avgTomorrow, dataTomorrow.Count)).ToList();
+            // Offset auf UTC-Zeit addieren
+            DateTimeOffset currentTime = new DateTimeOffset(DateTime.UtcNow).ToOffset(offset);
 
-            var highPriceToday = dataTodayItems.Select(s => (int)(s.Level ?? 0) > 2 ? avgToday : null).ToList();
-            var highPriceTomorrow = dataTomorrowItems.Select(s => (int)(s.Level ?? 0) > 2 ? avgTomorrow : null).ToList();
-            var avghighPrices = highPriceToday.Concat(highPriceTomorrow).ToList();
 
+            var hours = dataItems.Select(s => s.StartsAt.Hour);
+            var dataPoints = dataItems.Select(x => (double?)x.Total).ToList();
+
+            var dataToday = dataItems.Take(24).ToList();
+            var dataTomorrow = dataItems.Skip(24).Take(24).ToList();
+            double? avgToday = dataToday.Average(x => (double?)x.Total);
+            double? avgTomorrow = dataTomorrow.Average(x => (double?)x.Total);
+
+            var dataAvgPoints = dataToday.Select(x => (double?)x.Total < avgToday ? (double?)x.Total : avgToday).Concat(dataTomorrow.Select(x => (double?)x.Total < avgTomorrow ? (double?)x.Total : avgTomorrow)).ToList();
+            var dataHighPrices = dataToday.Select(x => (int)(x.Level ?? 0) > 2 ? avgToday : null).Concat(dataTomorrow.Select(x => (int)(x.Level ?? 0) > 2 ? avgTomorrow : null)).ToList(); 
+
+            var dataCurrentHour = dataToday.Select((x, index) => 
+                index < 25 &&
+                ( x.StartsAt.Hour == currentTime.Hour || x.StartsAt.Hour == currentTime.Hour + 1)
+                ? (double?)x.Total : null
+                ).Concat(dataTomorrow.Select(x => (double?)null)).ToList(); 
+  
             priceData = new ChartData
             {
                 Labels = hours.Select(x => x.ToString()).ToList(),
@@ -155,7 +165,7 @@ namespace EnergyAutomate.Components.Pages
                         HoverBorderWidth = 4,
                         Fill = true,
                         Stepped = true,
-                        Order = 6
+                        Order = 5
                     },
                     new LineChartDataset()
                     {
@@ -167,29 +177,29 @@ namespace EnergyAutomate.Components.Pages
                         HoverBorderWidth = 4,
                         Fill = true,
                         Stepped = true,
-                        Order = 5
+                        Order = 4
+                    },
+                    new LineChartDataset()
+                    {
+                        Label = "AvgLine",
+                        Data = dataAvgPoints,
+                        BackgroundColor = "rgb(0, 0, 0)",
+                        BorderColor = "rgb(0, 0, 0)",
+                        BorderWidth = 2,
+                        PointRadius = new List<double>() { 0.0 },
+                        Stepped = true,
+                        Order = 3
                     },
                     new LineChartDataset()
                     {
                         Label = "Avg high price",
-                        Data = avghighPrices,
+                        Data = dataHighPrices,
                         BackgroundColor = "rgb(0, 128, 255)",
                         BorderColor = "rgb(0, 128, 255)",
                         BorderWidth = 2,
                         PointRadius = new List<double>() { 0.0 },
                         Stepped = true,
                         Fill = true,
-                        Order = 3
-                    },
-                    new LineChartDataset()
-                    {
-                        Label = "AvgLine",
-                        Data = dataAvgLinePoints,
-                        BackgroundColor = "rgb(0, 0, 0)",
-                        BorderColor = "rgb(0, 0, 0)",
-                        BorderWidth = 2,
-                        PointRadius = new List<double>() { 0.0 },
-                        Stepped = true,
                         Order = 2
                     },
                     new LineChartDataset()

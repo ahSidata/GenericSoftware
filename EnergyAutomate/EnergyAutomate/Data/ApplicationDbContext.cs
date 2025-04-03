@@ -46,7 +46,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
         modelBuilder.Entity<RealTimeMeasurementExtention>()
             .HasKey(x => new { x.Timestamp });
 
-        modelBuilder.Entity<TibberPrice>().HasKey(x => new { x.StartsAt });
+        modelBuilder.Entity<TibberPrice>().HasKey(x => new { x.Id });
 
         // Set all string properties to be nullable
         foreach (var entityType in modelBuilder.Model.GetEntityTypes())

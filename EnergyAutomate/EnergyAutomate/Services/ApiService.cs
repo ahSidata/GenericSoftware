@@ -2,6 +2,7 @@ using EnergyAutomate.Definitions;
 using Growatt.OSS;
 using Growatt.Sdk;
 using Microsoft.EntityFrameworkCore;
+using System;
 using System.Diagnostics;
 using Tibber.Sdk;
 
@@ -14,8 +15,7 @@ namespace EnergyAutomate.Services
         private readonly Lock lockAdjustPower = new();
         private readonly Lock lockLoadBalance = new();
         private readonly int timerPenalty = 0;
-        private bool isRealTimeMeasurementAutoModeRunning = false;
-        private bool isRealTimeMeasurementRestrictionRunning = false;
+
 
         #endregion Fields
 
@@ -23,6 +23,7 @@ namespace EnergyAutomate.Services
 
         public ApiService(IServiceProvider serviceProvider)
         {
+            CurrentState = new ApiState(this);
             ServiceProvider = serviceProvider;
             GrowattDeviceQueryQueueWatchdog.OnItemDequeued += GrowattDeviceQueryQueueWatchdog_OnItemDequeued;
             TibberRealTimeMeasurement.CollectionChanged += (sender, e) => { GrowattRealTimeMeasurementChanged?.Invoke(sender, e); };
@@ -40,6 +41,8 @@ namespace EnergyAutomate.Services
 
         #region Properties
 
+        public ApiState CurrentState { get; set; } 
+
         public bool ApiSettingAutoMode { get; set; }
         public bool ApiSettingRestrictionMode { get; set; } = false;
         public bool ApiSettingAutoModeRestrictionCurrentState { get; set; } = false;
@@ -47,7 +50,7 @@ namespace EnergyAutomate.Services
         public int ApiSettingAvgPowerHysteresis { get; set; } = 50;
         public int ApiSettingAvgPowerLoadSeconds { get; set; } = 0;
         public int ApiSettingAvgPowerOffset { get; set; } = 25;
-        public DateTime ApiSettingCurrentHour => DateTime.Now.AddHours(ApiSettingTimeOffset);
+
         public Dictionary<string, int> ApiSettingDataReadsDelaySec { get; set; } = new Dictionary<string, int>() {
             { nameof(DeviceNoahInfoQuery), 60 * 2} ,
             { nameof(DeviceNoahLastDataQuery), 60 } ,
@@ -57,7 +60,7 @@ namespace EnergyAutomate.Services
         };
         public bool ApiSettingBatteryPriorityMode { get; set; } = false;
         public int ApiSettingMaxPower { get; set; } = 840;
-        public int ApiSettingTimeOffset { get; set; } = 0;
+        public int ApiSettingTimeOffset { get; set; } = DateTimeOffset.Now.Offset.Hours;
         public TimeOnly SunRise { get; set; } = new TimeOnly(8, 0);
         public TimeOnly SunSet { get; set; } = new TimeOnly(16, 0);
         private ApiRealTimeMeasurementWatchdog ApiRealTimeMeasurementWatchdog => ServiceProvider.GetRequiredService<ApiRealTimeMeasurementWatchdog>();
@@ -79,7 +82,7 @@ namespace EnergyAutomate.Services
 
         public bool ApiGetCurrentAutoModeRestriction()
         {
-            var level = TibberPrices.OrderBy(o => o.StartsAt).FirstOrDefault(x => x.StartsAt > ApiSettingCurrentHour.AddHours(-1))?.Level ?? PriceLevel.Normal;
+            var level = TibberPrices.OrderBy(o => o.StartsAt).FirstOrDefault(x => x.StartsAt > CurrentState.Now.AddHours(-1))?.Level ?? PriceLevel.Normal;
             return level == PriceLevel.Expensive || level == PriceLevel.VeryExpensive;
         }
 
@@ -138,7 +141,7 @@ namespace EnergyAutomate.Services
 
         public bool GrowattDataReadsDoRefresh(string queryType, int? delay = null)
         {
-            return !GrowattDataReads.Where(x => x.MethodeName == queryType && x.TimeStamp > ApiSettingCurrentHour.AddSeconds(-(delay ?? ApiSettingDataReadsDelaySec[queryType]))).Any();
+            return !GrowattDataReads.Where(x => x.MethodeName == queryType && x.TimeStamp > CurrentState.Now.AddSeconds(-(delay ?? ApiSettingDataReadsDelaySec[queryType]))).Any();
         }
 
         public int GrowattDeviceQueryQueueWatchdogCount()
@@ -146,16 +149,16 @@ namespace EnergyAutomate.Services
             return GrowattDeviceQueryQueueWatchdog.Count;
         }
 
-        public Task GrowattGetDevice()
+        public Task GrowattGetDevice(bool force = false)
         {
-            GrowattDeviceQueryQueueWatchdog.Enqueue(new DeviceListQuery());
+            GrowattDeviceQueryQueueWatchdog.Enqueue(new DeviceListQuery() { Force = force });
 
             return Task.CompletedTask;
         }
 
         public Task GrowattGetDeviceNoahInfo(bool force = false)
         {
-            if (GrowattIsOnline())
+            if (CurrentState.IsGrowattOnline)
             {
                 var deviceSnList = GetGrowattDeviceSnList();
 
@@ -170,9 +173,9 @@ namespace EnergyAutomate.Services
             return Task.CompletedTask;
         }
 
-        public Task GrowattGetDeviceNoahLastData()
+        public Task GrowattGetDeviceNoahLastData(bool force = false)
         {
-            if (GrowattIsOnline())
+            if (CurrentState.IsGrowattOnline)
             {
                 var deviceSnList = GetGrowattDeviceSnList();
 
@@ -180,6 +183,7 @@ namespace EnergyAutomate.Services
                 {
                     DeviceType = "noah",
                     DeviceSn = deviceSnList,
+                    Force = force
                 });
             }
 
@@ -192,7 +196,7 @@ namespace EnergyAutomate.Services
         {
             lock (TibberRealTimeMeasurement._syncRoot)
             {
-                return TibberRealTimeMeasurement.Where(x => x.Timestamp > ApiSettingCurrentHour.AddDays(-1) && x.CommitedPowerValue != null).OrderByDescending(x => x.Timestamp).FirstOrDefault();
+                return TibberRealTimeMeasurement.Where(x => x.Timestamp > CurrentState.Now.AddDays(-1) && x.CommitedPowerValue != null).OrderByDescending(x => x.Timestamp).FirstOrDefault();
             }
         }
 
@@ -202,7 +206,7 @@ namespace EnergyAutomate.Services
         {
             lock (TibberRealTimeMeasurement._syncRoot)
             {
-                return TibberRealTimeMeasurement.Where(x => x.Timestamp > ApiSettingCurrentHour.AddDays(-1) && x.RequestedPowerValue != null).OrderByDescending(x => x.Timestamp).FirstOrDefault();
+                return TibberRealTimeMeasurement.Where(x => x.Timestamp > CurrentState.Now.AddDays(-1) && x.RequestedPowerValue != null).OrderByDescending(x => x.Timestamp).FirstOrDefault();
             }
         }
 
@@ -254,24 +258,24 @@ namespace EnergyAutomate.Services
 
         public Task GrowattInvokeRefreshDeviceList()
         {
-            GrowattGetDevice();
-            GrowattGetDeviceNoahInfo();
-            GrowattGetDeviceNoahLastData();
+            GrowattGetDevice(true);
+            GrowattGetDeviceNoahInfo(true);
+            GrowattGetDeviceNoahLastData(true);
 
             return Task.CompletedTask;
         }
 
         public Task GrowattInvokeRefreshNoahs()
         {
-            GrowattGetDeviceNoahInfo();
-            GrowattGetDeviceNoahLastData();
+            GrowattGetDeviceNoahInfo(true);
+            GrowattGetDeviceNoahLastData(true);
 
             return Task.CompletedTask;
         }
 
         public Task GrowattInvokeRefreshNoahsLastData()
         {
-            GrowattGetDeviceNoahLastData();
+            GrowattGetDeviceNoahLastData(true);
 
             return Task.CompletedTask;
         }
@@ -349,24 +353,10 @@ namespace EnergyAutomate.Services
             }
         }
 
-        public List<TibberPrice> TibberGetPriceTodayDatas()
+        public List<TibberPrice> TibberGetPriceDatas()
         {
-            var priceDates = TibberPrices.GroupBy(x => x.StartsAt.Date).ToList();
-            var result = priceDates.OrderByDescending(x => x.Key).Take(2);
-            var today = result.OrderBy(x => x.Key).FirstOrDefault()?.Key;
-            var dataToday = today.HasValue ? TibberPrices.Where(x => x.StartsAt.Date == today.Value.Date).OrderBy(x => x.StartsAt).ToList() : new List<TibberPrice>();
-
-            return dataToday;
-        }
-
-        public List<TibberPrice> TibberGetPriceTomorrowDatas()
-        {
-            var priceDates = TibberPrices.GroupBy(x => x.StartsAt.Date).ToList();
-            var result = priceDates.OrderByDescending(x => x.Key).Take(2);
-            var tomorrow = result.OrderBy(x => x.Key).LastOrDefault()?.Key;
-            var dataTomorrow = tomorrow.HasValue ? TibberPrices.Where(x => x.StartsAt.Date == tomorrow.Value.Date).OrderBy(x => x.StartsAt).ToList() : new List<TibberPrice>();
-
-            return dataTomorrow;
+            var items = TibberPrices.OrderByDescending(x=> x.StartsAt).Take(48).ToList();
+            return items.OrderBy(x => x.StartsAt).ToList();
         }
 
         public async Task TibberGetTomorrowPrices()
@@ -407,14 +397,14 @@ namespace EnergyAutomate.Services
 
                     await TibberSavePrices(result.Data.Viewer.Home.CurrentSubscription.PriceInfo.Tomorrow.Select(x => new TibberPrice()
                     {
-                        StartsAt = DateTime.Parse(x.StartsAt),
+                        StartsAt = DateTimeOffset.Parse(x.StartsAt),
                         Total = x.Total,
                         Level = x.Level
                     }).ToList()
                     );
                     await TibberSavePrices(result.Data.Viewer.Home.CurrentSubscription.PriceInfo.Today.Select(x => new TibberPrice()
                     {
-                        StartsAt = DateTime.Parse(x.StartsAt),
+                        StartsAt = DateTimeOffset.Parse(x.StartsAt),
                         Total = x.Total,
                         Level = x.Level
                     }).ToList()
@@ -570,14 +560,12 @@ namespace EnergyAutomate.Services
 
         private void ApiCalcAvgOfLastSeconds(RealTimeMeasurementExtention value)
         {
-            var now = DateTimeOffset.Now;
-
             lock (TibberRealTimeMeasurement._syncRoot)
             {
                 var measurementsQuery = TibberRealTimeMeasurement;
 
                 if (ApiSettingAvgPowerLoadSeconds > 0)
-                    measurementsQuery.Where(m => m.Timestamp >= now.AddSeconds(-ApiSettingAvgPowerLoadSeconds));
+                    measurementsQuery.Where(m => m.Timestamp >= CurrentState.Now.AddSeconds(-ApiSettingAvgPowerLoadSeconds));
 
                 var measurements = measurementsQuery.ToList();
 
@@ -636,7 +624,7 @@ namespace EnergyAutomate.Services
 
         private Task ApiLoadBalance(RealTimeMeasurementExtention value)
         {
-            if (ApiSettingAutoMode && GrowattIsOnline())
+            if (ApiSettingAutoMode && CurrentState.IsGrowattOnline)
             {
 
             }
@@ -747,7 +735,7 @@ namespace EnergyAutomate.Services
             var entry = new ApiCallLog()
             {
                 MethodeName = item.GetType().Name,
-                TimeStamp = ApiSettingCurrentHour,
+                TimeStamp = CurrentState.Now,
                 RaisedError = false
             };
 
@@ -900,20 +888,6 @@ namespace EnergyAutomate.Services
             }
         }
 
-        private bool GrowattIsOnline()
-        {
-            var devices = GrowattDevices.Where(x => x.DeviceType == "noah").ToList();
-
-            foreach (var device in devices)
-            {
-                if (device.IsOfflineSince == null)
-                {
-                    return true;
-                }
-            }
-            return false;
-        }
-
         private async Task GrowattSaveDeviceList(List<DeviceList> deviceLists)
         {
             var dbContext = ApiGetDbContext();
@@ -937,6 +911,7 @@ namespace EnergyAutomate.Services
                     dbContext.Devices.Add(deviceList);
                 }
             }
+
             await dbContext.SaveChangesAsync();
 
             ApiInvokeStateHasChanged();
@@ -985,6 +960,7 @@ namespace EnergyAutomate.Services
                 }
             }
 
+            // Save changes to the database
             await dbContext.SaveChangesAsync();
 
             ApiInvokeStateHasChanged();
@@ -1107,10 +1083,10 @@ namespace EnergyAutomate.Services
 
         private async Task TibberDoRealTimeMeasurement(RealTimeMeasurementExtention value)
         {
-            if (ApiSettingAutoMode && GrowattIsOnline())
+            if (ApiSettingAutoMode && CurrentState.IsGrowattOnline)
             {
                 // If the automatic mode is enabled, the power value is adjusted
-                if (!isRealTimeMeasurementAutoModeRunning)
+                if (!CurrentState.IsRTMAutoModeRunning)
                 {
                     //Clear all time segments
                     await GrowattSetNoDeviceNoahTimeSegments();
@@ -1134,7 +1110,7 @@ namespace EnergyAutomate.Services
                     // value is adjusted
                     if (autoModeRestrictionCurrentState)
                     {
-                        if (!isRealTimeMeasurementRestrictionRunning)
+                        if (!CurrentState.IsRTMRestrictionModeRunning)
                         {
                             Trace.WriteLine($"Are in grace periode: Running SetNoDeviceNoahTimeSegments one time", "ApiService");
                             //Clear all time segments
@@ -1154,13 +1130,13 @@ namespace EnergyAutomate.Services
                             }
                         }
 
-                        isRealTimeMeasurementRestrictionRunning = true;
+                        CurrentState.IsRTMRestrictionModeRunning = true;
                     }
                     // If the automatic mode is enabled and the restriction is not active, the power
                     // value is set to 0
                     else
                     {
-                        if (isRealTimeMeasurementRestrictionRunning)
+                        if (CurrentState.IsRTMRestrictionModeRunning)
                         {
                             //Clear all querys
                             GrowattDeviceQueryQueueWatchdog.Clear();
@@ -1170,11 +1146,11 @@ namespace EnergyAutomate.Services
                             //If loadbalance is active the battety priority is set
                             //await ApiAutoModeDisabledLoadBalanceRule();
 
-                            isRealTimeMeasurementRestrictionRunning = false;
+                            CurrentState.IsRTMRestrictionModeRunning = false;
                         }
 
                         Trace.WriteLine($"Not in grace periode: Nothing to do", "ApiService");
-                        isRealTimeMeasurementRestrictionRunning = false;
+                        CurrentState.IsRTMRestrictionModeRunning = false;
                     }
                 }
                 else
@@ -1195,14 +1171,14 @@ namespace EnergyAutomate.Services
                         await ApiAdjustPower(value);
                     }
                 }
-                isRealTimeMeasurementAutoModeRunning = true;
+                CurrentState.IsRTMAutoModeRunning = true;
             }
             else
             {
-                if (GrowattIsOnline())
+                if (CurrentState.IsGrowattOnline)
                 {
                     // If the automatic mode is disabled, the power value is set to 0
-                    if (isRealTimeMeasurementAutoModeRunning)
+                    if (CurrentState.IsRTMAutoModeRunning)
                     {
                         GrowattDeviceQueryQueueWatchdog.Clear();
 
@@ -1211,7 +1187,7 @@ namespace EnergyAutomate.Services
                         //If loadbalance is active the battety priority is set
                         await ApiAutoModeDisabledLoadBalanceRule();
 
-                        isRealTimeMeasurementAutoModeRunning = false;
+                        CurrentState.IsRTMAutoModeRunning = false;
                     }
                 }
             }
@@ -1239,13 +1215,8 @@ namespace EnergyAutomate.Services
                 TibberPrices.Add(price);
 
                 // Prüfe, ob der Datensatz bereits existiert
-                var existingDevice = await dbContext.Prices.FindAsync(price.StartsAt);
-                if (existingDevice != null)
-                {
-                    // Aktualisiere den bestehenden Datensatz
-                    dbContext.Entry(existingDevice).CurrentValues.SetValues(price);
-                }
-                else
+                var existingDevice = await dbContext.Prices.FirstOrDefaultAsync(x => x.StartsAt == price.StartsAt);
+                if(existingDevice == null)
                 {
                     // Füge den neuen Datensatz hinzu
                     dbContext.Prices.Add(price);
