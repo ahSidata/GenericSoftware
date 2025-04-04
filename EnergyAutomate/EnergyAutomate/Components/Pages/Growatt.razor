@@ -1,0 +1,122 @@
+﻿@page "/growatt"
+
+@using System.Collections.Specialized
+@using BlazorBootstrap
+@using EnergyAutomate.Definitions
+@using EnergyAutomate.Services
+@using Microsoft.AspNetCore.Components.Web
+
+@rendermode Microsoft.AspNetCore.Components.Web.RenderMode.InteractiveServer
+
+@inject ApiService ApiService
+
+<PageTitle>RealTimeMeasurement</PageTitle>
+
+<CardGroup Class="my-3">
+    <Card Class="mb-4" Style="width:18rem;">
+        <CardHeader>Defaults</CardHeader>
+        <CardBody>
+
+        </CardBody>
+    </Card>
+    <Card Class="mb-4" Style="width:18rem;">
+        <CardHeader>Standard elements</CardHeader>
+        <CardBody>
+
+            <Grid @ref="gridElements"
+                  Style="--bb-table-selected-row-color: #fff;--bb-table-selected-row-background-color: #4c0bce;--bb-table-selected-row-hover-color: #fff;--bb-table-selected-row-hover-background-color: #4c0bce;"
+                  Class="table table-hover table-bordered table-striped mt-3"
+                  TItem="GrowattElement"
+                  DataProvider="GrowattElementDataProvider"
+                  @bind-SelectedItems="@GrowattSelectedElements"
+                  AllowSelection="true"
+                  Responsive="true">
+
+                <GridColumns>
+                    <GridColumn TItem="GrowattElement" HeaderText="ElementType" PropertyName="ElementType">
+                        @context.ElementType
+                    </GridColumn>
+                    <GridColumn TItem="GrowattElement" HeaderText="Name" PropertyName="Name">
+                        @context.Name
+                    </GridColumn>
+                    <GridColumn TItem="GrowattElement" HeaderText="IsActive" PropertyName="IsActive">
+                        @context.IsActive
+                    </GridColumn>
+                </GridColumns>
+
+            </Grid>
+            @if (GrowattSelectedElements != null && (GrowattSelectedElements?.Count ?? 0) > 0)
+            {
+                <Button Color="ButtonColor.Primary" @onclick="@(async () => {await GrowattSetElementActive(GrowattSelectedElements?.FirstOrDefault());})">Set "@GrowattSelectedElements?.FirstOrDefault()?.Name" as new active Element</Button>
+            }
+        </CardBody>
+    </Card>
+</CardGroup>
+<Card Class="my-3">
+    <CardHeader>Actions</CardHeader>
+    <CardBody>
+        <Button Color="ButtonColor.Primary" @onclick="ApiService.GrowattInvokeRefreshDeviceList">Refresh Device List</Button>
+        <Button Color="ButtonColor.Primary" @onclick="ApiService.GrowattInvokeClearDeviceNoahTimeSegments">Clear Device Noah Timesegments </Button>
+        <Button Color="ButtonColor.Primary" @onclick="ApiService.GrowattInvokeBattPriorityDeviceNoah">BattPriorityDeviceNoah</Button>
+        <Button Color="ButtonColor.Primary" @onclick="ApiService.GrowattInvokeLoadPriorityDeviceNoah">LoadPriorityDeviceNoah </Button>
+    </CardBody>
+</Card>
+<Card Class="my-3">
+    <CardHeader>Devices</CardHeader>
+    <CardBody>
+        @if (ApiService.GrowattListDevices() == null || !ApiService.GrowattListDevices().Any())
+        {
+            <p>Loading...</p>
+        }
+        else
+        {
+            <ul>
+                @foreach (var device in ApiService.GrowattListDevices())
+                {
+                    <li>@device.DeviceType : @device.DeviceSn </li>
+                }
+            </ul>
+        }
+
+        <Button Color="ButtonColor.Primary" @onclick="ApiService.GrowattInvokeRefreshNoahs">Refresh Noah Devices</Button>
+        <Button Color="ButtonColor.Primary" @onclick="ApiService.GrowattInvokeRefreshNoahsLastData">Refresh Noah Device last data</Button>
+
+        Growatt    @if (!ApiService.GrowattListNoahInfos().Any())
+        {
+            <p>Loading...</p>
+        }
+        else
+        {
+            <Tabs @ref="tabsGrowattRef">
+                @foreach (var deviceInfo in ApiService.GrowattListNoahInfos())
+                {
+                    <Tab Title="@($"{deviceInfo.Model} : {deviceInfo.DeviceSn}")">
+                        <Content>
+                            <div class="mt-3 d-flex">
+                                <div class="flex-column">
+                                    <ul>
+                                        @foreach (var property in deviceInfo.GetType().GetProperties())
+                                        {
+                                            <li>@property.Name : @property.GetValue(deviceInfo)</li>
+                                        }
+                                    </ul>
+                                </div>
+                                <div class="flex-column ml-3">
+                                    <ul>
+                                        @foreach (var lastData in ApiService.GrowattListNoahLastDatas().Where(x => x != null && x.deviceSn == deviceInfo.DeviceSn))
+                                        {
+
+                                            DateTime time = DateTimeOffset.FromUnixTimeMilliseconds(@lastData.time).DateTime;
+
+                                            <li>@time,  Workmode: @lastData.workMode , Power(W): @lastData.ppv, PAC(W): @lastData.pac, ChargingModus: @lastData.totalBatteryPackChargingStatus , Charging(W): @lastData.totalBatteryPackChargingPower , SOC: @lastData.totalBatteryPackSoc</li>
+                                        }
+                                    </ul>
+                                </div>
+                            </div>
+                        </Content>
+                    </Tab>
+                }
+            </Tabs>
+        }
+    </CardBody>
+</Card>

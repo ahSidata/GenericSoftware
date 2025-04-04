@@ -12,6 +12,9 @@
         public DateTimeOffset? PowerValueLastChanged { get; set; }
         public int PowerValueRequested { get; set; }
 
+        public bool IsBatteryEmpty { get; set; }
+        public bool IsBatteryFull { get; set; }
+
         #endregion Properties
     }
 }

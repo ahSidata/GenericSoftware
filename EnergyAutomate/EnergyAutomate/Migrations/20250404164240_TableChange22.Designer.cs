@@ -4,6 +4,7 @@ using EnergyAutomate.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace EnergyAutomate.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250404164240_TableChange22")]
+    partial class TableChange22
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -538,9 +541,8 @@ namespace EnergyAutomate.Migrations
 
             modelBuilder.Entity("EnergyAutomate.Definitions.GrowattElement", b =>
                 {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<string>("Id")
+                        .HasColumnType("nvarchar(450)");
 
                     b.Property<int>("ElementType")
                         .HasColumnType("int");
@@ -553,7 +555,7 @@ namespace EnergyAutomate.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("GrowattElements");
+                    b.ToTable("GrowattElement");
                 });
 
             modelBuilder.Entity("EnergyAutomate.Definitions.RealTimeMeasurementExtention", b =>

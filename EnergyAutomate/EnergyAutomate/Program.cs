@@ -3,11 +3,14 @@ global using EnergyAutomate.Components.Account;
 global using EnergyAutomate.Data;
 global using EnergyAutomate.Services;
 global using EnergyAutomate.Watchdogs;
+using CoordinateSharp;
+using EnergyAutomate.Definitions;
 using Growatt.OSS;
 using Growatt.Sdk;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using System.Diagnostics;
 using System.Net.Http.Headers;
 using Tibber.Sdk;
@@ -38,13 +41,14 @@ public class Program
         if (TraceEnabled)
         {
             // Erstellen und registrieren des benutzerdefinierten Trace-Listeners
-            
-            builder.Services.AddSingleton(sp => {
+
+            builder.Services.AddSingleton(sp =>
+            {
                 var customTraceListener = new CustomTraceListener(sp);
                 Trace.Listeners.Add(customTraceListener);
-                return customTraceListener; 
+                return customTraceListener;
             });
-            
+
         }
 
         // Add services to the container.
@@ -78,6 +82,8 @@ public class Program
 
         builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSender>();
 
+
+        builder.Services.AddTransient(sp => new Coordinate(double.Parse(builder.Configuration["ApiSettings:Latitude"] ?? "0,0"), double.Parse(builder.Configuration["ApiSettings:Longitude"] ?? "0,0"), DateTime.Now));
         builder.Services.AddTransient(sp => new GrowattApiClient("https://openapi.growatt.com", builder.Configuration["ApiSettings:GrowattApiToken"] ?? string.Empty));
         builder.Services.AddTransient(sp => new TibberApiClient(builder.Configuration["ApiSettings:TibberApiToken"] ?? string.Empty, new ProductInfoHeaderValue("EnergyAutomate", "1.0")));
         builder.Services.AddSingleton<ApiService>();
@@ -101,6 +107,14 @@ public class Program
         {
             var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
             dbContext.Database.Migrate();
+            var existingElements = dbContext.GrowattElements.ToList();
+            var newElements = GrowattElements.GrowattDefaultElements().Where(e => !existingElements.Any(existing => existing.Id == e.Id)).ToList();
+
+            if (newElements.Any())
+            {
+                dbContext.GrowattElements.AddRange(newElements);
+                dbContext.SaveChanges();
+            }
         }
 
         app.UseExceptionHandler("/Error");

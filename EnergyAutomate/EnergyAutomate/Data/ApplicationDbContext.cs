@@ -29,6 +29,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<DeviceList> Devices { get; set; }
     public DbSet<TibberPrice> Prices { get; set; }
     public DbSet<RealTimeMeasurementExtention> RealTimeMeasurements { get; set; }
+    public DbSet<GrowattElement> GrowattElements { get; set; }
 
     #endregion Properties
 
@@ -47,6 +48,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
             .HasKey(x => new { x.Timestamp });
 
         modelBuilder.Entity<TibberPrice>().HasKey(x => new { x.Id });
+        modelBuilder.Entity<GrowattElement>().HasKey(x => new { x.Id });
 
         // Set all string properties to be nullable
         foreach (var entityType in modelBuilder.Model.GetEntityTypes())

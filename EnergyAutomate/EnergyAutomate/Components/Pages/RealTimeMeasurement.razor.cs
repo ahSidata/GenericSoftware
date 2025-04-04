@@ -12,8 +12,7 @@ namespace EnergyAutomate.Components.Pages
         #region Fields
 
         private readonly IEnumerable<TickMark> ApiDataReadsDelaySecTickList = GenerateTickTickMarks(0, 600, 60);
-        private readonly IEnumerable<TickMark> ApiLockSecondsTickList = GenerateTickTickMarks(100, 1000, 50);
-        private readonly IEnumerable<TickMark> ApiMaxPowerTickList = GenerateTickTickMarks(700, 900, 10);
+        private readonly IEnumerable<TickMark> ApiPowerTickList = GenerateTickTickMarks(0, 900, 50);
         private readonly IEnumerable<TickMark> ApiOffsetAvgTickList = GenerateTickTickMarks(-25, 150, 5);
         private readonly IEnumerable<TickMark> ApiSettingTimeOffsetTickList = GenerateTickTickMarks(-12, 12, 1);
         private readonly IEnumerable<TickMark> ApiToleranceAvgTickList = GenerateTickTickMarks(0, 300, 10);
@@ -397,10 +396,6 @@ namespace EnergyAutomate.Components.Pages
 
         #region Growatt
 
-        private Grid<GrowattProgram> gridPrograms = default!;
-        private HashSet<GrowattProgram>? GrowattSelectedPrograms;
-        private IEnumerable<GrowattProgram>? listPrograms;
-        private Tabs tabsGrowattRef = default!;
         private int ApiSettingDataReadsDelaySec_DeviceNoahInfoQuery
         {
             get
@@ -423,35 +418,6 @@ namespace EnergyAutomate.Components.Pages
             {
                 ApiService.ApiSettingDataReadsDelaySec["DeviceNoahLastDataQuery"] = value;
             }
-        }
-
-        public async Task GrowattSetProgramActive(GrowattProgram? growattProgram)
-        {
-            if (growattProgram != null)
-            {
-                await ApiService.GrowattSetProgramActive(growattProgram);
-                GrowattSelectedPrograms = null;
-                await gridPrograms.RefreshDataAsync();
-            }
-        }
-
-        private IEnumerable<GrowattProgram> GrowattGetPrograms()
-        {
-            return new List<GrowattProgram>() {
-                new GrowattProgram() { Id = "1", Name = "Program 1", IsActive = true },
-                new GrowattProgram() { Id = "2", Name = "Program 2", IsActive = false },
-                new GrowattProgram() { Id = "3", Name = "Program 3", IsActive = false }
-            };
-        }
-
-        private async Task<GridDataProviderResult<GrowattProgram>> GrowattProgramDataProvider(GridDataProviderRequest<GrowattProgram> request)
-        {
-            Console.WriteLine("EmployeesDataProvider called...");
-
-            if (listPrograms is null) // pull employees only one time for client-side filtering, sorting, and paging
-                listPrograms = GrowattGetPrograms(); // call a service or an API to pull the employees
-
-            return await Task.FromResult(request.ApplyTo(listPrograms));
         }
 
         #endregion Growatt

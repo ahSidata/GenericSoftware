@@ -27,6 +27,8 @@ namespace EnergyAutomate.Watchdogs
         private IServiceProvider ServiceProvider { get; init; }
         private Guid? TibberHomeId { get; set; }
 
+        private IDisposable? RealTimeMeasurementObserver { get; set; }
+
         #endregion Properties
 
         #region Public Methods
@@ -79,7 +81,7 @@ namespace EnergyAutomate.Watchdogs
                         Trace.WriteLine("StartRealTimeMeasurementListener calling ...", "Tibber");
 
                         RealTimeMeasurementListener = await TibberApiClient.StartRealTimeMeasurementListener(TibberHomeId.Value, null, cancellationToken);
-                        _ = RealTimeMeasurementListener.Subscribe(ApiService);
+                        RealTimeMeasurementObserver = RealTimeMeasurementListener.Subscribe(new RealTimeMeasurementObserver(ApiService));
                     }
                     catch (OperationCanceledException ex) when (ex.CancellationToken == cancellationToken)
                     {
@@ -107,6 +109,12 @@ namespace EnergyAutomate.Watchdogs
 
             if (TibberHomeId.HasValue && TibberApiClient != null)
                 await TibberApiClient.StopRealTimeMeasurementListener(TibberHomeId.Value);
+
+            if (RealTimeMeasurementObserver != null)
+            {
+                RealTimeMeasurementObserver.Dispose();
+                RealTimeMeasurementObserver = null;
+            }
         }
 
         #endregion Public Methods
