@@ -149,45 +149,29 @@
                                             </div>
                                         </div>
                                     </li>
-                                    @if (lastInfoItem!.TimeSegments.Where(x => x.Enable == "1").Any())
+                                    @if (lastInfoItem != null && lastInfoItem.TimeSegments.Where(x => x.Enable == "1").Any())
                                     {
-                                        <li class="list-group-item d-flex align-items-center">
-                                            <div class="row w-100">
-                                                <div class="col-md-2">
-                                                    Start
-                                                </div>
-                                                <div class="col-md-2">
-                                                    End
-                                                </div>
-                                                <div class="col-md-2">
-                                                    Power
-                                                </div>
-                                                <div class="col-md-2">
-                                                    Prio
-                                                </div>
-                                            </div>
-                                        </li>
-                                    }
-                                    @foreach (var segment in lastInfoItem!.TimeSegments.Where(x => x.Enable == "1").OrderBy(x => x.StartTime))
-                                    {
-                                        <li class="list-group-item d-flex align-items-center">
-                                            <div class="row w-100">
+                                        @foreach (var segment in lastInfoItem!.TimeSegments.Where(x => x.Enable == "1").OrderBy(x => x.StartTime))
+                                        {
+                                            <li class="list-group-item d-flex align-items-center">
                                                 <div class="row w-100">
-                                                    <div class="col-md-2">
-                                                        @segment.StartTime
-                                                    </div>
-                                                    <div class="col-md-2">
-                                                        @segment.EndTime
-                                                    </div>
-                                                    <div class="col-md-2">
-                                                        @(segment.Mode == "0" ? "Load" : "Batt")
-                                                    </div>
-                                                    <div class="col-md-2">
-                                                        @segment.Power W
+                                                    <div class="row w-100">
+                                                        <div class="col-md-2">
+                                                            @segment.StartTime
+                                                        </div>
+                                                        <div class="col-md-2">
+                                                            @segment.EndTime
+                                                        </div>
+                                                        <div class="col-md-2">
+                                                            @(segment.Mode == "0" ? "Load" : "Batt")
+                                                        </div>
+                                                        <div class="col-md-2">
+                                                            @segment.Power W
+                                                        </div>
                                                     </div>
                                                 </div>
-                                            </div>
-                                        </li>
+                                            </li>
+                                        }
                                     }
                                 </ul>
                             </CardBody>
@@ -289,12 +273,6 @@
                     <CardBody>
                         <div>
                             ApiTimeOffset <RangeInput TValue="int" @bind-Value="ApiService.ApiSettingTimeOffset" Min="-12" Max="12" TickMarks="ApiSettingTimeOffsetTickList" Step="1" />
-                        </div>
-                        <div>
-                            DataReadsDelaySec DeviceNoah InfoQuery <RangeInput TValue="int" @bind-Value="ApiSettingDataReadsDelaySec_DeviceNoahInfoQuery" Min="0" Max="600" TickMarks="ApiDataReadsDelaySecTickList" Step="60" />
-                        </div>
-                        <div>
-                            DataReadsDelaySec DeviceNoah LastDataQuery <RangeInput TValue="int" @bind-Value="ApiSettingDataReadsDelaySec_DeviceNoahLastDataQuery" Min="0" Max="600" TickMarks="ApiDataReadsDelaySecTickList" Step="60" />
                         </div>
                     </CardBody>
                 </Card>

@@ -46,6 +46,8 @@ namespace EnergyAutomate.Services
         public int ApiSettingAvgPowerOffset { get; set; } = 25;
         public bool ApiSettingBatteryPriorityMode { get; set; } = false;
         public Dictionary<string, int> ApiSettingDataReadsDelaySec { get; set; } = new Dictionary<string, int>() {
+            { nameof(DeviceMinInfoDataQuery), 60 } ,
+            { nameof(DeviceMinLastDataQuery), 60 } ,
             { nameof(DeviceNoahInfoDataQuery), 60 } ,
             { nameof(DeviceNoahLastDataQuery), 60 } ,
             { nameof(DeviceNoahSetPowerQuery), 5 } ,
@@ -834,7 +836,7 @@ namespace EnergyAutomate.Services
 
             foreach (var deviceMinInfo in deviceMinInfos)
             {
-                var dateTime = DateTimeOffset.FromUnixTimeMilliseconds(deviceMinInfo.calendar.Time.Time).DateTime;
+                var dateTime = DateTimeOffset.FromUnixTimeMilliseconds(deviceMinInfo.lastUpdateTime).DateTime;
                 var offset = TimeSpan.FromHours(-6); // Beispiel: Offset von 2 Stunden
                 deviceMinInfo.TS = new DateTimeOffset(dateTime, offset);
 

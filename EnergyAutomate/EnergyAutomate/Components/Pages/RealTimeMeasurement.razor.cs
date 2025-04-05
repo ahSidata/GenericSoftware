@@ -395,30 +395,6 @@ namespace EnergyAutomate.Components.Pages
 
         #region Growatt
 
-        private int ApiSettingDataReadsDelaySec_DeviceNoahInfoQuery
-        {
-            get
-            {
-                return ApiService.ApiSettingDataReadsDelaySec["DeviceNoahInfoQuery"];
-            }
-            set
-            {
-                ApiService.ApiSettingDataReadsDelaySec["DeviceNoahInfoQuery"] = value;
-            }
-        }
-
-        private int ApiSettingDataReadsDelaySec_DeviceNoahLastDataQuery
-        {
-            get
-            {
-                return ApiService.ApiSettingDataReadsDelaySec["DeviceNoahLastDataQuery"];
-            }
-            set
-            {
-                ApiService.ApiSettingDataReadsDelaySec["DeviceNoahLastDataQuery"] = value;
-            }
-        }
-
         #endregion Growatt
     }
 }
