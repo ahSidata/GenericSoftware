@@ -1,14 +1,40 @@
-﻿using System;
-using Microsoft.EntityFrameworkCore.Migrations;
+﻿using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
 namespace EnergyAutomate.Migrations
 {
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public partial class TableChange23 : Migration
     {
-        /// <inheritdoc />
+        #region Protected Methods
+
+        /// <inheritdoc/>
+        protected override void Down(MigrationBuilder migrationBuilder)
+        {
+            migrationBuilder.DropPrimaryKey(
+                name: "PK_GrowattElements",
+                table: "GrowattElements");
+
+            migrationBuilder.RenameTable(
+                name: "GrowattElements",
+                newName: "GrowattElement");
+
+            migrationBuilder.AlterColumn<string>(
+                name: "Id",
+                table: "GrowattElement",
+                type: "nvarchar(450)",
+                nullable: false,
+                oldClrType: typeof(Guid),
+                oldType: "uniqueidentifier");
+
+            migrationBuilder.AddPrimaryKey(
+                name: "PK_GrowattElement",
+                table: "GrowattElement",
+                column: "Id");
+        }
+
+        /// <inheritdoc/>
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropPrimaryKey(
@@ -33,29 +59,6 @@ namespace EnergyAutomate.Migrations
                 column: "Id");
         }
 
-        /// <inheritdoc />
-        protected override void Down(MigrationBuilder migrationBuilder)
-        {
-            migrationBuilder.DropPrimaryKey(
-                name: "PK_GrowattElements",
-                table: "GrowattElements");
-
-            migrationBuilder.RenameTable(
-                name: "GrowattElements",
-                newName: "GrowattElement");
-
-            migrationBuilder.AlterColumn<string>(
-                name: "Id",
-                table: "GrowattElement",
-                type: "nvarchar(450)",
-                nullable: false,
-                oldClrType: typeof(Guid),
-                oldType: "uniqueidentifier");
-
-            migrationBuilder.AddPrimaryKey(
-                name: "PK_GrowattElement",
-                table: "GrowattElement",
-                column: "Id");
-        }
+        #endregion Protected Methods
     }
 }

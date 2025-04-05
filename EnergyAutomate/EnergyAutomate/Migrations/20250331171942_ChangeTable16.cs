@@ -4,10 +4,20 @@
 
 namespace EnergyAutomate.Migrations
 {
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public partial class ChangeTable16 : Migration
     {
-        /// <inheritdoc />
+        #region Protected Methods
+
+        /// <inheritdoc/>
+        protected override void Down(MigrationBuilder migrationBuilder)
+        {
+            migrationBuilder.DropColumn(
+                name: "SettingAutoModeRestriction",
+                table: "RealTimeMeasurements");
+        }
+
+        /// <inheritdoc/>
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.AddColumn<bool>(
@@ -18,12 +28,6 @@ namespace EnergyAutomate.Migrations
                 defaultValue: false);
         }
 
-        /// <inheritdoc />
-        protected override void Down(MigrationBuilder migrationBuilder)
-        {
-            migrationBuilder.DropColumn(
-                name: "SettingAutoModeRestriction",
-                table: "RealTimeMeasurements");
-        }
+        #endregion Protected Methods
     }
 }

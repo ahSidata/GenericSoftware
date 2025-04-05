@@ -2,7 +2,7 @@
 {
     public class GrowattElement
     {
-        public Guid Id { get; set; } = Guid.NewGuid();
+        #region Enums
 
         public enum ElementTypes
         {
@@ -10,10 +10,15 @@
             Calculation
         }
 
-        public ElementTypes ElementType { get; set; } = ElementTypes.Adjustment;
+        #endregion Enums
 
+        #region Properties
+
+        public ElementTypes ElementType { get; set; } = ElementTypes.Adjustment;
+        public Guid Id { get; set; } = Guid.NewGuid();
+        public bool IsActive { get; set; }
         public string Name { get; set; } = string.Empty;
 
-        public bool IsActive { get; set; }
+        #endregion Properties
     }
 }

@@ -59,6 +59,9 @@
         <Button Color="ButtonColor.Primary" @onclick="ApiService.GrowattInvokeClearDeviceNoahTimeSegments">Clear Device Noah Timesegments </Button>
         <Button Color="ButtonColor.Primary" @onclick="ApiService.GrowattInvokeBattPriorityDeviceNoah">BattPriorityDeviceNoah</Button>
         <Button Color="ButtonColor.Primary" @onclick="ApiService.GrowattInvokeLoadPriorityDeviceNoah">LoadPriorityDeviceNoah </Button>
+
+        <Button Color="ButtonColor.Primary" @onclick="async () => { await ApiService.GrowattInverterMaxSetPower(100); }">Inverter 100% </Button>
+        <Button Color="ButtonColor.Primary" @onclick="async () => { await ApiService.GrowattInverterMaxSetPower(50); }">Inverter 50% </Button>
     </CardBody>
 </Card>
 <Card Class="my-3">

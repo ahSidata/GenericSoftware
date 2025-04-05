@@ -1,5 +1,5 @@
 using EnergyAutomate.Definitions;
-using Growatt.OSS;
+using Growatt.Sdk;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
@@ -24,12 +24,15 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
 
     #region Properties
 
-    public DbSet<DeviceNoahInfo> DeviceNoahInfo { get; set; }
+    public DbSet<DeviceMinInfoData> DeviceMinInfoData { get; set; }
+    public DbSet<DeviceMinLastData> DeviceMinLastData { get; set; }
+
+    public DbSet<DeviceNoahInfoData> DeviceNoahInfoData { get; set; }
     public DbSet<DeviceNoahLastData> DeviceNoahLastData { get; set; }
     public DbSet<DeviceList> Devices { get; set; }
+    public DbSet<GrowattElement> GrowattElements { get; set; }
     public DbSet<TibberPrice> Prices { get; set; }
     public DbSet<RealTimeMeasurementExtention> RealTimeMeasurements { get; set; }
-    public DbSet<GrowattElement> GrowattElements { get; set; }
 
     #endregion Properties
 
@@ -40,8 +43,10 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
         base.OnModelCreating(modelBuilder);
 
         modelBuilder.Entity<DeviceList>().HasKey(x => x.DeviceSn);
-        modelBuilder.Entity<DeviceNoahInfo>().HasKey(x => x.DeviceSn);
-        modelBuilder.Entity<DeviceNoahInfo>().Ignore(x => x.TimeSegments);
+        modelBuilder.Entity<DeviceMinInfoData>().HasKey(x => x.serialNum);
+        modelBuilder.Entity<DeviceNoahInfoData>().HasKey(x => x.DeviceSn);
+        modelBuilder.Entity<DeviceNoahInfoData>().Ignore(x => x.TimeSegments);
+        modelBuilder.Entity<DeviceMinLastData>().HasKey(x => new { x.SerialNum, x.Time });
         modelBuilder.Entity<DeviceNoahLastData>().HasKey(x => new { x.deviceSn, x.time });
 
         modelBuilder.Entity<RealTimeMeasurementExtention>()

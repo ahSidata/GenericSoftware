@@ -1,6 +1,6 @@
 ﻿using Newtonsoft.Json;
 
-namespace Growatt.OSS
+namespace Growatt.Sdk
 {
     public class DeviceNoahHistoricalData
     {

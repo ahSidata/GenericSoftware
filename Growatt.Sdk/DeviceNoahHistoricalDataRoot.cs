@@ -1,6 +1,6 @@
-﻿namespace Growatt.OSS
+﻿namespace Growatt.Sdk
 {
-    public class DeviceNoahHistoricalDataData
+    public class DeviceNoahHistoricalDataRoot
     {
         #region Properties
 

@@ -1,23 +1,24 @@
-﻿using BlazorBootstrap;
-using EnergyAutomate.Components.Layout;
-using EnergyAutomate.Definitions;
-using Microsoft.AspNetCore.Components;
-using OpenMeteo;
-using System.Collections.Specialized;
-using System.Diagnostics;
+﻿using OpenMeteo;
 
 namespace EnergyAutomate.Components.Pages
 {
     public partial class Weather
     {
+        #region Properties
+
         public WeatherForecast? WeatherForecast { get; set; }
 
-        protected async override Task OnInitializedAsync()
+        #endregion Properties
+
+        #region Protected Methods
+
+        protected override async Task OnInitializedAsync()
         {
-            WeatherForecast =  await ApiService.CurrentState.GetWeatherForecastAsync();
+            WeatherForecast = await ApiService.CurrentState.GetWeatherForecastAsync();
 
             await base.OnInitializedAsync();
         }
 
+        #endregion Protected Methods
     }
 }

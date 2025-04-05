@@ -4,10 +4,28 @@
 
 namespace EnergyAutomate.Migrations
 {
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public partial class ChangeTable14 : Migration
     {
-        /// <inheritdoc />
+        #region Protected Methods
+
+        /// <inheritdoc/>
+        protected override void Down(MigrationBuilder migrationBuilder)
+        {
+            migrationBuilder.DropColumn(
+                name: "CommitedPowerValue",
+                table: "Devices");
+
+            migrationBuilder.DropColumn(
+                name: "LastChangePowerValue",
+                table: "Devices");
+
+            migrationBuilder.DropColumn(
+                name: "RequestedPowerValue",
+                table: "Devices");
+        }
+
+        /// <inheritdoc/>
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.AddColumn<int>(
@@ -31,20 +49,6 @@ namespace EnergyAutomate.Migrations
                 defaultValue: 0);
         }
 
-        /// <inheritdoc />
-        protected override void Down(MigrationBuilder migrationBuilder)
-        {
-            migrationBuilder.DropColumn(
-                name: "CommitedPowerValue",
-                table: "Devices");
-
-            migrationBuilder.DropColumn(
-                name: "LastChangePowerValue",
-                table: "Devices");
-
-            migrationBuilder.DropColumn(
-                name: "RequestedPowerValue",
-                table: "Devices");
-        }
+        #endregion Protected Methods
     }
 }

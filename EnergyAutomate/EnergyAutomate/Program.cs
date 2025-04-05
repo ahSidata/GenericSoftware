@@ -4,13 +4,10 @@ global using EnergyAutomate.Data;
 global using EnergyAutomate.Services;
 global using EnergyAutomate.Watchdogs;
 using CoordinateSharp;
-using EnergyAutomate.Definitions;
-using Growatt.OSS;
 using Growatt.Sdk;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using System.Diagnostics;
 using System.Net.Http.Headers;
 using Tibber.Sdk;
@@ -48,7 +45,6 @@ public class Program
                 Trace.Listeners.Add(customTraceListener);
                 return customTraceListener;
             });
-
         }
 
         // Add services to the container.
@@ -81,7 +77,6 @@ public class Program
             .AddDefaultTokenProviders();
 
         builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSender>();
-
 
         builder.Services.AddTransient(sp => new Coordinate(double.Parse(builder.Configuration["ApiSettings:Latitude"] ?? "0,0"), double.Parse(builder.Configuration["ApiSettings:Longitude"] ?? "0,0"), DateTime.Now));
         builder.Services.AddTransient(sp => new GrowattApiClient("https://openapi.growatt.com", builder.Configuration["ApiSettings:GrowattApiToken"] ?? string.Empty));

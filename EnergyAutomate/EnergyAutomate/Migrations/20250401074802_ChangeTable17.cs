@@ -4,10 +4,26 @@
 
 namespace EnergyAutomate.Migrations
 {
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public partial class ChangeTable17 : Migration
     {
-        /// <inheritdoc />
+        #region Protected Methods
+
+        /// <inheritdoc/>
+        protected override void Down(MigrationBuilder migrationBuilder)
+        {
+            migrationBuilder.RenameColumn(
+                name: "SettingAvgPowerHysteresis",
+                table: "RealTimeMeasurements",
+                newName: "SettingToleranceAvg");
+
+            migrationBuilder.RenameColumn(
+                name: "PenaltyFrequentlyAccess",
+                table: "RealTimeMeasurements",
+                newName: "SettingLockSeconds");
+        }
+
+        /// <inheritdoc/>
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.RenameColumn(
@@ -21,18 +37,6 @@ namespace EnergyAutomate.Migrations
                 newName: "PenaltyFrequentlyAccess");
         }
 
-        /// <inheritdoc />
-        protected override void Down(MigrationBuilder migrationBuilder)
-        {
-            migrationBuilder.RenameColumn(
-                name: "SettingAvgPowerHysteresis",
-                table: "RealTimeMeasurements",
-                newName: "SettingToleranceAvg");
-
-            migrationBuilder.RenameColumn(
-                name: "PenaltyFrequentlyAccess",
-                table: "RealTimeMeasurements",
-                newName: "SettingLockSeconds");
-        }
+        #endregion Protected Methods
     }
 }

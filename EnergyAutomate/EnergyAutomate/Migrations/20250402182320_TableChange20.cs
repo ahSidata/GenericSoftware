@@ -1,14 +1,27 @@
-﻿using System;
-using Microsoft.EntityFrameworkCore.Migrations;
+﻿using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
 namespace EnergyAutomate.Migrations
 {
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public partial class TableChange20 : Migration
     {
-        /// <inheritdoc />
+        #region Protected Methods
+
+        /// <inheritdoc/>
+        protected override void Down(MigrationBuilder migrationBuilder)
+        {
+            migrationBuilder.DropColumn(
+                name: "StartsAtOffset",
+                table: "Prices");
+
+            migrationBuilder.DropColumn(
+                name: "StartsAtString",
+                table: "Prices");
+        }
+
+        /// <inheritdoc/>
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.AddColumn<DateTimeOffset>(
@@ -25,16 +38,6 @@ namespace EnergyAutomate.Migrations
                 nullable: true);
         }
 
-        /// <inheritdoc />
-        protected override void Down(MigrationBuilder migrationBuilder)
-        {
-            migrationBuilder.DropColumn(
-                name: "StartsAtOffset",
-                table: "Prices");
-
-            migrationBuilder.DropColumn(
-                name: "StartsAtString",
-                table: "Prices");
-        }
+        #endregion Protected Methods
     }
 }

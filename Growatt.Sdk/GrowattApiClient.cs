@@ -1,8 +1,6 @@
-﻿using EnergyAutomate.Definitions;
-using Growatt.Sdk;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 
-namespace Growatt.OSS
+namespace Growatt.Sdk
 {
     public class GrowattApiClient
     {
@@ -54,7 +52,7 @@ namespace Growatt.OSS
             });
         }
 
-        public async Task<List<DeviceNoahInfo>?> GetDeviceInfoAsync(IDeviceQuery deviceQuery)
+        public async Task<TResponse?> GetDeviceInfoAsync<TResponse>(IDeviceQuery deviceQuery) where TResponse : IDeviceDataResponse
         {
             return await ExecuteWithExceptionHandlingAsync(async () =>
             {
@@ -65,11 +63,11 @@ namespace Growatt.OSS
                 response.EnsureSuccessStatusCode();
 
                 var responseString = await response.Content.ReadAsStringAsync();
-                var result = JsonConvert.DeserializeObject<DeviceNoahInfoResponse>(responseString);
+                var result = JsonConvert.DeserializeObject<TResponse>(responseString);
 
                 if (result != null && result.Code == 0)
                 {
-                    return result.Data.Noah;
+                    return result;
                 }
                 else if (result != null)
                 {
@@ -80,7 +78,7 @@ namespace Growatt.OSS
             });
         }
 
-        public async Task<List<DeviceNoahLastData>?> GetDeviceLastDataAsync(IDeviceQuery deviceQuery)
+        public async Task<TResponse?> GetDeviceLastDataAsync<TResponse>(IDeviceQuery deviceQuery) where TResponse : IDeviceDataResponse
         {
             return await ExecuteWithExceptionHandlingAsync(async () =>
             {
@@ -91,11 +89,11 @@ namespace Growatt.OSS
                 response.EnsureSuccessStatusCode();
 
                 var responseString = await response.Content.ReadAsStringAsync();
-                var result = JsonConvert.DeserializeObject<DeviceNoahLastDataResponse>(responseString);
+                var result = JsonConvert.DeserializeObject<TResponse>(responseString);
 
                 if (result != null && result.Code == 0)
                 {
-                    return result.Data.Noah;
+                    return result;
                 }
                 else if (result != null)
                 {

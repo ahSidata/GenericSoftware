@@ -4,10 +4,33 @@
 
 namespace EnergyAutomate.Migrations
 {
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public partial class ChangeTable18 : Migration
     {
-        /// <inheritdoc />
+        #region Protected Methods
+
+        /// <inheritdoc/>
+        protected override void Down(MigrationBuilder migrationBuilder)
+        {
+            migrationBuilder.DropColumn(
+                name: "SettingAutoMode",
+                table: "RealTimeMeasurements");
+
+            migrationBuilder.DropColumn(
+                name: "SettingBatteryPriorityMode",
+                table: "RealTimeMeasurements");
+
+            migrationBuilder.DropColumn(
+                name: "SettingRestrictionMode",
+                table: "RealTimeMeasurements");
+
+            migrationBuilder.RenameColumn(
+                name: "SettingRestrictionState",
+                table: "RealTimeMeasurements",
+                newName: "SettingAutoModeRestriction");
+        }
+
+        /// <inheritdoc/>
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.RenameColumn(
@@ -37,25 +60,6 @@ namespace EnergyAutomate.Migrations
                 defaultValue: false);
         }
 
-        /// <inheritdoc />
-        protected override void Down(MigrationBuilder migrationBuilder)
-        {
-            migrationBuilder.DropColumn(
-                name: "SettingAutoMode",
-                table: "RealTimeMeasurements");
-
-            migrationBuilder.DropColumn(
-                name: "SettingBatteryPriorityMode",
-                table: "RealTimeMeasurements");
-
-            migrationBuilder.DropColumn(
-                name: "SettingRestrictionMode",
-                table: "RealTimeMeasurements");
-
-            migrationBuilder.RenameColumn(
-                name: "SettingRestrictionState",
-                table: "RealTimeMeasurements",
-                newName: "SettingAutoModeRestriction");
-        }
+        #endregion Protected Methods
     }
 }

@@ -1,5 +1,4 @@
-﻿using EnergyAutomate.Services;
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using Tibber.Sdk;
 
 namespace EnergyAutomate.Watchdogs
@@ -24,10 +23,9 @@ namespace EnergyAutomate.Watchdogs
         private ILogger Logger => ServiceProvider.GetRequiredService<ILogger<ApiRealTimeMeasurementWatchdog>>();
         private CancellationTokenSource? RealTimeMeasurementCancellationTokenSource { get; set; }
         private IObservable<RealTimeMeasurement>? RealTimeMeasurementListener { get; set; }
+        private IDisposable? RealTimeMeasurementObserver { get; set; }
         private IServiceProvider ServiceProvider { get; init; }
         private Guid? TibberHomeId { get; set; }
-
-        private IDisposable? RealTimeMeasurementObserver { get; set; }
 
         #endregion Properties
 

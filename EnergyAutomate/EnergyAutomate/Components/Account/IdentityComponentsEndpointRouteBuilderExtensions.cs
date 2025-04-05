@@ -1,6 +1,5 @@
 using EnergyAutomate.Components.Account.Pages;
 using EnergyAutomate.Components.Account.Pages.Manage;
-using EnergyAutomate.Data;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Http.Extensions;

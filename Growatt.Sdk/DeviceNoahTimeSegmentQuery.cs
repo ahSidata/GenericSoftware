@@ -1,7 +1,6 @@
-﻿using Growatt.Sdk;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 
-namespace Growatt.OSS
+namespace Growatt.Sdk
 {
     public class DeviceNoahTimeSegmentQuery : IDeviceQuery
     {

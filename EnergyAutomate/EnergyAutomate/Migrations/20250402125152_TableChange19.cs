@@ -1,14 +1,45 @@
-﻿using System;
-using Microsoft.EntityFrameworkCore.Migrations;
+﻿using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
 namespace EnergyAutomate.Migrations
 {
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public partial class TableChange19 : Migration
     {
-        /// <inheritdoc />
+        #region Protected Methods
+
+        /// <inheritdoc/>
+        protected override void Down(MigrationBuilder migrationBuilder)
+        {
+            migrationBuilder.DropColumn(
+                name: "TS",
+                table: "DeviceNoahLastData");
+
+            migrationBuilder.DropColumn(
+                name: "TS",
+                table: "DeviceNoahInfo");
+
+            migrationBuilder.AlterColumn<DateTime>(
+                name: "PowerValueLastChanged",
+                table: "Devices",
+                type: "datetime2",
+                nullable: true,
+                oldClrType: typeof(DateTimeOffset),
+                oldType: "datetimeoffset",
+                oldNullable: true);
+
+            migrationBuilder.AlterColumn<DateTime>(
+                name: "IsOfflineSince",
+                table: "Devices",
+                type: "datetime2",
+                nullable: true,
+                oldClrType: typeof(DateTimeOffset),
+                oldType: "datetimeoffset",
+                oldNullable: true);
+        }
+
+        /// <inheritdoc/>
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.AlterColumn<DateTimeOffset>(
@@ -44,34 +75,6 @@ namespace EnergyAutomate.Migrations
                 defaultValue: new DateTimeOffset(new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)));
         }
 
-        /// <inheritdoc />
-        protected override void Down(MigrationBuilder migrationBuilder)
-        {
-            migrationBuilder.DropColumn(
-                name: "TS",
-                table: "DeviceNoahLastData");
-
-            migrationBuilder.DropColumn(
-                name: "TS",
-                table: "DeviceNoahInfo");
-
-            migrationBuilder.AlterColumn<DateTime>(
-                name: "PowerValueLastChanged",
-                table: "Devices",
-                type: "datetime2",
-                nullable: true,
-                oldClrType: typeof(DateTimeOffset),
-                oldType: "datetimeoffset",
-                oldNullable: true);
-
-            migrationBuilder.AlterColumn<DateTime>(
-                name: "IsOfflineSince",
-                table: "Devices",
-                type: "datetime2",
-                nullable: true,
-                oldClrType: typeof(DateTimeOffset),
-                oldType: "datetimeoffset",
-                oldNullable: true);
-        }
+        #endregion Protected Methods
     }
 }

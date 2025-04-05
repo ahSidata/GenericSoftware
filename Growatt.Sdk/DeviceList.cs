@@ -1,4 +1,4 @@
-﻿namespace Growatt.OSS
+﻿namespace Growatt.Sdk
 {
     public class DeviceList
     {

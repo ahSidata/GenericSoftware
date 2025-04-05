@@ -1,6 +1,4 @@
-﻿using EnergyAutomate.Watchdogs;
-
-namespace EnergyAutomate.Services
+﻿namespace EnergyAutomate.Services
 {
     public class ApiBackgroundService : IHostedService, IDisposable
     {

@@ -4,6 +4,8 @@ namespace EnergyAutomate
 {
     public static class GrowattElements
     {
+        #region Fields
+
         public static readonly GrowattElement Adjustment1 = new GrowattElement
         {
             Id = new Guid("{E70F66C1-784F-4F3A-B7C5-373EC2D7962E}"),
@@ -36,9 +38,15 @@ namespace EnergyAutomate
             IsActive = false
         };
 
+        #endregion Fields
+
+        #region Public Methods
+
         public static IEnumerable<GrowattElement> GrowattDefaultElements()
         {
             return new List<GrowattElement> { Adjustment1, Adjustment2, Calculation1, Calculation2 };
         }
+
+        #endregion Public Methods
     }
 }

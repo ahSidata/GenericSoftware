@@ -4,10 +4,27 @@
 
 namespace EnergyAutomate.Migrations
 {
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public partial class TableChange22 : Migration
     {
-        /// <inheritdoc />
+        #region Protected Methods
+
+        /// <inheritdoc/>
+        protected override void Down(MigrationBuilder migrationBuilder)
+        {
+            migrationBuilder.DropTable(
+                name: "GrowattElement");
+
+            migrationBuilder.DropColumn(
+                name: "IsBatteryEmpty",
+                table: "Devices");
+
+            migrationBuilder.DropColumn(
+                name: "IsBatteryFull",
+                table: "Devices");
+        }
+
+        /// <inheritdoc/>
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.AddColumn<bool>(
@@ -39,19 +56,6 @@ namespace EnergyAutomate.Migrations
                 });
         }
 
-        /// <inheritdoc />
-        protected override void Down(MigrationBuilder migrationBuilder)
-        {
-            migrationBuilder.DropTable(
-                name: "GrowattElement");
-
-            migrationBuilder.DropColumn(
-                name: "IsBatteryEmpty",
-                table: "Devices");
-
-            migrationBuilder.DropColumn(
-                name: "IsBatteryFull",
-                table: "Devices");
-        }
+        #endregion Protected Methods
     }
 }

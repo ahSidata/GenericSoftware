@@ -1,8 +1,8 @@
 ﻿using System;
-using System.Net.Http;
-using System.Threading.Tasks;
-using System.Text.Json;
 using System.Globalization;
+using System.Net.Http;
+using System.Text.Json;
+using System.Threading.Tasks;
 
 namespace OpenMeteo
 {
@@ -43,7 +43,7 @@ namespace OpenMeteo
                 Latitude = response.Locations[0].Latitude,
                 Longitude = response.Locations[0].Longitude,
                 Current = CurrentOptions.All // Get all current weather data if nothing else is provided
-                
+
             };
 
             return await GetWeatherForecastAsync(options);
@@ -66,7 +66,7 @@ namespace OpenMeteo
                 Latitude = response.Locations[0].Latitude,
                 Longitude = response.Locations[0].Longitude,
                 Current = CurrentOptions.All // Get all current weather data if nothing else is provided
-                
+
             };
 
             return await GetWeatherForecastAsync(weatherForecastOptions);
@@ -101,7 +101,7 @@ namespace OpenMeteo
             {
                 Latitude = latitude,
                 Longitude = longitude,
-                
+
             };
             return await QueryAsync(options);
         }
@@ -117,7 +117,7 @@ namespace OpenMeteo
             GeocodingApiResponse? geocodingApiResponse = await GetLocationDataAsync(location);
             if (geocodingApiResponse == null || geocodingApiResponse?.Locations == null)
                 return null;
-            
+
             options.Longitude = geocodingApiResponse.Locations[0].Longitude;
             options.Latitude = geocodingApiResponse.Locations[0].Latitude;
 
@@ -337,10 +337,10 @@ namespace OpenMeteo
             }
 
             // Add the properties
-            
+
             // Begin with Latitude and Longitude since they're required
             if (isFirstParam)
-                uri.Query += "latitude=" +  options.Latitude.ToString(CultureInfo.InvariantCulture);
+                uri.Query += "latitude=" + options.Latitude.ToString(CultureInfo.InvariantCulture);
             else
                 uri.Query += "&latitude=" + options.Latitude.ToString(CultureInfo.InvariantCulture);
 
@@ -492,9 +492,9 @@ namespace OpenMeteo
             else
                 uri.Query += "&name=" + options.Name;
 
-            if(options.Count >0)
+            if (options.Count > 0)
                 uri.Query += "&count=" + options.Count;
-            
+
             if (options.Format != string.Empty)
                 uri.Query += "&format=" + options.Format;
 

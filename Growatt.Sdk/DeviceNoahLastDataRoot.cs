@@ -1,4 +1,4 @@
-public class DeviceNoahLastDataData
+public class DeviceNoahLastDataRoot
 {
     #region Properties
 

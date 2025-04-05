@@ -52,24 +52,17 @@ namespace EnergyAutomate.Definitions
 
         public int? CommitedPowerValue { get; set; }
 
-        public int? RequestedPowerValue { get; set; }
-
         public int PenaltyFrequentlyAccess { get; set; }
-
+        public int? RequestedPowerValue { get; set; }
+        public bool SettingAutoMode { get; set; }
+        public int SettingAvgPowerHysteresis { get; set; }
+        public bool SettingBatteryPriorityMode { get; set; }
         public int SettingOffSetAvg { get; set; }
 
         public int SettingPowerLoadSeconds { get; set; }
-
-        public int SettingAvgPowerHysteresis { get; set; }
-
-        public bool SettingAutoMode { get; set; }
-
         public bool SettingRestrictionMode { get; set; }
 
         public bool SettingRestrictionState { get; set; }
-
-        public bool SettingBatteryPriorityMode { get; set; }
-
         [NotMapped]
         public int TotalPower => Power > 0 ? (int)Power : -(int)(PowerProduction ?? 0);
 

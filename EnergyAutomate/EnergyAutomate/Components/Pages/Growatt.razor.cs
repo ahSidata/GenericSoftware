@@ -1,30 +1,30 @@
 ﻿using BlazorBootstrap;
-using EnergyAutomate.Components.Layout;
 using EnergyAutomate.Definitions;
 using Microsoft.AspNetCore.Components;
 using Microsoft.EntityFrameworkCore;
-using System.Collections.Specialized;
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 
 namespace EnergyAutomate.Components.Pages
 {
     public partial class Growatt
     {
-        [Inject]
-        [AllowNull]
-        ApplicationDbContext ApplicationDbContext { get; set; }
+        #region Properties
 
         [Inject]
         [AllowNull]
-        NavigationManager NavigationManager { get; set; }
+        private ApplicationDbContext ApplicationDbContext { get; set; }
+
+        [Inject]
+        [AllowNull]
+        private NavigationManager NavigationManager { get; set; }
+
+        #endregion Properties
 
         #region Growatt
 
         private Grid<GrowattElement> gridElements = default!;
         private HashSet<GrowattElement>? GrowattSelectedElements;
         private Tabs tabsGrowattRef = default!;
-
 
         public async Task GrowattSetElementActive(GrowattElement? growattElement)
         {

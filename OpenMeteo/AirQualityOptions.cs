@@ -1,8 +1,6 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Text;
-using System.Text.Json.Serialization;
 
 namespace OpenMeteo
 {
@@ -179,21 +177,21 @@ namespace OpenMeteo
 
         public enum HourlyOptionsParameter
         {
-            pm10, 
-            pm2_5, 
-            carbon_monoxide, 
-            nitrogen_dioxide, 
-            sulphur_dioxide, 
-            ozone, 
-            aerosol_optical_depth, 
-            dust, 
-            uv_index, 
-            uv_index_clear_sky, 
-            alder_pollen, 
-            birch_pollen, 
-            grass_pollen, 
-            mugwort_pollen, 
-            olive_pollen, 
+            pm10,
+            pm2_5,
+            carbon_monoxide,
+            nitrogen_dioxide,
+            sulphur_dioxide,
+            ozone,
+            aerosol_optical_depth,
+            dust,
+            uv_index,
+            uv_index_clear_sky,
+            alder_pollen,
+            birch_pollen,
+            grass_pollen,
+            mugwort_pollen,
+            olive_pollen,
             ragweed_pollen,
             european_aqi,
             european_aqi_pm2_5,

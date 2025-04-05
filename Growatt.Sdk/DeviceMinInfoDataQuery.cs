@@ -1,11 +1,8 @@
 ﻿using Newtonsoft.Json;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace Growatt.Sdk
 {
-    public class DeviceNoahInfoQuery : IDeviceQuery
+    public class DeviceMinInfoDataQuery : IDeviceQuery
     {
         #region Properties
 

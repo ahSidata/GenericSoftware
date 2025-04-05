@@ -1,6 +1,4 @@
-﻿using Growatt.Sdk;
-
-namespace EnergyAutomate.Definitions
+﻿namespace Growatt.Sdk
 {
     public class DeviceNoahSetPowerQuery : IDeviceQuery
     {

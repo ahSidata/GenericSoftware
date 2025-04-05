@@ -1,5 +1,4 @@
-﻿using Growatt.OSS;
-using Growatt.Sdk;
+﻿using Growatt.Sdk;
 using Newtonsoft.Json;
 using System.Collections.ObjectModel;
 
@@ -26,12 +25,9 @@ namespace EnergyAutomate.Watchdogs
 
         #region Properties
 
-        public int PenaltyFrequentlyAccess { get; set; } = 0;
-
         public ObservableCollection<T> Collection { get; set; } = new();
-
         public int Count => Collection.Count;
-
+        public int PenaltyFrequentlyAccess { get; set; } = 0;
         private bool IsProceeding { get; set; }
 
         private ILogger<ApiQueueWatchdog<T>> Logger => ServiceProvider.GetRequiredService<ILogger<ApiQueueWatchdog<T>>>();

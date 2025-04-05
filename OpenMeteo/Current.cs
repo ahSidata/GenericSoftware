@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Text.Json.Serialization;
-
-namespace OpenMeteo
+﻿namespace OpenMeteo
 {
     /// <summary>
     /// Api response containing information about current weather conditions
@@ -17,7 +12,7 @@ namespace OpenMeteo
         /// <summary>
         /// Temperature in <see cref="WeatherForecastOptions.Temperature_Unit"/>
         /// </summary>
-        public float? Temperature { get { return Temperature_2m; } private set { } } 
+        public float? Temperature { get { return Temperature_2m; } private set { } }
 
         public float? Temperature_2m { get; set; }
 

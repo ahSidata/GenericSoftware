@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Text;
 
 namespace OpenMeteo
 {
@@ -104,33 +103,33 @@ namespace OpenMeteo
 
     public enum Minutely15OptionsParameter
     {
-        temperature_2m, 
-        relativehumidity_2m, 
-        dewpoint_2m, 
-        apparent_temperature, 
-        precipitation, 
-        rain, 
-        snowfall, 
-        snowfall_height, 
-        freezinglevel_height, 
-        weathercode, 
-        windspeed_10m, 
-        windspeed_80m, 
-        winddirection_10m, 
-        winddirection_80m, 
-        windgusts_10m, 
-        visibility, 
-        cape, 
-        lightning_potential, 
-        shortwave_radiation, 
-        direct_radiation, 
-        diffuse_radiation, 
-        direct_normal_irradiance, 
-        terrestrial_radiation, 
-        shortwave_radiation_instant, 
-        direct_radiation_instant, 
-        diffuse_radiation_instant, 
-        direct_normal_irradiance_instant, 
+        temperature_2m,
+        relativehumidity_2m,
+        dewpoint_2m,
+        apparent_temperature,
+        precipitation,
+        rain,
+        snowfall,
+        snowfall_height,
+        freezinglevel_height,
+        weathercode,
+        windspeed_10m,
+        windspeed_80m,
+        winddirection_10m,
+        winddirection_80m,
+        windgusts_10m,
+        visibility,
+        cape,
+        lightning_potential,
+        shortwave_radiation,
+        direct_radiation,
+        diffuse_radiation,
+        direct_normal_irradiance,
+        terrestrial_radiation,
+        shortwave_radiation_instant,
+        direct_radiation_instant,
+        diffuse_radiation_instant,
+        direct_normal_irradiance_instant,
         terrestrial_radiation_instant
     }
 }

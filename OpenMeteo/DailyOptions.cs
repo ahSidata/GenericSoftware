@@ -11,7 +11,7 @@ namespace OpenMeteo
         /// </summary>
         /// <returns></returns>
         public static DailyOptions All { get { return new DailyOptions((DailyOptionsParameter[])Enum.GetValues(typeof(DailyOptionsParameter))); } }
-        
+
         /// <summary>
         /// Gets a copy of elements contained in the List.
         /// </summary>

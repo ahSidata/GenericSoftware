@@ -1,6 +1,5 @@
 ﻿using BlazorBootstrap;
 using EnergyAutomate.Components.Layout;
-using EnergyAutomate.Definitions;
 using Microsoft.AspNetCore.Components;
 using System.Collections.Specialized;
 using System.Diagnostics;
@@ -12,8 +11,8 @@ namespace EnergyAutomate.Components.Pages
         #region Fields
 
         private readonly IEnumerable<TickMark> ApiDataReadsDelaySecTickList = GenerateTickTickMarks(0, 600, 60);
-        private readonly IEnumerable<TickMark> ApiPowerTickList = GenerateTickTickMarks(0, 900, 50);
         private readonly IEnumerable<TickMark> ApiOffsetAvgTickList = GenerateTickTickMarks(-25, 150, 5);
+        private readonly IEnumerable<TickMark> ApiPowerTickList = GenerateTickTickMarks(0, 900, 50);
         private readonly IEnumerable<TickMark> ApiSettingTimeOffsetTickList = GenerateTickTickMarks(-12, 12, 1);
         private readonly IEnumerable<TickMark> ApiToleranceAvgTickList = GenerateTickTickMarks(0, 300, 10);
         private readonly IEnumerable<TickMark> AvgPowerLoadSecondsTickList = GenerateTickTickMarks(0, 180, 5);
