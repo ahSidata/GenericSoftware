@@ -1,6 +1,4 @@
-﻿using EnergyAutomate.Definitions;
-
-namespace EnergyAutomate
+﻿namespace EnergyAutomate.Definitions
 {
     public static class GrowattElements
     {

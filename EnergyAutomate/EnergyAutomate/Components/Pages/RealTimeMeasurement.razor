@@ -27,7 +27,7 @@
                     @foreach (var device in ApiService.GrowattListDevices().Where(x => x.DeviceType == "noah"))
                     {
                         var lastDeviceItem = ApiService.GrowattListDevices().FirstOrDefault(x => x.DeviceSn == device.DeviceSn);
-                        var lastInfoItem = ApiService.GrowattGetNoahInfoPerDevice(device.DeviceSn);
+                        var lastInfoItem = ApiService.GrowattGetNoahInfoDataPerDevice(device.DeviceSn);
                         var lastDataItem = ApiService.GrowattGetNoahLastDataPerDevice(device.DeviceSn);
 
                         <Card Class="col-12 col-xl-6 col-xxl-4">

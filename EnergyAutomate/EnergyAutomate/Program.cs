@@ -4,6 +4,7 @@ global using EnergyAutomate.Data;
 global using EnergyAutomate.Services;
 global using EnergyAutomate.Watchdogs;
 using CoordinateSharp;
+using EnergyAutomate.Definitions;
 using Growatt.Sdk;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
