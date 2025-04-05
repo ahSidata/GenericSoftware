@@ -1663,6 +1663,11 @@ namespace EnergyAutomate.Services
         {
             try
             {
+                if (CurrentState.Now.Hour == 13 && CurrentState.Now.Minute == 0 && CurrentState.Now.Date != TibberPrices.Max(x => x.StartsAt).Date)
+                {
+                    await TibberGetTomorrowPrices();
+                }
+
                 var dbContext = ApiGetDbContext();
 
                 var realTimeMeasurementExtention = new RealTimeMeasurementExtention(value);
