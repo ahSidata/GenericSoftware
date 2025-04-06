@@ -13,71 +13,64 @@
 <PageTitle>Weather</PageTitle>
 
 <CardGroup Class="my-3">
-    <Card Class="mb-4" Style="width:18rem;">
-        <CardHeader>Defaults</CardHeader>
+    <Card Class="mb-4">
+        <CardHeader>Time points</CardHeader>
         <CardBody>
             <div class="form-group row mb-3">
-                <label class="col-md-6 col-form-label">
+                <label class="col-md-3 col-form-label">
                     <strong>SunRise:</strong>
                 </label>
-                <div class="col-md-6">
+                <div class="col-md-3">
                     @ApiService.CurrentState.SunRise?.ToString()
                 </div>
             </div>
             <div class="form-group row mb-3">
-                <label class="col-md-6 col-form-label">
+                <label class="col-md-3 col-form-label">
                     <strong>SunRise:</strong>
                 </label>
-                <div class="col-md-6">
+                <div class="col-md-3">
                     @ApiService.CurrentState.SunSet?.ToString()
                 </div>
             </div>
-
+        </CardBody>
+    </Card>
+    <Card Class="mb-4">
+        <CardHeader>Durations</CardHeader>
+        <CardBody>
             <div class="form-group row mb-3">
-                <label class="col-md-6 col-form-label">
+                <label class="col-md-3 col-form-label">
                     <strong>Daylight duration:</strong>
                 </label>
-                <div class="col-md-6">
+                <div class="col-md-3">
                     @if (WeatherForecast?.Daily?.Daylight_duration != null)
                     {
                         var seconds = Math.Round(WeatherForecast.Daily.Daylight_duration[0], 0);
                         var sunshine_duration = TimeSpan.FromSeconds(Convert.ToInt64(seconds));
-                        @($"{sunshine_duration.ToString()} hh:mm:ss")
+                        @($"{sunshine_duration.ToString()} (hh:mm:ss)")
                     }
                 </div>
             </div>
 
             <div class="form-group row mb-3">
-                <label class="col-md-6 col-form-label">
+                <label class="col-md-3 col-form-label">
                     <strong>Sunshine duration:</strong>
                 </label>
-                <div class="col-md-6">
+                <div class="col-md-3">
                     @if (WeatherForecast?.Daily?.Sunshine_duration != null)
                     {
-                        var seconds = Math.Round(WeatherForecast.Daily.Sunshine_duration[0],0);
+                        var seconds = Math.Round(WeatherForecast.Daily.Sunshine_duration[0], 0);
                         var sunshine_duration = TimeSpan.FromSeconds(Convert.ToInt64(seconds));
-                        @($"{sunshine_duration.ToString()} hh:mm:ss")
+                        @($"{sunshine_duration.ToString()} (hh:mm:ss)")
                     }
                 </div>
             </div>
         </CardBody>
     </Card>
-    <Card Class="mb-4" Style="width:18rem;">
-        <CardHeader>Standard program</CardHeader>
-        <CardBody>
-
-        </CardBody>
-    </Card>
 </CardGroup>
 <Card Class="my-3">
-    <CardHeader>Actions</CardHeader>
+    <CardHeader>Weather forecast</CardHeader>
     <CardBody>
-
-    </CardBody>
-</Card>
-<Card Class="my-3">
-    <CardHeader>Devices</CardHeader>
-    <CardBody>
-
+        <LineChart @ref="radiationChart" Class="weatherLineChart" Height="30" HeightUnit="Unit.Vh" />
+        <LineChart @ref="cloudcoverChart" Class="weatherLineChart" Height="30" HeightUnit="Unit.Vh" />
     </CardBody>
 </Card>

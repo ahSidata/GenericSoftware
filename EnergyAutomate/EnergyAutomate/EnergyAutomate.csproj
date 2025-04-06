@@ -26,10 +26,10 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\..\BlazorMonaco\BlazorMonaco.csproj" />
-		<ProjectReference Include="..\..\Growatt.Sdk\EnergyAutomate.Growatt.csproj" />
-		<ProjectReference Include="..\..\OpenMeteo\OpenMeteo.csproj" />
-		<ProjectReference Include="..\..\Tibber.Sdk\EnergyAutomate.Tibber.csproj" />
+		<ProjectReference Include="..\..\EnergyAutomate.BlazorMonaco\EnergyAutomate.BlazorMonaco.csproj" />
+		<ProjectReference Include="..\..\EnergyAutomate.Growatt\EnergyAutomate.Growatt.csproj" />
+		<ProjectReference Include="..\..\EnergyAutomate.OpenMeteo\EnergyAutomate.OpenMeteo.csproj" />
+		<ProjectReference Include="..\..\EnergyAutomate.Tibber\EnergyAutomate.Tibber.csproj" />
 		<ProjectReference Include="..\EnergyAutomate.Client\EnergyAutomate.Client.csproj" />
 	</ItemGroup>
 

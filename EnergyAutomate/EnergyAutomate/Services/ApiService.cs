@@ -1,3 +1,4 @@
+using BlazorBootstrap;
 using EnergyAutomate.Definitions;
 using EnergyAutomate.Extentions;
 using Microsoft.EntityFrameworkCore;
@@ -22,14 +23,11 @@ namespace EnergyAutomate.Services
             CurrentState = new ApiState(serviceProvider, this);
             ServiceProvider = serviceProvider;
             GrowattDeviceQueryQueueWatchdog.OnItemDequeued += GrowattDeviceQueryQueueWatchdog_OnItemDequeued;
-            TibberRealTimeMeasurement.CollectionChanged += (sender, e) => { GrowattRealTimeMeasurementChanged?.Invoke(sender, e); };
         }
 
         #endregion Public Constructors
 
         #region Events
-
-        public event EventHandler? GrowattRealTimeMeasurementChanged;
 
         public event EventHandler? StateHasChanged;
 
@@ -70,7 +68,17 @@ namespace EnergyAutomate.Services
         private IServiceProvider ServiceProvider { get; set; }
         private Guid? TibberHomeId { get; set; }
         private ThreadSafeObservableCollection<TibberPrice> TibberPrices { get; set; } = [];
-        private ThreadSafeObservableCollection<RealTimeMeasurementExtention> TibberRealTimeMeasurement { get; set; } = [];
+        public ThreadSafeObservableCollection<RealTimeMeasurementExtention> TibberRealTimeMeasurement { get; set; } = [];
+
+        public static IEnumerable<TickMark> GenerateTickTickMarks(int start, int end, int step)
+        {
+            var tickMarks = new List<TickMark>();
+            for (int i = start; i <= end; i += step)
+            {
+                tickMarks.Add(new TickMark { Label = i.ToString(), Value = i.ToString() });
+            }
+            return tickMarks;
+        }
 
         #endregion Properties
 

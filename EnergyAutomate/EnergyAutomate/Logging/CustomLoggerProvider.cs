@@ -1,4 +1,4 @@
-using EnergyAutomate.Definitions;
+using EnergyAutomate.Logging;
 using System.Collections.Concurrent;
 using System.Collections.ObjectModel;
 

@@ -21,9 +21,10 @@ FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
 COPY ["EnergyAutomate/EnergyAutomate/EnergyAutomate.csproj", "EnergyAutomate/EnergyAutomate/"]
-COPY ["BlazorMonaco/BlazorMonaco.csproj", "BlazorMonaco/"]
-COPY ["Growatt.Sdk/Growatt.Sdk.csproj", "Growatt.Sdk/"]
-COPY ["Tibber.Sdk/Tibber.Sdk.csproj", "Tibber.Sdk/"]
+COPY ["EnergyAutomate.BlazorMonaco/EnergyAutomate.BlazorMonaco.csproj", "EnergyAutomate.BlazorMonaco/"]
+COPY ["EnergyAutomate.Growatt/EnergyAutomate.Growatt.csproj", "EnergyAutomate.Growatt/"]
+COPY ["EnergyAutomate.OpenMeteo/EnergyAutomate.OpenMeteo.csproj", "EnergyAutomate.OpenMeteo/"]
+COPY ["EnergyAutomate.Tibber/EnergyAutomate.Tibber.csproj", "EnergyAutomate.Tibber/"]
 COPY ["EnergyAutomate/EnergyAutomate.Client/EnergyAutomate.Client.csproj", "EnergyAutomate/EnergyAutomate.Client/"]
 RUN dotnet restore "./EnergyAutomate/EnergyAutomate/EnergyAutomate.csproj"
 COPY . .

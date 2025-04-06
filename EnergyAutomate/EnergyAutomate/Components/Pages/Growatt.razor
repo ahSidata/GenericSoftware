@@ -12,17 +12,38 @@
 
 <PageTitle>RealTimeMeasurement</PageTitle>
 
+<style>
+
+    .table-responsive table {
+        margin-top: 0px !important;
+    }
+
+</style>
+
 <CardGroup Class="my-3">
     <Card Class="mb-4" Style="width:18rem;">
         <CardHeader>Defaults</CardHeader>
         <CardBody>
-
+            <div>
+                <Switch @bind-Value="ApiService.ApiSettingAutoMode" Label="AutoMode (zero injection on low soc)" />
+            </div>
+            <div>
+                <Switch @bind-Value="ApiService.ApiSettingRestrictionMode" Label="AutoMode Restriction (only if current price is over avg price)" />
+            </div>
+            <div>
+                <Switch @bind-Value="ApiService.ApiSettingBatteryPriorityMode" Label="LoadBalanced (zero injection on low soc)" />
+            </div>
+            <div>
+                ApiSettingMaxPower <RangeInput TValue="int" @bind-Value="ApiService.ApiSettingMaxPower" Min="0" Max="900" TickMarks="ApiPowerTickList" Step="25" />
+            </div>
+            <div>
+                ApiSettingAvgPower <RangeInput TValue="int" @bind-Value="ApiService.ApiSettingAvgPower" Min="0" Max="900" TickMarks="ApiPowerTickList" Step="25" />
+            </div>
         </CardBody>
     </Card>
     <Card Class="mb-4" Style="width:18rem;">
         <CardHeader>Standard elements</CardHeader>
-        <CardBody>
-
+        <CardBody Class="p-0 flex-start">
             <Grid @ref="gridElements"
                   Style="--bb-table-selected-row-color: #fff;--bb-table-selected-row-background-color: #4c0bce;--bb-table-selected-row-hover-color: #fff;--bb-table-selected-row-hover-background-color: #4c0bce;"
                   Class="table table-hover table-bordered table-striped mt-3"

@@ -1,4 +1,4 @@
-using EnergyAutomate.Definitions;
+using EnergyAutomate.Logging;
 
 public class CustomLogger : ILogger
 {
@@ -23,7 +23,7 @@ public class CustomLogger : ILogger
         {
             _provider.LogMessages.Add(new CustomTraceLog
             {
-                Category = logLevel.ToString(),
+                Category = _name,
                 LogLevel = logLevel,
                 EventId = eventId,
                 Message = state?.ToString(),

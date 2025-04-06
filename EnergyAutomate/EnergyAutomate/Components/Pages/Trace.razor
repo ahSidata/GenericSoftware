@@ -15,11 +15,12 @@
                         <thead>
                             <tr>
                                 <th>Timestamp</th>
+                                <th>Category</th>
                                 <th>Message</th>
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach (var log in ((CustomLoggerProvider)CustomLoggerProvider).LogMessages.Where(x => x.Category == category).OrderByDescending(x => x.TS).Take(50))
+                            @foreach (var log in ((CustomLoggerProvider)CustomLoggerProvider).LogMessages.Where(x => x.Category == category || x.Category!.Split(".").Last() == category).OrderByDescending(x => x.TS).Take(50))
                             {
                                 <tr>
                                     <td>@log.TS</td>
@@ -44,7 +45,17 @@ else
     [Inject]
     private ILoggerProvider CustomLoggerProvider { get; set; } = default!;
 
-    private List<string?> LogMessageCategories => ((CustomLoggerProvider)CustomLoggerProvider).LogMessages.GroupBy(x => x.Category).Select(s => s.Key).OrderBy(o => o).ToList();
+    private List<string> LogMessageCategories
+    {
+        get
+        {
+            var categories = ((CustomLoggerProvider)CustomLoggerProvider).LogMessages.Where(x => x.Category != null).Select(s => s.Category!.Contains(".") ? s.Category.Split(".").Last() : s.Category);
+            if (categories != null)
+                return categories.GroupBy(x => x).Select(s => s.Key).OrderBy(o => o).ToList();
+            else
+                return new List<string>();
+        }
+    } 
 
     private Tabs tabsMainRef = default!;
 

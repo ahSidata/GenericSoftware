@@ -1,5 +1,4 @@
-using EnergyAutomate.Definitions;
-using Microsoft.Extensions.Logging;
+using EnergyAutomate.Logging;
 using System.Diagnostics;
 
 public class ILoggerTraceListener : TraceListener
@@ -37,7 +36,7 @@ public class ILoggerTraceListener : TraceListener
         {
             LoggerProvider.LogMessages.Add(new CustomTraceLog
             {
-                Category = "Trace",
+                Category = "ApiServcie",
                 LogLevel = LogLevel.Trace,
                 EventId = new EventId(5, "Trace"),
                 Message = message,

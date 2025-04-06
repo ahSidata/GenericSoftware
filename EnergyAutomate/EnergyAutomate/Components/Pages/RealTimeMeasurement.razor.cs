@@ -1,5 +1,6 @@
 ﻿using BlazorBootstrap;
 using EnergyAutomate.Components.Layout;
+using EnergyAutomate.Definitions;
 using Microsoft.AspNetCore.Components;
 using System.Collections.Specialized;
 using System.Diagnostics;
@@ -10,12 +11,12 @@ namespace EnergyAutomate.Components.Pages
     {
         #region Fields
 
-        private readonly IEnumerable<TickMark> ApiDataReadsDelaySecTickList = GenerateTickTickMarks(0, 600, 60);
-        private readonly IEnumerable<TickMark> ApiOffsetAvgTickList = GenerateTickTickMarks(-25, 150, 5);
-        private readonly IEnumerable<TickMark> ApiPowerTickList = GenerateTickTickMarks(0, 900, 50);
-        private readonly IEnumerable<TickMark> ApiSettingTimeOffsetTickList = GenerateTickTickMarks(-12, 12, 1);
-        private readonly IEnumerable<TickMark> ApiToleranceAvgTickList = GenerateTickTickMarks(0, 300, 10);
-        private readonly IEnumerable<TickMark> AvgPowerLoadSecondsTickList = GenerateTickTickMarks(0, 180, 5);
+        private readonly IEnumerable<TickMark> ApiDataReadsDelaySecTickList = ApiService.GenerateTickTickMarks(0, 600, 60);
+        private readonly IEnumerable<TickMark> ApiOffsetAvgTickList = ApiService.GenerateTickTickMarks(-25, 150, 5);
+
+        private readonly IEnumerable<TickMark> ApiSettingTimeOffsetTickList = ApiService.GenerateTickTickMarks(-12, 12, 1);
+        private readonly IEnumerable<TickMark> ApiToleranceAvgTickList = ApiService.GenerateTickTickMarks(0, 300, 10);
+        private readonly IEnumerable<TickMark> AvgPowerLoadSecondsTickList = ApiService.GenerateTickTickMarks(0, 180, 5);
         private Tabs tabsMainRef = default!;
 
         #endregion Fields
@@ -31,7 +32,7 @@ namespace EnergyAutomate.Components.Pages
 
         public void Dispose()
         {
-            ApiService.GrowattRealTimeMeasurementChanged -= RealTimeMeasurement_CollectionChanged;
+            Logger.LogTrace("Dispose RealTimeMeasurement");
             ApiService.StateHasChanged -= ApiService_StateHasChanged;
         }
 
@@ -52,7 +53,7 @@ namespace EnergyAutomate.Components.Pages
 
         protected override void OnInitialized()
         {
-            ApiService.GrowattRealTimeMeasurementChanged += RealTimeMeasurement_CollectionChanged;
+            ApiService.TibberRealTimeMeasurement.RegisterOnCollectionChanged(this, RealTimeMeasurement_CollectionChanged);
             ApiService.StateHasChanged += ApiService_StateHasChanged;
         }
 
@@ -60,15 +61,7 @@ namespace EnergyAutomate.Components.Pages
 
         #region Private Methods
 
-        private static IEnumerable<TickMark> GenerateTickTickMarks(int start, int end, int step)
-        {
-            var tickMarks = new List<TickMark>();
-            for (int i = start; i <= end; i += step)
-            {
-                tickMarks.Add(new TickMark { Label = i.ToString(), Value = i.ToString() });
-            }
-            return tickMarks;
-        }
+
 
         private async void ApiService_StateHasChanged(object? sender, EventArgs e)
         {
@@ -141,7 +134,8 @@ namespace EnergyAutomate.Components.Pages
 
             var dataCurrentHour = dataToday.Select((x, index) =>
                 index < 25 &&
-                (x.StartsAt.Hour == currentTime.Hour || x.StartsAt.Hour == currentTime.Hour + 1)
+                (x.StartsAt.Date == currentTime.Date && x.StartsAt.Hour == currentTime.Hour) || 
+                (x.StartsAt.Date == currentTime.Date && x.StartsAt.Hour == currentTime.Hour + 1)
                 ? (double?)x.Total : null
                 ).Concat(dataTomorrow.Select(x => (double?)null)).ToList();
 
@@ -318,7 +312,7 @@ namespace EnergyAutomate.Components.Pages
             }
         }
 
-        private async void RealTimeMeasurement_CollectionChanged(object? sender, EventArgs eventArgs)
+        private async void RealTimeMeasurement_CollectionChanged()
         {
             try
             {

@@ -1,4 +1,4 @@
-﻿namespace EnergyAutomate.Definitions
+﻿namespace EnergyAutomate.Logging
 {
     public class CustomTraceLog
     {
