@@ -1,6 +1,6 @@
 using Newtonsoft.Json;
 
-namespace Growatt.Sdk
+namespace EnergyAutomate.Growatt
 {
     public class DeviceMinLastData
     {

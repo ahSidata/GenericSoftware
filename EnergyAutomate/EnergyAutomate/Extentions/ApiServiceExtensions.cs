@@ -1,7 +1,6 @@
 ﻿using EnergyAutomate.Definitions;
-using Tibber.Sdk;
 
-namespace EnergyAutomate
+namespace EnergyAutomate.Extentions
 {
     public static class ApiServiceExtensions
     {

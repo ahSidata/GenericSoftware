@@ -9,7 +9,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Tibber.Sdk
+namespace EnergyAutomate.Tibber
 {
     internal class HomeRealTimeMeasurementObservable : IObservable<RealTimeMeasurement>
     {
@@ -354,7 +354,7 @@ namespace Tibber.Sdk
                                 break;
 
                             case "error":
-                                Trace.WriteLine($"web socket error message received: {String.Join("; ", message.Payload.Errors.Select(e => e.Message))}");
+                                Trace.WriteLine($"web socket error message received: {string.Join("; ", message.Payload.Errors.Select(e => e.Message))}");
                                 foreach (var error in message.Payload.Errors)
                                     homeStreamObserverCollection.Observable.Error(error.Message);
 

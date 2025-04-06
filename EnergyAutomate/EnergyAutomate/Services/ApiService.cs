@@ -1,9 +1,7 @@
 using EnergyAutomate.Definitions;
-using Growatt.Sdk;
+using EnergyAutomate.Extentions;
 using Microsoft.EntityFrameworkCore;
-using Newtonsoft.Json.Linq;
 using System.Diagnostics;
-using Tibber.Sdk;
 
 namespace EnergyAutomate.Services
 {
@@ -1229,7 +1227,7 @@ namespace EnergyAutomate.Services
 
         private async Task TibberRTMAjustment2(RealTimeMeasurementExtention value)
         {
-            if(CurrentState.GrowattNoahTotalPPV < ApiSettingAvgPower)
+            if (CurrentState.GrowattNoahTotalPPV < ApiSettingAvgPower)
             {
 
                 if (CurrentState.IsGrowattBatteryEmpty)
@@ -1254,7 +1252,8 @@ namespace EnergyAutomate.Services
                         }
                     }
                 }
-            }else if (CurrentState.GrowattNoahTotalPPV > 840)
+            }
+            else if (CurrentState.GrowattNoahTotalPPV > 840)
             {
                 if (CurrentState.IsGrowattBatteryFull)
                 {
@@ -1282,7 +1281,8 @@ namespace EnergyAutomate.Services
                         }
                     }
                 }
-            }else
+            }
+            else
             {
                 if (!CurrentState.IsGrowattBatteryFull)
                 {
@@ -1718,7 +1718,7 @@ namespace EnergyAutomate.Services
                 var firstTime = CurrentState.WeatherForecast?.Hourly?.Time?.FirstOrDefault();
 
                 if (firstTime == null || firstTime != null && DateTime.Parse(firstTime).Date != CurrentState.Now.Date)
-                { 
+                {
                     CurrentState.WeatherForecast = await CurrentState.GetWeatherForecastAsync();
                 }
 

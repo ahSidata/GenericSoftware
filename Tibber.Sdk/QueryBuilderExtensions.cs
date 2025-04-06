@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Tibber.Sdk
+namespace EnergyAutomate.Tibber
 {
     public static class QueryBuilderExtensions
     {

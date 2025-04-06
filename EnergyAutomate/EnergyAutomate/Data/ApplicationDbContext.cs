@@ -1,5 +1,4 @@
 using EnergyAutomate.Definitions;
-using Growatt.Sdk;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json;

@@ -1,6 +1,4 @@
-﻿using Tibber.Sdk;
-
-namespace EnergyAutomate.Watchdogs
+﻿namespace EnergyAutomate.Watchdogs
 {
     public class RealTimeMeasurementObserver : IObserver<RealTimeMeasurement>, IDisposable
     {

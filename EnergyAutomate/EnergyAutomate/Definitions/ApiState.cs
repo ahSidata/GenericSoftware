@@ -1,7 +1,6 @@
 ﻿using CoordinateSharp;
-using Newtonsoft.Json.Linq;
+using EnergyAutomate.Extentions;
 using OpenMeteo;
-using Tibber.Sdk;
 
 namespace EnergyAutomate.Definitions
 {
@@ -54,7 +53,7 @@ namespace EnergyAutomate.Definitions
                     var averagePower = powerCount / totalCount;
 
                     // Check if the average power is less than 200 W/m²
-                    return averagePower < 200; 
+                    return averagePower < 200;
                 }
 
                 return false;
@@ -126,7 +125,7 @@ namespace EnergyAutomate.Definitions
             if (ActiveRTMCondition != condition)
             {
                 ActiveRTMCondition = condition;
-                _apiService.ApiSettingAvgPowerAdjustmentTraceValues.AddOrUpdate(new APiTraceValue() { Index = 51, Key = "ActiveRTMCondition", Value = condition});
+                _apiService.ApiSettingAvgPowerAdjustmentTraceValues.AddOrUpdate(new APiTraceValue() { Index = 51, Key = "ActiveRTMCondition", Value = condition });
                 return true;
             }
 

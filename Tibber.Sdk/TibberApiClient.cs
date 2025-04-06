@@ -12,7 +12,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Tibber.Sdk
+namespace EnergyAutomate.Tibber
 {
     /// <inheritdoc />
     /// <summary>
@@ -44,7 +44,7 @@ namespace Tibber.Sdk
 
         public TibberApiClient(string accessToken, ProductInfoHeaderValue userAgent = null, HttpMessageHandler messageHandler = null, TimeSpan? timeout = null, string baseUrl = null)
         {
-            if (String.IsNullOrWhiteSpace(accessToken))
+            if (string.IsNullOrWhiteSpace(accessToken))
                 throw new ArgumentException("access token required", nameof(accessToken));
 
             _accessToken = accessToken;
@@ -247,7 +247,7 @@ namespace Tibber.Sdk
 
             try
             {
-                response = await _httpClient.PostAsync(String.Empty, JsonContent(new { query }), cancellationToken);
+                response = await _httpClient.PostAsync(string.Empty, JsonContent(new { query }), cancellationToken);
             }
             catch (Exception exception)
             {
@@ -269,7 +269,7 @@ namespace Tibber.Sdk
         {
             if (response.Errors is not null && response.Errors.Any())
                 throw new TibberApiException(
-                    $"Query execution failed:{Environment.NewLine}{String.Join(Environment.NewLine, response.Errors.Select(e => $"{e.Message} (locations: {String.Join(";", e.Locations.Select(l => $"line: {l.Line}, column: {l.Column}"))})"))}"
+                    $"Query execution failed:{Environment.NewLine}{string.Join(Environment.NewLine, response.Errors.Select(e => $"{e.Message} (locations: {string.Join(";", e.Locations.Select(l => $"line: {l.Line}, column: {l.Column}"))})"))}"
                 );
         }
     }

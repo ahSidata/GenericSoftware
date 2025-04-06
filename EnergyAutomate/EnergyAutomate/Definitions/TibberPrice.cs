@@ -1,6 +1,4 @@
-﻿using Tibber.Sdk;
-
-namespace EnergyAutomate
+﻿namespace EnergyAutomate.Definitions
 {
     public class TibberPrice
     {

@@ -6,7 +6,7 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Tibber.Sdk
+namespace EnergyAutomate.Tibber
 {
     public class TibberApiException : Exception
     {
@@ -123,16 +123,16 @@ namespace Tibber.Sdk
             if (RequestHeaders != null && RequestHeaders.Any())
             {
                 builder.AppendLine("Request headers:");
-                builder.AppendLine(String.Join(Environment.NewLine, RequestHeaders.Select(h => $"{h.Key}: [{String.Join(", ", h.Value)}]")));
+                builder.AppendLine(string.Join(Environment.NewLine, RequestHeaders.Select(h => $"{h.Key}: [{string.Join(", ", h.Value)}]")));
             }
 
             if (RequestContentHeaders != null && RequestContentHeaders.Any())
             {
                 builder.AppendLine("Request content headers:");
-                builder.AppendLine(String.Join(Environment.NewLine, RequestContentHeaders.Select(h => $"{h.Key}: [{String.Join(", ", h.Value)}]")));
+                builder.AppendLine(string.Join(Environment.NewLine, RequestContentHeaders.Select(h => $"{h.Key}: [{string.Join(", ", h.Value)}]")));
             }
 
-            if (!String.IsNullOrEmpty(RequestContent))
+            if (!string.IsNullOrEmpty(RequestContent))
             {
                 builder.AppendLine("Request content:");
                 if (RequestContent.Length > MaximumBodyLength)
@@ -150,16 +150,16 @@ namespace Tibber.Sdk
             if (ResponseHeaders != null && ResponseHeaders.Any())
             {
                 builder.AppendLine("Response headers:");
-                builder.AppendLine(String.Join(Environment.NewLine, ResponseHeaders.Select(h => $"{h.Key}: [{String.Join(", ", h.Value)}]")));
+                builder.AppendLine(string.Join(Environment.NewLine, ResponseHeaders.Select(h => $"{h.Key}: [{string.Join(", ", h.Value)}]")));
             }
 
             if (ResponseContentHeaders != null && ResponseContentHeaders.Any())
             {
                 builder.AppendLine("Response content headers:");
-                builder.AppendLine(String.Join(Environment.NewLine, ResponseContentHeaders.Select(h => $"{h.Key}: [{String.Join(", ", h.Value)}]")));
+                builder.AppendLine(string.Join(Environment.NewLine, ResponseContentHeaders.Select(h => $"{h.Key}: [{string.Join(", ", h.Value)}]")));
             }
 
-            if (!String.IsNullOrEmpty(ResponseContent))
+            if (!string.IsNullOrEmpty(ResponseContent))
             {
                 builder.AppendLine("Response content:");
 

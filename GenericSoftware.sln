@@ -7,9 +7,9 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EnergyAutomate", "EnergyAut
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EnergyAutomate.Client", "EnergyAutomate\EnergyAutomate.Client\EnergyAutomate.Client.csproj", "{9E43901A-D7AB-41BE-AEEB-F6556B8FF1F3}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tibber.Sdk", "Tibber.Sdk\Tibber.Sdk.csproj", "{7CE4DB5C-B72A-7115-D8C5-8CF4082A25E4}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EnergyAutomate.Tibber", "Tibber.Sdk\EnergyAutomate.Tibber.csproj", "{7CE4DB5C-B72A-7115-D8C5-8CF4082A25E4}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Growatt.Sdk", "Growatt.Sdk\Growatt.Sdk.csproj", "{0BEB2A4A-565C-7917-DD77-0C4CE310CB0C}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EnergyAutomate.Growatt", "Growatt.Sdk\EnergyAutomate.Growatt.csproj", "{0BEB2A4A-565C-7917-DD77-0C4CE310CB0C}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BlazorMonaco", "BlazorMonaco\BlazorMonaco.csproj", "{98942119-F8FC-D89A-EFBF-3182C3611B88}"
 EndProject

@@ -1,4 +1,5 @@
-﻿using BlazorMonaco.Helpers;
+﻿using BlazorMonaco.Bridge;
+using BlazorMonaco.Helpers;
 using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
 using System;
@@ -6,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
+using Range = BlazorMonaco.Bridge.Range;
 
 namespace BlazorMonaco.Editor
 {
@@ -43,7 +45,7 @@ namespace BlazorMonaco.Editor
                 CssClass = cssClass,
                 JsRuntime = jsRuntime
             };
-            virtual_editor._dotnetObjectRef = DotNetObjectReference.Create<Editor>(virtual_editor);
+            virtual_editor._dotnetObjectRef = DotNetObjectReference.Create<MonacoEditor>(virtual_editor);
             return virtual_editor;
         }
 
@@ -132,7 +134,7 @@ namespace BlazorMonaco.Editor
     /**
      * A rich code editor.
      */
-    public class CodeEditor : Editor
+    public class CodeEditor : MonacoEditor
     {
         #region Blazor
 

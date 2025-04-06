@@ -4,7 +4,7 @@
 
 <h3>Trace Log</h3>
 
-@if (CustomTraceListener.GetLogMessages().Any())
+@if (((CustomLoggerProvider)CustomLoggerProvider).LogMessages.Any())
 {
     <Tabs @ref="tabsMainRef">
         @foreach (var category in LogMessageCategories)
@@ -19,7 +19,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach (var log in CustomTraceListener.GetLogMessages().Where(x => x.Category == category).OrderByDescending(x => x.TS).Take(50))
+                            @foreach (var log in ((CustomLoggerProvider)CustomLoggerProvider).LogMessages.Where(x => x.Category == category).OrderByDescending(x => x.TS).Take(50))
                             {
                                 <tr>
                                     <td>@log.TS</td>
@@ -42,16 +42,16 @@ else
 @code {
 
     [Inject]
-    private CustomTraceListener CustomTraceListener { get; set; } = default!;
+    private ILoggerProvider CustomLoggerProvider { get; set; } = default!;
 
-    private List<string?> LogMessageCategories => CustomTraceListener.GetLogMessages().GroupBy(x => x.Category).Select(s => s.Key).OrderBy(o => o).ToList();
+    private List<string?> LogMessageCategories => ((CustomLoggerProvider)CustomLoggerProvider).LogMessages.GroupBy(x => x.Category).Select(s => s.Key).OrderBy(o => o).ToList();
 
     private Tabs tabsMainRef = default!;
 
 
     protected override void OnInitialized()
     {
-        CustomTraceListener.LogMessages.CollectionChanged += CollectionChanged;
+        ((CustomLoggerProvider)CustomLoggerProvider).LogMessages.CollectionChanged += CollectionChanged;
     }
 
     private async void CollectionChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)

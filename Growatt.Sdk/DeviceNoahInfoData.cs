@@ -1,4 +1,4 @@
-using Growatt.Sdk;
+using EnergyAutomate.Growatt;
 using Newtonsoft.Json;
 
 /// <summary>Represents the information of a device.</summary>

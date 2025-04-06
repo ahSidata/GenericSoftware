@@ -1,4 +1,4 @@
-using Growatt.Sdk;
+using EnergyAutomate.Growatt;
 
 public class DeviceMinInfoDataRoot
 {

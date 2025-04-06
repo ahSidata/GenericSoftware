@@ -1,5 +1,4 @@
 ﻿using System.Diagnostics;
-using Tibber.Sdk;
 
 namespace EnergyAutomate.Watchdogs
 {

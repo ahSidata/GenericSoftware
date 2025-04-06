@@ -1,3 +1,4 @@
+using BlazorMonaco.Bridge;
 using BlazorMonaco.Editor;
 using BlazorMonaco.Helpers;
 using Microsoft.JSInterop;
@@ -8,6 +9,7 @@ using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
+using Range = BlazorMonaco.Bridge.Range;
 
 /*---------------------------------------------------------------------------------------------
 *  C# translation of the monaco.d.ts file here : https://www.npmjs.com/package/monaco-editor/v/0.52.2?activeTab=code
@@ -19,7 +21,7 @@ using System.Threading.Tasks;
     MonacoEnvironment?: monaco.Environment | undefined;
 }*/
 
-namespace BlazorMonaco
+namespace BlazorMonaco.Bridge
 {
     //export type Thenable<T> = PromiseLike<T>;
 
@@ -938,7 +940,7 @@ namespace BlazorMonaco.Editor
             string domElementId,
             StandaloneEditorConstructionOptions options,
             EditorOverrideServices overrideServices,
-            DotNetObjectReference<Editor> dotnetObjectRef)
+            DotNetObjectReference<MonacoEditor> dotnetObjectRef)
         {
             options = options ?? new StandaloneEditorConstructionOptions();
 
@@ -989,9 +991,9 @@ namespace BlazorMonaco.Editor
             string domElementId,
             StandaloneDiffEditorConstructionOptions options,
             EditorOverrideServices overrideServices,
-            DotNetObjectReference<Editor> dotnetObjectRef,
-            DotNetObjectReference<Editor> dotnetObjectRefOriginal,
-            DotNetObjectReference<Editor> dotnetObjectRefModified)
+            DotNetObjectReference<MonacoEditor> dotnetObjectRef,
+            DotNetObjectReference<MonacoEditor> dotnetObjectRefOriginal,
+            DotNetObjectReference<MonacoEditor> dotnetObjectRefModified)
         {
             options = options ?? new StandaloneDiffEditorConstructionOptions();
 

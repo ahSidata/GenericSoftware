@@ -15,7 +15,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 #endif
 
-namespace Tibber.Sdk
+namespace EnergyAutomate.Tibber
 {
     #region base classes
     public struct GraphQlFieldMetadata

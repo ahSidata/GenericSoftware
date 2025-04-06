@@ -1,4 +1,4 @@
-﻿namespace Growatt.Sdk
+﻿namespace EnergyAutomate.Growatt
 {
     public class DeviceNoahSetPowerQuery : IDeviceQuery
     {

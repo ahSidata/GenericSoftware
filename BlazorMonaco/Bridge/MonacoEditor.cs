@@ -1,4 +1,5 @@
-﻿using BlazorMonaco.Helpers;
+﻿using BlazorMonaco.Editor;
+using BlazorMonaco.Helpers;
 using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
 using System;
@@ -6,12 +7,12 @@ using System.Collections.Generic;
 using System.Text.Json;
 using System.Threading.Tasks;
 
-namespace BlazorMonaco.Editor
+namespace BlazorMonaco.Bridge
 {
     /**
      * An editor.
      */
-    public class Editor : ComponentBase, IDisposable
+    public class MonacoEditor : ComponentBase, IDisposable
     {
         #region Blazor
 
@@ -30,7 +31,7 @@ namespace BlazorMonaco.Editor
         [Inject]
         protected IJSRuntime JsRuntime { get; set; }
 
-        internal DotNetObjectReference<Editor> _dotnetObjectRef;
+        internal DotNetObjectReference<MonacoEditor> _dotnetObjectRef;
 
         protected override void OnInitialized()
         {

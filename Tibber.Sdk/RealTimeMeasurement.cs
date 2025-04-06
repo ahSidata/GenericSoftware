@@ -1,7 +1,7 @@
 ﻿using Newtonsoft.Json;
 using System;
 
-namespace Tibber.Sdk
+namespace EnergyAutomate.Tibber
 {
     public class RealTimeMeasurement
     {

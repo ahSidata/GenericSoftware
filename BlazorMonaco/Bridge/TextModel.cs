@@ -1,10 +1,11 @@
-﻿using BlazorMonaco.Helpers;
+﻿using BlazorMonaco.Editor;
+using BlazorMonaco.Helpers;
 using Microsoft.JSInterop;
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
-namespace BlazorMonaco.Editor
+namespace BlazorMonaco.Bridge
 {
     /**
      * A model.

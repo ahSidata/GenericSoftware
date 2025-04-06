@@ -1,4 +1,5 @@
-﻿using BlazorMonaco.Helpers;
+﻿using BlazorMonaco.Bridge;
+using BlazorMonaco.Helpers;
 using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
 using System;
@@ -122,7 +123,7 @@ namespace BlazorMonaco.Editor
     /**
      * A rich diff editor.
      */
-    public class DiffEditor : Editor
+    public class DiffEditor : MonacoEditor
     {
         #region Blazor
 

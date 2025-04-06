@@ -1,17 +1,17 @@
 global using EnergyAutomate.Components;
 global using EnergyAutomate.Components.Account;
 global using EnergyAutomate.Data;
+global using EnergyAutomate.Growatt;
 global using EnergyAutomate.Services;
+global using EnergyAutomate.Tibber;
 global using EnergyAutomate.Watchdogs;
 using CoordinateSharp;
 using EnergyAutomate.Definitions;
-using Growatt.Sdk;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using System.Diagnostics;
 using System.Net.Http.Headers;
-using Tibber.Sdk;
 
 namespace EnergyAutomate;
 
@@ -23,29 +23,21 @@ public class Program
     {
         var builder = WebApplication.CreateBuilder(args);
 
-        // Logger-Konfiguration hinzufügen
-        builder.Logging.ClearProviders();
-        builder.Logging.AddConsole();
+#if DEBUG
         builder.Logging.AddDebug();
+#endif
+        builder.Logging.AddConsole();
+
 
         // Konfiguration laden
         var configuration = builder.Configuration;
         var TraceEnabled = configuration.GetSection("Trace").GetValue<bool>("TraceEnabled");
 
-#if !DEBUG
-        if (TraceEnabled)
-            Trace.Listeners.Add(new ConsoleTraceListener());
-#endif
         if (TraceEnabled)
         {
             // Erstellen und registrieren des benutzerdefinierten Trace-Listeners
-
-            builder.Services.AddSingleton(sp =>
-            {
-                var customTraceListener = new CustomTraceListener(sp);
-                Trace.Listeners.Add(customTraceListener);
-                return customTraceListener;
-            });
+            builder.Logging.AddCustomLogger(LogLevel.Trace, category => category.StartsWith("EnergyAutomate"));
+            builder.Services.AddSingleton(sp => new ILoggerTraceListener(sp));
         }
 
         // Add services to the container.
@@ -92,6 +84,11 @@ public class Program
         builder.Services.AddBlazorBootstrap();
 
         var app = builder.Build();
+
+        if (TraceEnabled)
+        {
+            Trace.Listeners.Add(app.Services.GetRequiredService<ILoggerTraceListener>());
+        }
 
         // Configure the HTTP request pipeline.
 
