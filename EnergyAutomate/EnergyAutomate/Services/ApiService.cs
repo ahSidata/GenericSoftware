@@ -174,23 +174,23 @@ namespace EnergyAutomate.Services
             return GrowattDeviceQueryQueueWatchdog.Count;
         }
 
-        public int? GrowattGetLastCommitedPowerValue() => GrowattGetLastCommitedPowerValueItem()?.CommitedPowerValue;
+        public int? GrowattGetLastCommitedPowerValue() => GrowattGetLastCommitedPowerValueItem()?.PowerValueNewCommited;
 
         public TibberRealTimeMeasurement? GrowattGetLastCommitedPowerValueItem()
         {
             lock (TibberRealTimeMeasurement._syncRoot)
             {
-                return TibberRealTimeMeasurement.Where(x => x.Timestamp > CurrentState.Now.AddDays(-1) && x.CommitedPowerValue != null).OrderByDescending(x => x.Timestamp).FirstOrDefault();
+                return TibberRealTimeMeasurement.Where(x => x.Timestamp > CurrentState.Now.AddDays(-1) && x.PowerValueNewCommited != null).OrderByDescending(x => x.Timestamp).FirstOrDefault();
             }
         }
 
-        public int? GrowattGetLastRequestedPowerValue() => GrowattGetLastRequestedPowerValueItem()?.RequestedPowerValue;
+        public int? GrowattGetLastRequestedPowerValue() => GrowattGetLastRequestedPowerValueItem()?.PowerValueNewRequested;
 
         public TibberRealTimeMeasurement? GrowattGetLastRequestedPowerValueItem()
         {
             lock (TibberRealTimeMeasurement._syncRoot)
             {
-                return TibberRealTimeMeasurement.Where(x => x.Timestamp > CurrentState.Now.AddDays(-1) && x.RequestedPowerValue != null).OrderByDescending(x => x.Timestamp).FirstOrDefault();
+                return TibberRealTimeMeasurement.Where(x => x.Timestamp > CurrentState.Now.AddDays(-1) && x.PowerValueNewRequested != null).OrderByDescending(x => x.Timestamp).FirstOrDefault();
             }
         }
 
@@ -668,11 +668,11 @@ namespace EnergyAutomate.Services
 
                                 if (dataRealTimeMeasurementApiService != null)
                                     lock (TibberRealTimeMeasurement._syncRoot)
-                                        dataRealTimeMeasurementApiService.CommitedPowerValue = setPowerQuery.Value;
+                                        dataRealTimeMeasurementApiService.PowerValueNewCommited = setPowerQuery.Value;
 
                                 if (dataRealTimeMeasurementDbContext != null)
                                 {
-                                    dataRealTimeMeasurementDbContext.CommitedPowerValue = setPowerQuery.Value;
+                                    dataRealTimeMeasurementDbContext.PowerValueNewCommited = setPowerQuery.Value;
                                     await dbContext.SaveChangesAsync();
                                 }
 
@@ -1091,7 +1091,7 @@ namespace EnergyAutomate.Services
                     device.PowerValueRequested = lastDataPPV;
                     device.PowerValueLastChanged = value.TS;
                     device.PowerValueRequested = lastDataPPV;
-                    value.RequestedPowerValue = lastDataPPV;
+                    value.PowerValueNewRequested = lastDataPPV;
                     GrowattDeviceQueryQueueWatchdog.Enqueue(new DeviceNoahSetPowerQuery()
                     {
                         DeviceType = "noah",
@@ -1208,10 +1208,10 @@ namespace EnergyAutomate.Services
                 }
             }
 
-            if (value.RequestedPowerValue.HasValue)
-                Logger.LogDebug($"RequestedPowerValue: {value.RequestedPowerValue}");
+            if (value.PowerValueNewRequested.HasValue)
+                Logger.LogDebug($"RequestedPowerValue: {value.PowerValueNewRequested}");
 
-            value.PenaltyFrequentlyAccess = GrowattDeviceQueryQueueWatchdog.PenaltyFrequentlyAccess;
+            value.ApiPenaltyFrequentlyAccess = GrowattDeviceQueryQueueWatchdog.PenaltyFrequentlyAccess;
             value.SettingPowerLoadSeconds = ApiSettingAvgPowerLoadSeconds;
             value.SettingOffSetAvg = ApiSettingAvgPowerOffset;
             value.SettingAvgPowerHysteresis = ApiSettingAvgPowerHysteresis;
@@ -1248,8 +1248,8 @@ namespace EnergyAutomate.Services
             {
                 int lastCommitedPowerValue = device.PowerValueCommited == 0 ? (int)(GrowattGetNoahLastDataPerDevice(device.DeviceSn)?.pac ?? 0) : device.PowerValueCommited;
                 var lastRequestedPowerValue = device.PowerValueRequested;
-                var avgPowerConsumption = value.AvgPowerConsumption;
-                var avgPowerProduction = -value.AvgPowerProduction;
+                var avgPowerConsumption = value.PowerAvgConsumption;
+                var avgPowerProduction = -value.PowerAvgProduction;
 
                 // If the total power is greater than 0, it indicates power consumption
                 if (value.TotalPower > 0)
@@ -1310,7 +1310,6 @@ namespace EnergyAutomate.Services
                     {
                         device.PowerValueLastChanged = value.TS;
                         device.PowerValueRequested = newPowerValue;
-                        value.RequestedPowerValue = newPowerValue;
 
                         GrowattDeviceQueryQueueWatchdog.Enqueue(new DeviceNoahSetPowerQuery()
                         {
@@ -1336,6 +1335,13 @@ namespace EnergyAutomate.Services
                         Logger.LogTrace($"lastCommitedPowerValue: {lastCommitedPowerValue} - lowerDelta: {productionDelta}, calcPowerValue: {calcPowerValue}, OffSet: {ApiSettingAvgPowerOffset}");
                     }
                 }
+                
+                value.PowerValueNewRequested = newPowerValue;
+                value.PowerValueNewCommited = 0;
+                value.PowerValueNewDeviceSn = device.DeviceSn;
+
+                value.PowerValueTotalCommited = devices.Sum(x => x.PowerValueCommited);
+                value.PowerValueTotalRequested = devices.Sum(x => x.PowerValueRequested);
 
                 ApiInvokeStateHasChanged();
             }
@@ -1458,10 +1464,10 @@ namespace EnergyAutomate.Services
                 }
             }
 
-            if (value.RequestedPowerValue.HasValue)
-                Logger.LogDebug($"RequestedPowerValue: {value.RequestedPowerValue}");
+            if (value.PowerValueNewRequested.HasValue)
+                Logger.LogDebug($"RequestedPowerValue: {value.PowerValueNewRequested}");
 
-            value.PenaltyFrequentlyAccess = GrowattDeviceQueryQueueWatchdog.PenaltyFrequentlyAccess;
+            value.ApiPenaltyFrequentlyAccess = GrowattDeviceQueryQueueWatchdog.PenaltyFrequentlyAccess;
             value.SettingPowerLoadSeconds = ApiSettingAvgPowerLoadSeconds;
             value.SettingOffSetAvg = ApiSettingAvgPowerOffset;
             value.SettingAvgPowerHysteresis = ApiSettingAvgPowerHysteresis;
@@ -1499,8 +1505,8 @@ namespace EnergyAutomate.Services
             {
                 int lastCommitedPowerValue = device.PowerValueCommited == 0 ? (int)(GrowattGetNoahLastDataPerDevice(device.DeviceSn)?.pac ?? 0) : device.PowerValueCommited;
                 var lastRequestedPowerValue = device.PowerValueRequested;
-                var avgPowerConsumption = value.AvgPowerConsumption;
-                var avgPowerProduction = -value.AvgPowerProduction;
+                var avgPowerConsumption = value.PowerAvgConsumption;
+                var avgPowerProduction = -value.PowerAvgProduction;
 
                 // If the total power is greater than 0, it indicates power consumption
                 if (value.TotalPower > 0 && value.TotalPower > upperlimit)
@@ -1526,7 +1532,6 @@ namespace EnergyAutomate.Services
                     {
                         device.PowerValueLastChanged = value.TS;
                         device.PowerValueRequested = newPowerValue;
-                        value.RequestedPowerValue = newPowerValue;
 
                         GrowattDeviceQueryQueueWatchdog.Enqueue(new DeviceNoahSetPowerQuery()
                         {
@@ -1552,6 +1557,13 @@ namespace EnergyAutomate.Services
                         Logger.LogTrace($"lastCommitedPowerValue: {lastCommitedPowerValue} - lowerDelta: {productionDelta}, calcPowerValue: {calcPowerValue}, OffSet: {ApiSettingAvgPowerOffset}");
                     }
                 }
+
+                value.PowerValueNewRequested = newPowerValue;
+                value.PowerValueNewCommited = 0;
+                value.PowerValueNewDeviceSn = device.DeviceSn;
+
+                value.PowerValueTotalCommited = devices.Sum(x => x.PowerValueCommited);
+                value.PowerValueTotalRequested = devices.Sum(x => x.PowerValueRequested);
 
                 ApiInvokeStateHasChanged();
             }
@@ -1593,7 +1605,7 @@ namespace EnergyAutomate.Services
                     powerConsumptionUntilZero.Add(powerConsumptionCompleteMeasurements.Current);
                 }
 
-                value.AvgPowerConsumption = value.Power > 0 ? (int)powerConsumptionUntilZero.Average(m => m.Power) : 0;
+                value.PowerAvgConsumption = value.Power > 0 ? (int)powerConsumptionUntilZero.Average(m => m.Power) : 0;
 
                 var powerProductionCompleteMeasurements = measurements.OrderByDescending(m => m.Timestamp).ToList().GetEnumerator();
 
@@ -1605,11 +1617,11 @@ namespace EnergyAutomate.Services
                     powerProductionUntilZero.Add(powerProductionCompleteMeasurements.Current);
                 }
 
-                value.AvgPowerProduction = value.PowerProduction > 0 ? (int)powerProductionUntilZero.Average(m => m.PowerProduction ?? 0) : 0;
+                value.PowerAvgProduction = value.PowerProduction > 0 ? (int)powerProductionUntilZero.Average(m => m.PowerProduction ?? 0) : 0;
             }
 
-            ApiSettingAvgPowerAdjustmentTraceValues.AddOrUpdate(new APiTraceValue() { Index = 101, Key = "AvgPowerConsumption", Value = value.AvgPowerConsumption.ToString() });
-            ApiSettingAvgPowerAdjustmentTraceValues.AddOrUpdate(new APiTraceValue() { Index = 102, Key = "AvgPowerProduction", Value = value.AvgPowerProduction.ToString() });
+            ApiSettingAvgPowerAdjustmentTraceValues.AddOrUpdate(new APiTraceValue() { Index = 101, Key = "AvgPowerConsumption", Value = value.PowerAvgConsumption.ToString() });
+            ApiSettingAvgPowerAdjustmentTraceValues.AddOrUpdate(new APiTraceValue() { Index = 102, Key = "AvgPowerProduction", Value = value.PowerAvgProduction.ToString() });
 
             await Task.CompletedTask;
         }
@@ -1637,7 +1649,7 @@ namespace EnergyAutomate.Services
                     powerConsumptionUntilZero.Add(powerConsumptionCompleteMeasurements.Current);
                 }
 
-                value.AvgPowerConsumption = value.Power > 0 ? (int)powerConsumptionUntilZero.Average(m => m.Power) : 0;
+                value.PowerAvgConsumption = value.Power > 0 ? (int)powerConsumptionUntilZero.Average(m => m.Power) : 0;
 
                 var powerProductionCompleteMeasurements = measurements.OrderByDescending(m => m.Timestamp).ToList().GetEnumerator();
 
@@ -1649,11 +1661,11 @@ namespace EnergyAutomate.Services
                     powerProductionUntilZero.Add(powerProductionCompleteMeasurements.Current);
                 }
 
-                value.AvgPowerProduction = value.PowerProduction > 0 ? (int)powerProductionUntilZero.Average(m => m.PowerProduction ?? 0) : 0;
+                value.PowerAvgProduction = value.PowerProduction > 0 ? (int)powerProductionUntilZero.Average(m => m.PowerProduction ?? 0) : 0;
             }
 
-            ApiSettingAvgPowerAdjustmentTraceValues.AddOrUpdate(new APiTraceValue() { Index = 101, Key = "AvgPowerConsumption", Value = value.AvgPowerConsumption.ToString() });
-            ApiSettingAvgPowerAdjustmentTraceValues.AddOrUpdate(new APiTraceValue() { Index = 201, Key = "AvgPowerProduction", Value = value.AvgPowerProduction.ToString() });
+            ApiSettingAvgPowerAdjustmentTraceValues.AddOrUpdate(new APiTraceValue() { Index = 101, Key = "AvgPowerConsumption", Value = value.PowerAvgConsumption.ToString() });
+            ApiSettingAvgPowerAdjustmentTraceValues.AddOrUpdate(new APiTraceValue() { Index = 201, Key = "AvgPowerProduction", Value = value.PowerAvgProduction.ToString() });
 
             await Task.CompletedTask;
         }

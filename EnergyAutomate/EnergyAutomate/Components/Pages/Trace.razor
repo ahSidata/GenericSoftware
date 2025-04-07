@@ -4,7 +4,7 @@
 
 <h3>Trace Log</h3>
 
-@if (((CustomLoggerProvider)CustomLoggerProvider).LogMessages.Any())
+@if (((CustomLoggerProvider)CustomLoggerProvider).GetLogMessages().Any())
 {
     <Tabs @ref="tabsMainRef">
         @foreach (var category in LogMessageCategories)
@@ -20,7 +20,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach (var log in ((CustomLoggerProvider)CustomLoggerProvider).LogMessages.Where(x => x.Category == category || x.Category!.Split(".").Last() == category).OrderByDescending(x => x.TS).Take(50))
+                            @foreach (var log in ((CustomLoggerProvider)CustomLoggerProvider).GetLogMessages().Where(x => x.Category == category || x.Category!.Split(".").Last() == category).OrderByDescending(x => x.TS).Take(50))
                             {
                                 <tr>
                                     <td>@log.TS</td>
@@ -49,7 +49,7 @@ else
     {
         get
         {
-            var categories = ((CustomLoggerProvider)CustomLoggerProvider).LogMessages.Where(x => x.Category != null).Select(s => s.Category!.Contains(".") ? s.Category.Split(".").Last() : s.Category);
+            var categories = ((CustomLoggerProvider)CustomLoggerProvider).GetLogMessages().Where(x => x.Category != null).Select(s => s.Category!.Contains(".") ? s.Category.Split(".").Last() : s.Category);
             if (categories != null)
                 return categories.GroupBy(x => x).Select(s => s.Key).OrderBy(o => o).ToList();
             else

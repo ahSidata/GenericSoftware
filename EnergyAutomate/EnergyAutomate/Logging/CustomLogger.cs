@@ -1,4 +1,5 @@
 using EnergyAutomate.Logging;
+using Microsoft.Extensions.Logging;
 
 public class CustomLogger : ILogger
 {
@@ -21,15 +22,18 @@ public class CustomLogger : ILogger
     {
         if (_categoryFilter == null || _categoryFilter != null && _categoryFilter(_name))
         {
-            _provider.LogMessages.Add(new CustomTraceLog
+            lock (_provider.LogMessages_Lock)
             {
-                Category = _name,
-                LogLevel = logLevel,
-                EventId = eventId,
-                Message = state?.ToString(),
-                Exception = exception?.ToString(),
-                TS = DateTime.Now
-            });
+                _provider.LogMessages.Add(new CustomTraceLog
+                {
+                    Category = _name,
+                    LogLevel = logLevel,
+                    EventId = eventId,
+                    Message = state?.ToString(),
+                    Exception = exception?.ToString(),
+                    TS = DateTime.Now
+                });
+            }
         }
     }
 

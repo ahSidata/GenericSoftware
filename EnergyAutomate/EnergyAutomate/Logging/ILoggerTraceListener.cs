@@ -14,15 +14,18 @@ public class ILoggerTraceListener : TraceListener
 
     public override void WriteLine(string? message, string? category)
     {
-        LoggerProvider.LogMessages.Add(new CustomTraceLog
+        lock (LoggerProvider.LogMessages_Lock)
         {
-            Category = category,
-            LogLevel = LogLevel.Trace,
-            EventId = new EventId(0, category),
-            Message = message,
-            Exception = null,
-            TS = DateTime.Now
-        });
+            LoggerProvider.LogMessages.Add(new CustomTraceLog
+            {
+                Category = category,
+                LogLevel = LogLevel.Trace,
+                EventId = new EventId(0, category),
+                Message = message,
+                Exception = null,
+                TS = DateTime.Now
+            });
+        }
     }
 
     public override void Write(string? message)
@@ -34,15 +37,18 @@ public class ILoggerTraceListener : TraceListener
     {
         if (!string.IsNullOrWhiteSpace(message))
         {
-            LoggerProvider.LogMessages.Add(new CustomTraceLog
+            lock (LoggerProvider.LogMessages_Lock)
             {
-                Category = "ApiService",
-                LogLevel = LogLevel.Trace,
-                EventId = new EventId(5, "Trace"),
-                Message = message,
-                Exception = null,
-                TS = DateTime.Now
-            });
+                LoggerProvider.LogMessages.Add(new CustomTraceLog
+                {
+                    Category = "ApiService",
+                    LogLevel = LogLevel.Trace,
+                    EventId = new EventId(5, "Trace"),
+                    Message = message,
+                    Exception = null,
+                    TS = DateTime.Now
+                });
+            }
         }
     }
 }

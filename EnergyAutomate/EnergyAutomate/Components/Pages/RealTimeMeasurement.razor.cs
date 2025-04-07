@@ -3,7 +3,9 @@ using EnergyAutomate.Components.Layout;
 using EnergyAutomate.Definitions;
 using EnergyAutomate.Extentions;
 using Microsoft.AspNetCore.Components;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using System.Collections.Specialized;
+using System.Data;
 using System.Diagnostics;
 
 namespace EnergyAutomate.Components.Pages
@@ -87,7 +89,18 @@ namespace EnergyAutomate.Components.Pages
 
         private void GetDeviceData()
         {
-            var dataSource = ApiService.TibberListRealTimeMeasurement().OrderByDescending(x => x.Timestamp).Take(61).Reverse().ToList();
+            var dataSource = ApiService.TibberListRealTimeMeasurement().OrderByDescending(x => x.TS).Take(61).Reverse().ToList();
+
+            List<double?>? GetDeviceData( string deviceSn, string propertyName)
+            {
+                switch(propertyName)
+                {
+                    case "Requested":
+                        return dataSource.Select(x => x.PowerValueNewDeviceSn == deviceSn ? (double?)x.PowerValueNewRequested : null).ToList();
+                    default:
+                        return new List<double?>();
+                }
+            }            
 
             deviceData = new ChartData
             {
@@ -96,16 +109,71 @@ namespace EnergyAutomate.Components.Pages
                 {
                     new LineChartDataset()
                     {
-                        Label = "AvgOutputValue",
-                        Data = dataSource.Select(x => (double?)x.CommitedPowerValue).ToList(),
+                        Label = "Total Commited",
+                        Data = dataSource.Select(x => (double?)x.PowerValueTotalCommited).ToList(),
+                        BackgroundColor = "rgb(0, 255, 0)",
+                        BorderColor = "rgb(0, 255, 0)",
+                        BorderWidth = 4,
+                        PointRadius = new List<double>() { 0 },
+                        Stepped = true,
+                        Order = 14
+                    },
+                    new LineChartDataset()
+                    {
+                        Label = "Total Requested",
+                        Data = dataSource.Select(x => (double?)x.PowerValueTotalRequested).ToList(),
+                        BackgroundColor = "rgb(255, 0, 0)",
+                        BorderColor = "rgb(255, 0, 0)",
+                        BorderWidth = 4,
+                        PointRadius = new List<double>() { 0 },
+                        Stepped = true,
+                        Order = 13
+                    },
+                    new LineChartDataset()
+                    {
+                        Label = "New Requested",
+                        Data = dataSource.Select(x => (double?)x.PowerValueNewRequested).ToList(),
+                        BackgroundColor = "rgb(255, 0, 0)",
+                        BorderColor = "rgb(255, 0, 0)",
+                        BorderWidth = 2,
+                        PointRadius = new List<double>() { 0 },
+                        Stepped = true,
+                        Fill = true,
+                        Order = 12
+                    },
+                    new LineChartDataset()
+                    {
+                        Label = "New Commited",
+                        Data = dataSource.Select(x => (double?)x.PowerValueNewCommited).ToList(),
                         BackgroundColor = "rgb(0, 255, 0)",
                         BorderColor = "rgb(0, 255, 0)",
                         BorderWidth = 2,
                         PointRadius = new List<double>() { 0 },
-                        Order = 3
+                        Stepped = true,
+                        Fill = true,
+                        Order = 11
                     }
                 },
             };
+
+            Dictionary<int, string> ColorSet = new Dictionary<int, string>() { { 1, "rgb(0, 0, 255)" }, { 2, "rgb(0, 150, 255)" } };
+
+            var index = 1;
+            foreach(var device in ApiService.GrowattAllNoahDevices())
+            {
+                deviceData.Datasets.Add(new LineChartDataset()
+                {
+                    Label = $"Noah({device.DeviceSn}) Requested",
+                    Data = GetDeviceData(device.DeviceSn, "Requested"),
+                    BackgroundColor = ColorSet[index],
+                    BorderColor = ColorSet[index],
+                    BorderWidth = 2,
+                    HoverBorderWidth = 4,
+                    Stepped = true,
+                    Order = index
+                });
+                index++;
+            }
         }
 
         private void GetPriceData()
@@ -249,7 +317,7 @@ namespace EnergyAutomate.Components.Pages
                     new LineChartDataset()
                     {
                         Label = "AvgPowerConsumption",
-                        Data = dataSource.Select(x => (double?)x.AvgPowerConsumption).ToList(),
+                        Data = dataSource.Select(x => (double?)x.PowerAvgConsumption).ToList(),
                         BackgroundColor = "rgb(0, 0, 0)",
                         BorderColor = "rgb(0, 0, 0)",
                         BorderWidth = 2,
@@ -259,7 +327,7 @@ namespace EnergyAutomate.Components.Pages
                     new LineChartDataset()
                     {
                         Label = "AvgPowerProduction",
-                        Data = dataSource.Select(x => (double?)x.AvgPowerProduction).Select(s => -s).ToList(),
+                        Data = dataSource.Select(x => (double?)x.PowerAvgProduction).Select(s => -s).ToList(),
                         BackgroundColor = "rgb(0, 0, 0)",
                         BorderColor = "rgb(0, 0, 0)",
                         BorderWidth = 2,

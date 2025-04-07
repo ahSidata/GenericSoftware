@@ -25,7 +25,7 @@
             else
             {
                 <LineChart @ref="realTimeMeasurementChart" Class="tibberLineChart" Height="40" HeightUnit="Unit.Vh" />
-                <LineChart @ref="deviceChart" Class="tibberLineChart" Height="20" HeightUnit="Unit.Vh" />
+                <LineChart @ref="deviceChart" Class="tibberLineChart" Height="40" HeightUnit="Unit.Vh" />
                 <div class="row">
                     @foreach (var device in ApiService.GrowattListDevices().Where(x => x.DeviceType == "noah"))
                     {
