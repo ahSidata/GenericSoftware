@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using System.Diagnostics;
+using System.Globalization;
 using System.Net.Http.Headers;
 
 namespace EnergyAutomate;
@@ -71,7 +72,24 @@ public class Program
 
         builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSender>();
 
-        builder.Services.AddTransient(sp => new Coordinate(double.Parse(builder.Configuration["ApiSettings:Latitude"] ?? "0,0"), double.Parse(builder.Configuration["ApiSettings:Longitude"] ?? "0,0"), DateTime.Now));
+
+        builder.Services.AddTransient(sp =>
+        {
+            var latitudeString = builder.Configuration["ApiSettings:Latitude"];
+            var longitudeString = builder.Configuration["ApiSettings:Longitude"];
+
+            if (!double.TryParse(latitudeString, NumberStyles.Float, CultureInfo.InvariantCulture, out var latitude))
+            {
+                latitude = 0.0;
+            }
+
+            if (!double.TryParse(longitudeString, NumberStyles.Float, CultureInfo.InvariantCulture, out var longitude))
+            {
+                longitude = 0.0;
+            }
+
+            return new Coordinate(latitude, longitude, DateTime.Now);
+        });
         builder.Services.AddTransient(sp => new GrowattApiClient("https://openapi.growatt.com", builder.Configuration["ApiSettings:GrowattApiToken"] ?? string.Empty));
         builder.Services.AddTransient(sp => new TibberApiClient(builder.Configuration["ApiSettings:TibberApiToken"] ?? string.Empty, new ProductInfoHeaderValue("EnergyAutomate", "1.0")));
         builder.Services.AddSingleton<ApiService>();

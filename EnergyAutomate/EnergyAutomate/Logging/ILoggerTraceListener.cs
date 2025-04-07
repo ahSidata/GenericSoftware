@@ -36,7 +36,7 @@ public class ILoggerTraceListener : TraceListener
         {
             LoggerProvider.LogMessages.Add(new CustomTraceLog
             {
-                Category = "ApiServcie",
+                Category = "ApiService",
                 LogLevel = LogLevel.Trace,
                 EventId = new EventId(5, "Trace"),
                 Message = message,

@@ -4,9 +4,9 @@ public class CustomLogger : ILogger
 {
     private readonly string _name;
     private readonly CustomLoggerProvider _provider;
-    private Func<string, bool> _categoryFilter;
+    private Func<string, bool>? _categoryFilter;
 
-    public CustomLogger(string name, CustomLoggerProvider provider, Func<string, bool> categoryFilter)
+    public CustomLogger(string name, CustomLoggerProvider provider, Func<string, bool>? categoryFilter)
     {
         _name = name;
         _provider = provider;
@@ -17,9 +17,9 @@ public class CustomLogger : ILogger
 
     public bool IsEnabled(LogLevel logLevel) => logLevel >= _provider.LogLevel;
 
-    public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception, string> formatter)
+    public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception, string>? formatter)
     {
-        if (_categoryFilter(_name))
+        if (_categoryFilter == null || _categoryFilter != null && _categoryFilter(_name))
         {
             _provider.LogMessages.Add(new CustomTraceLog
             {

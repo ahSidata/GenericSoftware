@@ -5,9 +5,9 @@ using System.Collections.ObjectModel;
 public class CustomLoggerProvider : ILoggerProvider
 {
     private readonly ConcurrentDictionary<string, ILogger> _loggers = new ConcurrentDictionary<string, ILogger>();
-    private Func<string, bool> _categoryFilter;
+    private Func<string, bool>? _categoryFilter;
 
-    public CustomLoggerProvider(IServiceProvider serviceProvider, LogLevel logLevel, Func<string, bool> categoryFilter)
+    public CustomLoggerProvider(IServiceProvider serviceProvider, LogLevel logLevel, Func<string, bool>? categoryFilter)
     {
         ServiceProvider = serviceProvider;
         _categoryFilter = categoryFilter;

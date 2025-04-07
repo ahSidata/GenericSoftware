@@ -81,7 +81,7 @@ namespace EnergyAutomate.Components.Pages
         private ChartData priceData = default!;
         private LineChart realTimeMeasurementChart = default!;
         private ChartData realTimeMeasurementData = default!;
-        private Tabs tabsTibberRef = default!;
+
         private List<string>? PriceBackgroundColors { get; set; }
 
         private void GetDeviceData()

@@ -95,10 +95,10 @@ namespace EnergyAutomate.Definitions
         }
 
         /// <summary>Battery is empty if all Growatt devices are empty.</summary>
-        public bool IsGrowattBatteryEmpty => _apiService.GrowattNoahDevices().All(x => x.IsBatteryEmpty);
+        public bool IsGrowattBatteryEmpty => _apiService.GrowattAllNoahDevices().All(x => x.IsBatteryEmpty);
 
         /// <summary>Full battery if all Growatt devices are full.</summary>
-        public bool IsGrowattBatteryFull => _apiService.GrowattNoahDevices().All(x => x.IsBatteryFull);
+        public bool IsGrowattBatteryFull => _apiService.GrowattAllNoahDevices().All(x => x.IsBatteryFull);
 
         /// <summary>
         /// Returns true if the total available power from all Growatt devices is greater than the
