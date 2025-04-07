@@ -107,7 +107,7 @@ namespace EnergyAutomate.Definitions
         public bool IsGrowattNoahSufficientSurplusAvailable => GrowattNoahTotalPPV >= _apiService.ApiSettingMaxPower;
 
         /// <summary>Returns true if all Growatt devices are offline.</summary>
-        public bool IsGrowattOnline => _apiService.GrowattNoahDevices().Where(x => x.IsOfflineSince == null).Any();
+        public bool IsGrowattOnline => _apiService.GrowattOnlineNoahDevices().Any();
 
         /// <summary>Current UTC time with the API setting time offset applied.</summary>
         public DateTime Now => DateTime.UtcNow.AddHours(_apiService.ApiSettingTimeOffset);

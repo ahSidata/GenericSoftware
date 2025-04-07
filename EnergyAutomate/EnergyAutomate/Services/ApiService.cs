@@ -318,6 +318,12 @@ namespace EnergyAutomate.Services
                 return GrowattDevices.Where(x => x.DeviceType == "noah").ToList();
         }
 
+        public List<DeviceList> GrowattOnlineNoahDevices()
+        {
+            lock (GrowattDevices._syncRoot)
+                return GrowattDevices.Where(x => x.DeviceType == "noah" && x.IsOfflineSince == null).ToList();
+        }
+
         public Task GrowattQueryDevice(bool force = false)
         {
             GrowattDeviceQueryQueueWatchdog.Enqueue(new DeviceListQuery() { Force = force });
@@ -361,17 +367,14 @@ namespace EnergyAutomate.Services
 
         public Task GrowattQueryDeviceNoahInfo(bool force = false)
         {
-            if (CurrentState.IsGrowattOnline)
-            {
-                var deviceSnList = GrowattGetDeviceNoahSnList();
+            var deviceSnList = GrowattGetDeviceNoahSnList();
 
-                GrowattDeviceQueryQueueWatchdog.Enqueue(new DeviceNoahInfoDataQuery()
-                {
-                    Force = false,
-                    DeviceType = "noah",
-                    DeviceSn = deviceSnList,
-                });
-            }
+            GrowattDeviceQueryQueueWatchdog.Enqueue(new DeviceNoahInfoDataQuery()
+            {
+                Force = false,
+                DeviceType = "noah",
+                DeviceSn = deviceSnList,
+            });
 
             return Task.CompletedTask;
         }
@@ -1467,7 +1470,7 @@ namespace EnergyAutomate.Services
             int calcPowerValue = 0;
             int newPowerValue = 0;
 
-            var devices = GrowattDevices.Where(x => x.DeviceType == "noah" && x.IsOfflineSince == null).ToList();
+            var devices = GrowattOnlineNoahDevices();
 
             DeviceList? device = null;
 
@@ -1585,7 +1588,7 @@ namespace EnergyAutomate.Services
 
         private Task TibberRTMAdjustmentPower2(RealTimeMeasurementExtention value)
         {
-            var devices = GrowattDevices.Where(x => x.DeviceType == "noah" && x.IsOfflineSince == null).ToList();
+            var devices = GrowattOnlineNoahDevices();
             var totalCommited = devices.Sum(x => x.PowerValueCommited);
 
             int calcPowerValue = 0;
