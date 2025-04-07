@@ -1,0 +1,877 @@
+﻿using System;
+using Microsoft.EntityFrameworkCore.Migrations;
+
+#nullable disable
+
+namespace EnergyAutomate.Migrations
+{
+    /// <inheritdoc />
+    public partial class ChangeTable25 : Migration
+    {
+        /// <inheritdoc />
+        protected override void Up(MigrationBuilder migrationBuilder)
+        {
+            migrationBuilder.DropTable(
+                name: "DeviceMinInfoData");
+
+            migrationBuilder.DropTable(
+                name: "DeviceMinLastData");
+
+            migrationBuilder.DropTable(
+                name: "Devices");
+
+            migrationBuilder.DropTable(
+                name: "Prices");
+
+            migrationBuilder.DropTable(
+                name: "RealTimeMeasurements");
+
+            migrationBuilder.DropPrimaryKey(
+                name: "PK_DeviceNoahLastData",
+                table: "DeviceNoahLastData");
+
+            migrationBuilder.DropPrimaryKey(
+                name: "PK_DeviceNoahInfoData",
+                table: "DeviceNoahInfoData");
+
+            migrationBuilder.RenameTable(
+                name: "DeviceNoahLastData",
+                newName: "GrowattDeviceNoahLastData");
+
+            migrationBuilder.RenameTable(
+                name: "DeviceNoahInfoData",
+                newName: "GrowattDeviceNoahInfoData");
+
+            migrationBuilder.AddPrimaryKey(
+                name: "PK_GrowattDeviceNoahLastData",
+                table: "GrowattDeviceNoahLastData",
+                columns: new[] { "deviceSn", "time" });
+
+            migrationBuilder.AddPrimaryKey(
+                name: "PK_GrowattDeviceNoahInfoData",
+                table: "GrowattDeviceNoahInfoData",
+                column: "DeviceSn");
+
+            migrationBuilder.CreateTable(
+                name: "GrowattDeviceMinInfoData",
+                columns: table => new
+                {
+                    serialNum = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    id = table.Column<int>(type: "int", nullable: false),
+                    portName = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    dataLogSn = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    groupId = table.Column<int>(type: "int", nullable: false),
+                    alias = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    location = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    addr = table.Column<int>(type: "int", nullable: false),
+                    fwVersion = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    model = table.Column<long>(type: "bigint", nullable: false),
+                    innerVersion = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    lost = table.Column<bool>(type: "bit", nullable: false),
+                    status = table.Column<int>(type: "int", nullable: false),
+                    tcpServerIp = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    lastUpdateTime = table.Column<long>(type: "bigint", nullable: false),
+                    sysTime = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    deviceType = table.Column<int>(type: "int", nullable: false),
+                    communicationVersion = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    pmax = table.Column<int>(type: "int", nullable: false),
+                    comAddress = table.Column<int>(type: "int", nullable: false),
+                    dtc = table.Column<int>(type: "int", nullable: false),
+                    countrySelected = table.Column<int>(type: "int", nullable: false),
+                    startTime = table.Column<int>(type: "int", nullable: false),
+                    restartTime = table.Column<int>(type: "int", nullable: false),
+                    wselectBaudrate = table.Column<int>(type: "int", nullable: false),
+                    trakerModel = table.Column<int>(type: "int", nullable: false),
+                    priorityChoose = table.Column<int>(type: "int", nullable: false),
+                    batteryType = table.Column<int>(type: "int", nullable: false),
+                    batSeriesNum = table.Column<int>(type: "int", nullable: false),
+                    batParallelNum = table.Column<int>(type: "int", nullable: false),
+                    bctMode = table.Column<int>(type: "int", nullable: false),
+                    bctAdjust = table.Column<int>(type: "int", nullable: false),
+                    bagingTestStep = table.Column<int>(type: "int", nullable: false),
+                    vnormal = table.Column<double>(type: "float", nullable: false),
+                    mppt = table.Column<double>(type: "float", nullable: false),
+                    batTempLowerLimitD = table.Column<double>(type: "float", nullable: false),
+                    batTempUpperLimitD = table.Column<double>(type: "float", nullable: false),
+                    batTempLowerLimitC = table.Column<double>(type: "float", nullable: false),
+                    batTempUpperLimitC = table.Column<double>(type: "float", nullable: false),
+                    vbatWarning = table.Column<double>(type: "float", nullable: false),
+                    vbatWarnClr = table.Column<double>(type: "float", nullable: false),
+                    modbusVersion = table.Column<int>(type: "int", nullable: false),
+                    manufacturer = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    bdc1Sn = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    bdc1Model = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    bdc1Version = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    vbatStopForDischarge = table.Column<double>(type: "float", nullable: false),
+                    vbatStopForCharge = table.Column<double>(type: "float", nullable: false),
+                    vbatStartForDischarge = table.Column<double>(type: "float", nullable: false),
+                    userName = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    modelText = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    plantId = table.Column<int>(type: "int", nullable: false),
+                    plantname = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    timezone = table.Column<double>(type: "float", nullable: false),
+                    pCharge = table.Column<double>(type: "float", nullable: false),
+                    pDischarge = table.Column<double>(type: "float", nullable: false),
+                    updating = table.Column<bool>(type: "bit", nullable: false),
+                    power = table.Column<double>(type: "float", nullable: false),
+                    eToday = table.Column<double>(type: "float", nullable: false),
+                    eTotal = table.Column<double>(type: "float", nullable: false),
+                    energyMonth = table.Column<double>(type: "float", nullable: false),
+                    strNum = table.Column<int>(type: "int", nullable: false),
+                    liBatteryManufacturers = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    liBatteryFwVersion = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    bmsSoftwareVersion = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    bmsCommunicationType = table.Column<int>(type: "int", nullable: false),
+                    monitorVersion = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    bdcMode = table.Column<int>(type: "int", nullable: false),
+                    bdcAuthversion = table.Column<int>(type: "int", nullable: false),
+                    hwVersion = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    vppOpen = table.Column<int>(type: "int", nullable: false),
+                    level = table.Column<int>(type: "int", nullable: false),
+                    lastUpdateTimeText = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    treeName = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    treeID = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    parentID = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    imgPath = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    statusText = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    powerMaxText = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    energyMonthText = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    TS = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_GrowattDeviceMinInfoData", x => x.serialNum);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "GrowattDeviceMinLastData",
+                columns: table => new
+                {
+                    SerialNum = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    Time = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    Address = table.Column<int>(type: "int", nullable: false),
+                    Again = table.Column<bool>(type: "bit", nullable: false),
+                    Alias = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    BatSn = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    BatteryNo = table.Column<int>(type: "int", nullable: false),
+                    BatterySN = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    Bdc1ChargePower = table.Column<double>(type: "float", nullable: false),
+                    Bdc1ChargeTotal = table.Column<double>(type: "float", nullable: false),
+                    Bdc1DischargePower = table.Column<double>(type: "float", nullable: false),
+                    Bdc1DischargeTotal = table.Column<double>(type: "float", nullable: false),
+                    Bdc1FaultType = table.Column<int>(type: "int", nullable: false),
+                    Bdc1Ibat = table.Column<double>(type: "float", nullable: false),
+                    Bdc1Ibb = table.Column<double>(type: "float", nullable: false),
+                    Bdc1Illc = table.Column<double>(type: "float", nullable: false),
+                    Bdc1Mode = table.Column<int>(type: "int", nullable: false),
+                    Bdc1Soc = table.Column<int>(type: "int", nullable: false),
+                    Bdc1Status = table.Column<int>(type: "int", nullable: false),
+                    Bdc1Temp1 = table.Column<double>(type: "float", nullable: false),
+                    Bdc1Temp2 = table.Column<double>(type: "float", nullable: false),
+                    Bdc1Vbat = table.Column<double>(type: "float", nullable: false),
+                    Bdc1Vbus1 = table.Column<double>(type: "float", nullable: false),
+                    Bdc1Vbus2 = table.Column<double>(type: "float", nullable: false),
+                    Bdc1WarnCode = table.Column<int>(type: "int", nullable: false),
+                    Bdc2ChargePower = table.Column<double>(type: "float", nullable: false),
+                    Bdc2ChargeTotal = table.Column<double>(type: "float", nullable: false),
+                    Bdc2DischargePower = table.Column<double>(type: "float", nullable: false),
+                    Bdc2DischargeTotal = table.Column<double>(type: "float", nullable: false),
+                    Bdc2FaultType = table.Column<int>(type: "int", nullable: false),
+                    Bdc2Ibat = table.Column<double>(type: "float", nullable: false),
+                    Bdc2Ibb = table.Column<double>(type: "float", nullable: false),
+                    Bdc2Illc = table.Column<double>(type: "float", nullable: false),
+                    Bdc2Mode = table.Column<int>(type: "int", nullable: false),
+                    Bdc2Soc = table.Column<int>(type: "int", nullable: false),
+                    Bdc2Status = table.Column<int>(type: "int", nullable: false),
+                    Bdc2Temp1 = table.Column<double>(type: "float", nullable: false),
+                    Bdc2Temp2 = table.Column<double>(type: "float", nullable: false),
+                    Bdc2Vbat = table.Column<double>(type: "float", nullable: false),
+                    Bdc2Vbus1 = table.Column<double>(type: "float", nullable: false),
+                    Bdc2Vbus2 = table.Column<double>(type: "float", nullable: false),
+                    Bdc2WarnCode = table.Column<int>(type: "int", nullable: false),
+                    BdcBusRef = table.Column<int>(type: "int", nullable: false),
+                    BdcDerateReason = table.Column<int>(type: "int", nullable: false),
+                    BdcFaultSubCode = table.Column<int>(type: "int", nullable: false),
+                    BdcStatus = table.Column<int>(type: "int", nullable: false),
+                    BdcVbus2Neg = table.Column<double>(type: "float", nullable: false),
+                    BdcWarnSubCode = table.Column<int>(type: "int", nullable: false),
+                    BgridType = table.Column<int>(type: "int", nullable: false),
+                    BMerterConnectFlag = table.Column<int>(type: "int", nullable: false),
+                    BmsCommunicationType = table.Column<int>(type: "int", nullable: false),
+                    BmsCvVolt = table.Column<double>(type: "float", nullable: false),
+                    BmsError2 = table.Column<int>(type: "int", nullable: false),
+                    BmsError3 = table.Column<int>(type: "int", nullable: false),
+                    BmsError4 = table.Column<int>(type: "int", nullable: false),
+                    BmsFaultType = table.Column<int>(type: "int", nullable: false),
+                    BmsFwVersion = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    BmsIbat = table.Column<double>(type: "float", nullable: false),
+                    BmsIcycle = table.Column<int>(type: "int", nullable: false),
+                    BmsInfo = table.Column<double>(type: "float", nullable: false),
+                    BmsIosStatus = table.Column<int>(type: "int", nullable: false),
+                    BmsMaxCurr = table.Column<double>(type: "float", nullable: false),
+                    BmsMcuVersion = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    BmsPackInfo = table.Column<double>(type: "float", nullable: false),
+                    BmsSoc = table.Column<int>(type: "int", nullable: false),
+                    BmsSoh = table.Column<int>(type: "int", nullable: false),
+                    BmsStatus = table.Column<int>(type: "int", nullable: false),
+                    BmsTemp1Bat = table.Column<double>(type: "float", nullable: false),
+                    BmsUsingCap = table.Column<double>(type: "float", nullable: false),
+                    BmsVbat = table.Column<double>(type: "float", nullable: false),
+                    BmsVdelta = table.Column<double>(type: "float", nullable: false),
+                    BmsWarn2 = table.Column<int>(type: "int", nullable: false),
+                    BmsWarnCode = table.Column<int>(type: "int", nullable: false),
+                    BsystemWorkMode = table.Column<int>(type: "int", nullable: false),
+                    Calendar = table.Column<long>(type: "bigint", nullable: false),
+                    DataLogSn = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    Day = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    DciR = table.Column<double>(type: "float", nullable: false),
+                    DciS = table.Column<double>(type: "float", nullable: false),
+                    DciT = table.Column<double>(type: "float", nullable: false),
+                    DcVoltage = table.Column<double>(type: "float", nullable: false),
+                    Debug1 = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    Debug2 = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    DeratingMode = table.Column<int>(type: "int", nullable: false),
+                    DryContactStatus = table.Column<int>(type: "int", nullable: false),
+                    EacChargeToday = table.Column<double>(type: "float", nullable: false),
+                    EacChargeTotal = table.Column<double>(type: "float", nullable: false),
+                    EacToday = table.Column<double>(type: "float", nullable: false),
+                    EacTotal = table.Column<double>(type: "float", nullable: false),
+                    EchargeToday = table.Column<double>(type: "float", nullable: false),
+                    EchargeTotal = table.Column<double>(type: "float", nullable: false),
+                    EdischargeToday = table.Column<double>(type: "float", nullable: false),
+                    EdischargeTotal = table.Column<double>(type: "float", nullable: false),
+                    Eex1Today = table.Column<double>(type: "float", nullable: false),
+                    Eex1Total = table.Column<double>(type: "float", nullable: false),
+                    Eex2Today = table.Column<double>(type: "float", nullable: false),
+                    Eex2Total = table.Column<double>(type: "float", nullable: false),
+                    ElocalLoadToday = table.Column<double>(type: "float", nullable: false),
+                    ElocalLoadTotal = table.Column<double>(type: "float", nullable: false),
+                    EpsFac = table.Column<double>(type: "float", nullable: false),
+                    EpsIac1 = table.Column<double>(type: "float", nullable: false),
+                    EpsIac2 = table.Column<double>(type: "float", nullable: false),
+                    EpsIac3 = table.Column<double>(type: "float", nullable: false),
+                    EpsPac = table.Column<double>(type: "float", nullable: false),
+                    EpsPac1 = table.Column<double>(type: "float", nullable: false),
+                    EpsPac2 = table.Column<double>(type: "float", nullable: false),
+                    EpsPac3 = table.Column<double>(type: "float", nullable: false),
+                    EpsPf = table.Column<double>(type: "float", nullable: false),
+                    EpsVac1 = table.Column<double>(type: "float", nullable: false),
+                    EpsVac2 = table.Column<double>(type: "float", nullable: false),
+                    EpsVac3 = table.Column<double>(type: "float", nullable: false),
+                    Epv1Today = table.Column<double>(type: "float", nullable: false),
+                    Epv1Total = table.Column<double>(type: "float", nullable: false),
+                    Epv2Today = table.Column<double>(type: "float", nullable: false),
+                    Epv2Total = table.Column<double>(type: "float", nullable: false),
+                    Epv3Today = table.Column<double>(type: "float", nullable: false),
+                    Epv3Total = table.Column<double>(type: "float", nullable: false),
+                    Epv4Today = table.Column<double>(type: "float", nullable: false),
+                    Epv4Total = table.Column<double>(type: "float", nullable: false),
+                    EpvTotal = table.Column<double>(type: "float", nullable: false),
+                    ErrorText = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    EselfToday = table.Column<double>(type: "float", nullable: false),
+                    EselfTotal = table.Column<double>(type: "float", nullable: false),
+                    EsystemToday = table.Column<double>(type: "float", nullable: false),
+                    EsystemTotal = table.Column<double>(type: "float", nullable: false),
+                    EtoGridToday = table.Column<double>(type: "float", nullable: false),
+                    EtoGridTotal = table.Column<double>(type: "float", nullable: false),
+                    EtoUserToday = table.Column<double>(type: "float", nullable: false),
+                    EtoUserTotal = table.Column<double>(type: "float", nullable: false),
+                    Fac = table.Column<double>(type: "float", nullable: false),
+                    FaultType = table.Column<int>(type: "int", nullable: false),
+                    FaultType1 = table.Column<int>(type: "int", nullable: false),
+                    Gfci = table.Column<int>(type: "int", nullable: false),
+                    Iac1 = table.Column<double>(type: "float", nullable: false),
+                    Iac2 = table.Column<double>(type: "float", nullable: false),
+                    Iac3 = table.Column<double>(type: "float", nullable: false),
+                    Iacr = table.Column<double>(type: "float", nullable: false),
+                    InvDelayTime = table.Column<double>(type: "float", nullable: false),
+                    Ipv1 = table.Column<double>(type: "float", nullable: false),
+                    Ipv2 = table.Column<double>(type: "float", nullable: false),
+                    Ipv3 = table.Column<double>(type: "float", nullable: false),
+                    Ipv4 = table.Column<double>(type: "float", nullable: false),
+                    IsAgain = table.Column<bool>(type: "bit", nullable: false),
+                    Iso = table.Column<int>(type: "int", nullable: false),
+                    LoadPercent = table.Column<double>(type: "float", nullable: false),
+                    Lost = table.Column<bool>(type: "bit", nullable: false),
+                    NBusVoltage = table.Column<double>(type: "float", nullable: false),
+                    OperatingMode = table.Column<int>(type: "int", nullable: false),
+                    OpFullwatt = table.Column<double>(type: "float", nullable: false),
+                    Pac = table.Column<double>(type: "float", nullable: false),
+                    Pac1 = table.Column<double>(type: "float", nullable: false),
+                    Pac2 = table.Column<double>(type: "float", nullable: false),
+                    Pac3 = table.Column<double>(type: "float", nullable: false),
+                    Pacr = table.Column<double>(type: "float", nullable: false),
+                    PacToGridTotal = table.Column<double>(type: "float", nullable: false),
+                    PacToLocalLoad = table.Column<double>(type: "float", nullable: false),
+                    PacToUserTotal = table.Column<double>(type: "float", nullable: false),
+                    PBusVoltage = table.Column<double>(type: "float", nullable: false),
+                    Pex1 = table.Column<double>(type: "float", nullable: false),
+                    Pex2 = table.Column<double>(type: "float", nullable: false),
+                    Pf = table.Column<double>(type: "float", nullable: false),
+                    Ppv = table.Column<double>(type: "float", nullable: false),
+                    Ppv1 = table.Column<double>(type: "float", nullable: false),
+                    Ppv2 = table.Column<double>(type: "float", nullable: false),
+                    Ppv3 = table.Column<double>(type: "float", nullable: false),
+                    Ppv4 = table.Column<double>(type: "float", nullable: false),
+                    Pself = table.Column<double>(type: "float", nullable: false),
+                    Psystem = table.Column<double>(type: "float", nullable: false),
+                    RealOPPercent = table.Column<int>(type: "int", nullable: false),
+                    Status = table.Column<int>(type: "int", nullable: false),
+                    StatusText = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    SysFaultWord = table.Column<int>(type: "int", nullable: false),
+                    SysFaultWord1 = table.Column<int>(type: "int", nullable: false),
+                    SysFaultWord2 = table.Column<int>(type: "int", nullable: false),
+                    SysFaultWord3 = table.Column<int>(type: "int", nullable: false),
+                    SysFaultWord4 = table.Column<int>(type: "int", nullable: false),
+                    SysFaultWord5 = table.Column<int>(type: "int", nullable: false),
+                    SysFaultWord6 = table.Column<int>(type: "int", nullable: false),
+                    SysFaultWord7 = table.Column<int>(type: "int", nullable: false),
+                    Temp1 = table.Column<double>(type: "float", nullable: false),
+                    Temp2 = table.Column<double>(type: "float", nullable: false),
+                    Temp3 = table.Column<double>(type: "float", nullable: false),
+                    Temp4 = table.Column<double>(type: "float", nullable: false),
+                    Temp5 = table.Column<double>(type: "float", nullable: false),
+                    TimeTotal = table.Column<double>(type: "float", nullable: false),
+                    TotalWorkingTime = table.Column<double>(type: "float", nullable: false),
+                    TS = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: false),
+                    UwSysWorkMode = table.Column<int>(type: "int", nullable: false),
+                    Vac1 = table.Column<double>(type: "float", nullable: false),
+                    Vac2 = table.Column<double>(type: "float", nullable: false),
+                    Vac3 = table.Column<double>(type: "float", nullable: false),
+                    Vacr = table.Column<double>(type: "float", nullable: false),
+                    VacRs = table.Column<double>(type: "float", nullable: false),
+                    VacSt = table.Column<double>(type: "float", nullable: false),
+                    VacTr = table.Column<double>(type: "float", nullable: false),
+                    Vpv1 = table.Column<double>(type: "float", nullable: false),
+                    Vpv2 = table.Column<double>(type: "float", nullable: false),
+                    Vpv3 = table.Column<double>(type: "float", nullable: false),
+                    Vpv4 = table.Column<double>(type: "float", nullable: false),
+                    WarnCode = table.Column<int>(type: "int", nullable: false),
+                    WarnCode1 = table.Column<int>(type: "int", nullable: false),
+                    WarnText = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    WithTime = table.Column<bool>(type: "bit", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_GrowattDeviceMinLastData", x => new { x.SerialNum, x.Time });
+                });
+
+            migrationBuilder.CreateTable(
+                name: "GrowattDevices",
+                columns: table => new
+                {
+                    DeviceSn = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    CreateDate = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    DeviceType = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    IsOfflineSince = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: true),
+                    PowerValueCommited = table.Column<int>(type: "int", nullable: false),
+                    PowerValueLastChanged = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: true),
+                    PowerValueRequested = table.Column<int>(type: "int", nullable: false),
+                    IsBatteryEmpty = table.Column<bool>(type: "bit", nullable: false),
+                    IsBatteryFull = table.Column<bool>(type: "bit", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_GrowattDevices", x => x.DeviceSn);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "TibberPrices",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    AutoModeRestriction = table.Column<bool>(type: "bit", nullable: true),
+                    Level = table.Column<int>(type: "int", nullable: true),
+                    StartsAt = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: false),
+                    Total = table.Column<decimal>(type: "decimal(18,2)", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_TibberPrices", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "TibberRealTimeMeasurements",
+                columns: table => new
+                {
+                    Timestamp = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: false),
+                    AvgPowerConsumption = table.Column<int>(type: "int", nullable: false),
+                    AvgPowerProduction = table.Column<int>(type: "int", nullable: false),
+                    CommitedPowerValue = table.Column<int>(type: "int", nullable: true),
+                    PenaltyFrequentlyAccess = table.Column<int>(type: "int", nullable: false),
+                    RequestedPowerValue = table.Column<int>(type: "int", nullable: true),
+                    SettingAutoMode = table.Column<bool>(type: "bit", nullable: false),
+                    SettingAvgPowerHysteresis = table.Column<int>(type: "int", nullable: false),
+                    SettingBatteryPriorityMode = table.Column<bool>(type: "bit", nullable: false),
+                    SettingOffSetAvg = table.Column<int>(type: "int", nullable: false),
+                    SettingPowerLoadSeconds = table.Column<int>(type: "int", nullable: false),
+                    SettingRestrictionMode = table.Column<bool>(type: "bit", nullable: false),
+                    SettingRestrictionState = table.Column<bool>(type: "bit", nullable: false),
+                    TS = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    Power = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    LastMeterConsumption = table.Column<decimal>(type: "decimal(18,2)", nullable: true),
+                    AccumulatedConsumption = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    AccumulatedConsumptionLastHour = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    AccumulatedProduction = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    AccumulatedProductionLastHour = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    AccumulatedCost = table.Column<decimal>(type: "decimal(18,2)", nullable: true),
+                    AccumulatedReward = table.Column<decimal>(type: "decimal(18,2)", nullable: true),
+                    Currency = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    MinPower = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    AveragePower = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    MaxPower = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    PowerProduction = table.Column<decimal>(type: "decimal(18,2)", nullable: true),
+                    PowerReactive = table.Column<decimal>(type: "decimal(18,2)", nullable: true),
+                    PowerProductionReactive = table.Column<decimal>(type: "decimal(18,2)", nullable: true),
+                    MinPowerProduction = table.Column<decimal>(type: "decimal(18,2)", nullable: true),
+                    MaxPowerProduction = table.Column<decimal>(type: "decimal(18,2)", nullable: true),
+                    LastMeterProduction = table.Column<decimal>(type: "decimal(18,2)", nullable: true),
+                    VoltagePhase1 = table.Column<decimal>(type: "decimal(18,2)", nullable: true),
+                    VoltagePhase2 = table.Column<decimal>(type: "decimal(18,2)", nullable: true),
+                    VoltagePhase3 = table.Column<decimal>(type: "decimal(18,2)", nullable: true),
+                    CurrentPhase1 = table.Column<decimal>(type: "decimal(18,2)", nullable: true),
+                    CurrentPhase2 = table.Column<decimal>(type: "decimal(18,2)", nullable: true),
+                    CurrentPhase3 = table.Column<decimal>(type: "decimal(18,2)", nullable: true),
+                    PowerFactor = table.Column<decimal>(type: "decimal(18,2)", nullable: true),
+                    SignalStrength = table.Column<int>(type: "int", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_TibberRealTimeMeasurements", x => x.Timestamp);
+                });
+        }
+
+        /// <inheritdoc />
+        protected override void Down(MigrationBuilder migrationBuilder)
+        {
+            migrationBuilder.DropTable(
+                name: "GrowattDeviceMinInfoData");
+
+            migrationBuilder.DropTable(
+                name: "GrowattDeviceMinLastData");
+
+            migrationBuilder.DropTable(
+                name: "GrowattDevices");
+
+            migrationBuilder.DropTable(
+                name: "TibberPrices");
+
+            migrationBuilder.DropTable(
+                name: "TibberRealTimeMeasurements");
+
+            migrationBuilder.DropPrimaryKey(
+                name: "PK_GrowattDeviceNoahLastData",
+                table: "GrowattDeviceNoahLastData");
+
+            migrationBuilder.DropPrimaryKey(
+                name: "PK_GrowattDeviceNoahInfoData",
+                table: "GrowattDeviceNoahInfoData");
+
+            migrationBuilder.RenameTable(
+                name: "GrowattDeviceNoahLastData",
+                newName: "DeviceNoahLastData");
+
+            migrationBuilder.RenameTable(
+                name: "GrowattDeviceNoahInfoData",
+                newName: "DeviceNoahInfoData");
+
+            migrationBuilder.AddPrimaryKey(
+                name: "PK_DeviceNoahLastData",
+                table: "DeviceNoahLastData",
+                columns: new[] { "deviceSn", "time" });
+
+            migrationBuilder.AddPrimaryKey(
+                name: "PK_DeviceNoahInfoData",
+                table: "DeviceNoahInfoData",
+                column: "DeviceSn");
+
+            migrationBuilder.CreateTable(
+                name: "DeviceMinInfoData",
+                columns: table => new
+                {
+                    serialNum = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    TS = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: false),
+                    addr = table.Column<int>(type: "int", nullable: false),
+                    alias = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    bagingTestStep = table.Column<int>(type: "int", nullable: false),
+                    batParallelNum = table.Column<int>(type: "int", nullable: false),
+                    batSeriesNum = table.Column<int>(type: "int", nullable: false),
+                    batTempLowerLimitC = table.Column<double>(type: "float", nullable: false),
+                    batTempLowerLimitD = table.Column<double>(type: "float", nullable: false),
+                    batTempUpperLimitC = table.Column<double>(type: "float", nullable: false),
+                    batTempUpperLimitD = table.Column<double>(type: "float", nullable: false),
+                    batteryType = table.Column<int>(type: "int", nullable: false),
+                    bctAdjust = table.Column<int>(type: "int", nullable: false),
+                    bctMode = table.Column<int>(type: "int", nullable: false),
+                    bdc1Model = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    bdc1Sn = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    bdc1Version = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    bdcAuthversion = table.Column<int>(type: "int", nullable: false),
+                    bdcMode = table.Column<int>(type: "int", nullable: false),
+                    bmsCommunicationType = table.Column<int>(type: "int", nullable: false),
+                    bmsSoftwareVersion = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    comAddress = table.Column<int>(type: "int", nullable: false),
+                    communicationVersion = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    countrySelected = table.Column<int>(type: "int", nullable: false),
+                    dataLogSn = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    deviceType = table.Column<int>(type: "int", nullable: false),
+                    dtc = table.Column<int>(type: "int", nullable: false),
+                    eToday = table.Column<double>(type: "float", nullable: false),
+                    eTotal = table.Column<double>(type: "float", nullable: false),
+                    energyMonth = table.Column<double>(type: "float", nullable: false),
+                    energyMonthText = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    fwVersion = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    groupId = table.Column<int>(type: "int", nullable: false),
+                    hwVersion = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    id = table.Column<int>(type: "int", nullable: false),
+                    imgPath = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    innerVersion = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    lastUpdateTime = table.Column<long>(type: "bigint", nullable: false),
+                    lastUpdateTimeText = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    level = table.Column<int>(type: "int", nullable: false),
+                    liBatteryFwVersion = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    liBatteryManufacturers = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    location = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    lost = table.Column<bool>(type: "bit", nullable: false),
+                    manufacturer = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    modbusVersion = table.Column<int>(type: "int", nullable: false),
+                    model = table.Column<long>(type: "bigint", nullable: false),
+                    modelText = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    monitorVersion = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    mppt = table.Column<double>(type: "float", nullable: false),
+                    pCharge = table.Column<double>(type: "float", nullable: false),
+                    pDischarge = table.Column<double>(type: "float", nullable: false),
+                    parentID = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    plantId = table.Column<int>(type: "int", nullable: false),
+                    plantname = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    pmax = table.Column<int>(type: "int", nullable: false),
+                    portName = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    power = table.Column<double>(type: "float", nullable: false),
+                    powerMaxText = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    priorityChoose = table.Column<int>(type: "int", nullable: false),
+                    restartTime = table.Column<int>(type: "int", nullable: false),
+                    startTime = table.Column<int>(type: "int", nullable: false),
+                    status = table.Column<int>(type: "int", nullable: false),
+                    statusText = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    strNum = table.Column<int>(type: "int", nullable: false),
+                    sysTime = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    tcpServerIp = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    timezone = table.Column<double>(type: "float", nullable: false),
+                    trakerModel = table.Column<int>(type: "int", nullable: false),
+                    treeID = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    treeName = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    updating = table.Column<bool>(type: "bit", nullable: false),
+                    userName = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    vbatStartForDischarge = table.Column<double>(type: "float", nullable: false),
+                    vbatStopForCharge = table.Column<double>(type: "float", nullable: false),
+                    vbatStopForDischarge = table.Column<double>(type: "float", nullable: false),
+                    vbatWarnClr = table.Column<double>(type: "float", nullable: false),
+                    vbatWarning = table.Column<double>(type: "float", nullable: false),
+                    vnormal = table.Column<double>(type: "float", nullable: false),
+                    vppOpen = table.Column<int>(type: "int", nullable: false),
+                    wselectBaudrate = table.Column<int>(type: "int", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_DeviceMinInfoData", x => x.serialNum);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "DeviceMinLastData",
+                columns: table => new
+                {
+                    SerialNum = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    Time = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    Address = table.Column<int>(type: "int", nullable: false),
+                    Again = table.Column<bool>(type: "bit", nullable: false),
+                    Alias = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    BMerterConnectFlag = table.Column<int>(type: "int", nullable: false),
+                    BatSn = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    BatteryNo = table.Column<int>(type: "int", nullable: false),
+                    BatterySN = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    Bdc1ChargePower = table.Column<double>(type: "float", nullable: false),
+                    Bdc1ChargeTotal = table.Column<double>(type: "float", nullable: false),
+                    Bdc1DischargePower = table.Column<double>(type: "float", nullable: false),
+                    Bdc1DischargeTotal = table.Column<double>(type: "float", nullable: false),
+                    Bdc1FaultType = table.Column<int>(type: "int", nullable: false),
+                    Bdc1Ibat = table.Column<double>(type: "float", nullable: false),
+                    Bdc1Ibb = table.Column<double>(type: "float", nullable: false),
+                    Bdc1Illc = table.Column<double>(type: "float", nullable: false),
+                    Bdc1Mode = table.Column<int>(type: "int", nullable: false),
+                    Bdc1Soc = table.Column<int>(type: "int", nullable: false),
+                    Bdc1Status = table.Column<int>(type: "int", nullable: false),
+                    Bdc1Temp1 = table.Column<double>(type: "float", nullable: false),
+                    Bdc1Temp2 = table.Column<double>(type: "float", nullable: false),
+                    Bdc1Vbat = table.Column<double>(type: "float", nullable: false),
+                    Bdc1Vbus1 = table.Column<double>(type: "float", nullable: false),
+                    Bdc1Vbus2 = table.Column<double>(type: "float", nullable: false),
+                    Bdc1WarnCode = table.Column<int>(type: "int", nullable: false),
+                    Bdc2ChargePower = table.Column<double>(type: "float", nullable: false),
+                    Bdc2ChargeTotal = table.Column<double>(type: "float", nullable: false),
+                    Bdc2DischargePower = table.Column<double>(type: "float", nullable: false),
+                    Bdc2DischargeTotal = table.Column<double>(type: "float", nullable: false),
+                    Bdc2FaultType = table.Column<int>(type: "int", nullable: false),
+                    Bdc2Ibat = table.Column<double>(type: "float", nullable: false),
+                    Bdc2Ibb = table.Column<double>(type: "float", nullable: false),
+                    Bdc2Illc = table.Column<double>(type: "float", nullable: false),
+                    Bdc2Mode = table.Column<int>(type: "int", nullable: false),
+                    Bdc2Soc = table.Column<int>(type: "int", nullable: false),
+                    Bdc2Status = table.Column<int>(type: "int", nullable: false),
+                    Bdc2Temp1 = table.Column<double>(type: "float", nullable: false),
+                    Bdc2Temp2 = table.Column<double>(type: "float", nullable: false),
+                    Bdc2Vbat = table.Column<double>(type: "float", nullable: false),
+                    Bdc2Vbus1 = table.Column<double>(type: "float", nullable: false),
+                    Bdc2Vbus2 = table.Column<double>(type: "float", nullable: false),
+                    Bdc2WarnCode = table.Column<int>(type: "int", nullable: false),
+                    BdcBusRef = table.Column<int>(type: "int", nullable: false),
+                    BdcDerateReason = table.Column<int>(type: "int", nullable: false),
+                    BdcFaultSubCode = table.Column<int>(type: "int", nullable: false),
+                    BdcStatus = table.Column<int>(type: "int", nullable: false),
+                    BdcVbus2Neg = table.Column<double>(type: "float", nullable: false),
+                    BdcWarnSubCode = table.Column<int>(type: "int", nullable: false),
+                    BgridType = table.Column<int>(type: "int", nullable: false),
+                    BmsCommunicationType = table.Column<int>(type: "int", nullable: false),
+                    BmsCvVolt = table.Column<double>(type: "float", nullable: false),
+                    BmsError2 = table.Column<int>(type: "int", nullable: false),
+                    BmsError3 = table.Column<int>(type: "int", nullable: false),
+                    BmsError4 = table.Column<int>(type: "int", nullable: false),
+                    BmsFaultType = table.Column<int>(type: "int", nullable: false),
+                    BmsFwVersion = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    BmsIbat = table.Column<double>(type: "float", nullable: false),
+                    BmsIcycle = table.Column<int>(type: "int", nullable: false),
+                    BmsInfo = table.Column<double>(type: "float", nullable: false),
+                    BmsIosStatus = table.Column<int>(type: "int", nullable: false),
+                    BmsMaxCurr = table.Column<double>(type: "float", nullable: false),
+                    BmsMcuVersion = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    BmsPackInfo = table.Column<double>(type: "float", nullable: false),
+                    BmsSoc = table.Column<int>(type: "int", nullable: false),
+                    BmsSoh = table.Column<int>(type: "int", nullable: false),
+                    BmsStatus = table.Column<int>(type: "int", nullable: false),
+                    BmsTemp1Bat = table.Column<double>(type: "float", nullable: false),
+                    BmsUsingCap = table.Column<double>(type: "float", nullable: false),
+                    BmsVbat = table.Column<double>(type: "float", nullable: false),
+                    BmsVdelta = table.Column<double>(type: "float", nullable: false),
+                    BmsWarn2 = table.Column<int>(type: "int", nullable: false),
+                    BmsWarnCode = table.Column<int>(type: "int", nullable: false),
+                    BsystemWorkMode = table.Column<int>(type: "int", nullable: false),
+                    Calendar = table.Column<long>(type: "bigint", nullable: false),
+                    DataLogSn = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    Day = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    DcVoltage = table.Column<double>(type: "float", nullable: false),
+                    DciR = table.Column<double>(type: "float", nullable: false),
+                    DciS = table.Column<double>(type: "float", nullable: false),
+                    DciT = table.Column<double>(type: "float", nullable: false),
+                    Debug1 = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    Debug2 = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    DeratingMode = table.Column<int>(type: "int", nullable: false),
+                    DryContactStatus = table.Column<int>(type: "int", nullable: false),
+                    EacChargeToday = table.Column<double>(type: "float", nullable: false),
+                    EacChargeTotal = table.Column<double>(type: "float", nullable: false),
+                    EacToday = table.Column<double>(type: "float", nullable: false),
+                    EacTotal = table.Column<double>(type: "float", nullable: false),
+                    EchargeToday = table.Column<double>(type: "float", nullable: false),
+                    EchargeTotal = table.Column<double>(type: "float", nullable: false),
+                    EdischargeToday = table.Column<double>(type: "float", nullable: false),
+                    EdischargeTotal = table.Column<double>(type: "float", nullable: false),
+                    Eex1Today = table.Column<double>(type: "float", nullable: false),
+                    Eex1Total = table.Column<double>(type: "float", nullable: false),
+                    Eex2Today = table.Column<double>(type: "float", nullable: false),
+                    Eex2Total = table.Column<double>(type: "float", nullable: false),
+                    ElocalLoadToday = table.Column<double>(type: "float", nullable: false),
+                    ElocalLoadTotal = table.Column<double>(type: "float", nullable: false),
+                    EpsFac = table.Column<double>(type: "float", nullable: false),
+                    EpsIac1 = table.Column<double>(type: "float", nullable: false),
+                    EpsIac2 = table.Column<double>(type: "float", nullable: false),
+                    EpsIac3 = table.Column<double>(type: "float", nullable: false),
+                    EpsPac = table.Column<double>(type: "float", nullable: false),
+                    EpsPac1 = table.Column<double>(type: "float", nullable: false),
+                    EpsPac2 = table.Column<double>(type: "float", nullable: false),
+                    EpsPac3 = table.Column<double>(type: "float", nullable: false),
+                    EpsPf = table.Column<double>(type: "float", nullable: false),
+                    EpsVac1 = table.Column<double>(type: "float", nullable: false),
+                    EpsVac2 = table.Column<double>(type: "float", nullable: false),
+                    EpsVac3 = table.Column<double>(type: "float", nullable: false),
+                    Epv1Today = table.Column<double>(type: "float", nullable: false),
+                    Epv1Total = table.Column<double>(type: "float", nullable: false),
+                    Epv2Today = table.Column<double>(type: "float", nullable: false),
+                    Epv2Total = table.Column<double>(type: "float", nullable: false),
+                    Epv3Today = table.Column<double>(type: "float", nullable: false),
+                    Epv3Total = table.Column<double>(type: "float", nullable: false),
+                    Epv4Today = table.Column<double>(type: "float", nullable: false),
+                    Epv4Total = table.Column<double>(type: "float", nullable: false),
+                    EpvTotal = table.Column<double>(type: "float", nullable: false),
+                    ErrorText = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    EselfToday = table.Column<double>(type: "float", nullable: false),
+                    EselfTotal = table.Column<double>(type: "float", nullable: false),
+                    EsystemToday = table.Column<double>(type: "float", nullable: false),
+                    EsystemTotal = table.Column<double>(type: "float", nullable: false),
+                    EtoGridToday = table.Column<double>(type: "float", nullable: false),
+                    EtoGridTotal = table.Column<double>(type: "float", nullable: false),
+                    EtoUserToday = table.Column<double>(type: "float", nullable: false),
+                    EtoUserTotal = table.Column<double>(type: "float", nullable: false),
+                    Fac = table.Column<double>(type: "float", nullable: false),
+                    FaultType = table.Column<int>(type: "int", nullable: false),
+                    FaultType1 = table.Column<int>(type: "int", nullable: false),
+                    Gfci = table.Column<int>(type: "int", nullable: false),
+                    Iac1 = table.Column<double>(type: "float", nullable: false),
+                    Iac2 = table.Column<double>(type: "float", nullable: false),
+                    Iac3 = table.Column<double>(type: "float", nullable: false),
+                    Iacr = table.Column<double>(type: "float", nullable: false),
+                    InvDelayTime = table.Column<double>(type: "float", nullable: false),
+                    Ipv1 = table.Column<double>(type: "float", nullable: false),
+                    Ipv2 = table.Column<double>(type: "float", nullable: false),
+                    Ipv3 = table.Column<double>(type: "float", nullable: false),
+                    Ipv4 = table.Column<double>(type: "float", nullable: false),
+                    IsAgain = table.Column<bool>(type: "bit", nullable: false),
+                    Iso = table.Column<int>(type: "int", nullable: false),
+                    LoadPercent = table.Column<double>(type: "float", nullable: false),
+                    Lost = table.Column<bool>(type: "bit", nullable: false),
+                    NBusVoltage = table.Column<double>(type: "float", nullable: false),
+                    OpFullwatt = table.Column<double>(type: "float", nullable: false),
+                    OperatingMode = table.Column<int>(type: "int", nullable: false),
+                    PBusVoltage = table.Column<double>(type: "float", nullable: false),
+                    Pac = table.Column<double>(type: "float", nullable: false),
+                    Pac1 = table.Column<double>(type: "float", nullable: false),
+                    Pac2 = table.Column<double>(type: "float", nullable: false),
+                    Pac3 = table.Column<double>(type: "float", nullable: false),
+                    PacToGridTotal = table.Column<double>(type: "float", nullable: false),
+                    PacToLocalLoad = table.Column<double>(type: "float", nullable: false),
+                    PacToUserTotal = table.Column<double>(type: "float", nullable: false),
+                    Pacr = table.Column<double>(type: "float", nullable: false),
+                    Pex1 = table.Column<double>(type: "float", nullable: false),
+                    Pex2 = table.Column<double>(type: "float", nullable: false),
+                    Pf = table.Column<double>(type: "float", nullable: false),
+                    Ppv = table.Column<double>(type: "float", nullable: false),
+                    Ppv1 = table.Column<double>(type: "float", nullable: false),
+                    Ppv2 = table.Column<double>(type: "float", nullable: false),
+                    Ppv3 = table.Column<double>(type: "float", nullable: false),
+                    Ppv4 = table.Column<double>(type: "float", nullable: false),
+                    Pself = table.Column<double>(type: "float", nullable: false),
+                    Psystem = table.Column<double>(type: "float", nullable: false),
+                    RealOPPercent = table.Column<int>(type: "int", nullable: false),
+                    Status = table.Column<int>(type: "int", nullable: false),
+                    StatusText = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    SysFaultWord = table.Column<int>(type: "int", nullable: false),
+                    SysFaultWord1 = table.Column<int>(type: "int", nullable: false),
+                    SysFaultWord2 = table.Column<int>(type: "int", nullable: false),
+                    SysFaultWord3 = table.Column<int>(type: "int", nullable: false),
+                    SysFaultWord4 = table.Column<int>(type: "int", nullable: false),
+                    SysFaultWord5 = table.Column<int>(type: "int", nullable: false),
+                    SysFaultWord6 = table.Column<int>(type: "int", nullable: false),
+                    SysFaultWord7 = table.Column<int>(type: "int", nullable: false),
+                    TS = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: false),
+                    Temp1 = table.Column<double>(type: "float", nullable: false),
+                    Temp2 = table.Column<double>(type: "float", nullable: false),
+                    Temp3 = table.Column<double>(type: "float", nullable: false),
+                    Temp4 = table.Column<double>(type: "float", nullable: false),
+                    Temp5 = table.Column<double>(type: "float", nullable: false),
+                    TimeTotal = table.Column<double>(type: "float", nullable: false),
+                    TotalWorkingTime = table.Column<double>(type: "float", nullable: false),
+                    UwSysWorkMode = table.Column<int>(type: "int", nullable: false),
+                    Vac1 = table.Column<double>(type: "float", nullable: false),
+                    Vac2 = table.Column<double>(type: "float", nullable: false),
+                    Vac3 = table.Column<double>(type: "float", nullable: false),
+                    VacRs = table.Column<double>(type: "float", nullable: false),
+                    VacSt = table.Column<double>(type: "float", nullable: false),
+                    VacTr = table.Column<double>(type: "float", nullable: false),
+                    Vacr = table.Column<double>(type: "float", nullable: false),
+                    Vpv1 = table.Column<double>(type: "float", nullable: false),
+                    Vpv2 = table.Column<double>(type: "float", nullable: false),
+                    Vpv3 = table.Column<double>(type: "float", nullable: false),
+                    Vpv4 = table.Column<double>(type: "float", nullable: false),
+                    WarnCode = table.Column<int>(type: "int", nullable: false),
+                    WarnCode1 = table.Column<int>(type: "int", nullable: false),
+                    WarnText = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    WithTime = table.Column<bool>(type: "bit", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_DeviceMinLastData", x => new { x.SerialNum, x.Time });
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Devices",
+                columns: table => new
+                {
+                    DeviceSn = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    CreateDate = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    DeviceType = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    IsBatteryEmpty = table.Column<bool>(type: "bit", nullable: false),
+                    IsBatteryFull = table.Column<bool>(type: "bit", nullable: false),
+                    IsOfflineSince = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: true),
+                    PowerValueCommited = table.Column<int>(type: "int", nullable: false),
+                    PowerValueLastChanged = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: true),
+                    PowerValueRequested = table.Column<int>(type: "int", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Devices", x => x.DeviceSn);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Prices",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    AutoModeRestriction = table.Column<bool>(type: "bit", nullable: true),
+                    Level = table.Column<int>(type: "int", nullable: true),
+                    StartsAt = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: false),
+                    Total = table.Column<decimal>(type: "decimal(18,2)", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Prices", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "RealTimeMeasurements",
+                columns: table => new
+                {
+                    Timestamp = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: false),
+                    AccumulatedConsumption = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    AccumulatedConsumptionLastHour = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    AccumulatedCost = table.Column<decimal>(type: "decimal(18,2)", nullable: true),
+                    AccumulatedProduction = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    AccumulatedProductionLastHour = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    AccumulatedReward = table.Column<decimal>(type: "decimal(18,2)", nullable: true),
+                    AveragePower = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    AvgPowerConsumption = table.Column<int>(type: "int", nullable: false),
+                    AvgPowerProduction = table.Column<int>(type: "int", nullable: false),
+                    CommitedPowerValue = table.Column<int>(type: "int", nullable: true),
+                    Currency = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    CurrentPhase1 = table.Column<decimal>(type: "decimal(18,2)", nullable: true),
+                    CurrentPhase2 = table.Column<decimal>(type: "decimal(18,2)", nullable: true),
+                    CurrentPhase3 = table.Column<decimal>(type: "decimal(18,2)", nullable: true),
+                    LastMeterConsumption = table.Column<decimal>(type: "decimal(18,2)", nullable: true),
+                    LastMeterProduction = table.Column<decimal>(type: "decimal(18,2)", nullable: true),
+                    MaxPower = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    MaxPowerProduction = table.Column<decimal>(type: "decimal(18,2)", nullable: true),
+                    MinPower = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    MinPowerProduction = table.Column<decimal>(type: "decimal(18,2)", nullable: true),
+                    PenaltyFrequentlyAccess = table.Column<int>(type: "int", nullable: false),
+                    Power = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    PowerFactor = table.Column<decimal>(type: "decimal(18,2)", nullable: true),
+                    PowerProduction = table.Column<decimal>(type: "decimal(18,2)", nullable: true),
+                    PowerProductionReactive = table.Column<decimal>(type: "decimal(18,2)", nullable: true),
+                    PowerReactive = table.Column<decimal>(type: "decimal(18,2)", nullable: true),
+                    RequestedPowerValue = table.Column<int>(type: "int", nullable: true),
+                    SettingAutoMode = table.Column<bool>(type: "bit", nullable: false),
+                    SettingAvgPowerHysteresis = table.Column<int>(type: "int", nullable: false),
+                    SettingBatteryPriorityMode = table.Column<bool>(type: "bit", nullable: false),
+                    SettingOffSetAvg = table.Column<int>(type: "int", nullable: false),
+                    SettingPowerLoadSeconds = table.Column<int>(type: "int", nullable: false),
+                    SettingRestrictionMode = table.Column<bool>(type: "bit", nullable: false),
+                    SettingRestrictionState = table.Column<bool>(type: "bit", nullable: false),
+                    SignalStrength = table.Column<int>(type: "int", nullable: true),
+                    TS = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    VoltagePhase1 = table.Column<decimal>(type: "decimal(18,2)", nullable: true),
+                    VoltagePhase2 = table.Column<decimal>(type: "decimal(18,2)", nullable: true),
+                    VoltagePhase3 = table.Column<decimal>(type: "decimal(18,2)", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_RealTimeMeasurements", x => x.Timestamp);
+                });
+        }
+    }
+}

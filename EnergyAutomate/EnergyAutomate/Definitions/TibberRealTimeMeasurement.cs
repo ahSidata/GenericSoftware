@@ -2,14 +2,14 @@
 
 namespace EnergyAutomate.Definitions
 {
-    public class RealTimeMeasurementExtention : RealTimeMeasurement
+    public class TibberRealTimeMeasurement : RealTimeMeasurement
     {
         #region Public Constructors
 
-        public RealTimeMeasurementExtention()
+        public TibberRealTimeMeasurement()
         { }
 
-        public RealTimeMeasurementExtention(RealTimeMeasurement measurement)
+        public TibberRealTimeMeasurement(RealTimeMeasurement measurement)
         {
             Timestamp = measurement.Timestamp;
             TS = measurement.Timestamp.DateTime;

@@ -1,6 +1,7 @@
 ﻿using BlazorBootstrap;
 using EnergyAutomate.Components.Layout;
 using EnergyAutomate.Definitions;
+using EnergyAutomate.Extentions;
 using Microsoft.AspNetCore.Components;
 using System.Collections.Specialized;
 using System.Diagnostics;
@@ -53,7 +54,7 @@ namespace EnergyAutomate.Components.Pages
 
         protected override void OnInitialized()
         {
-            ApiService.TibberRealTimeMeasurement.RegisterOnCollectionChanged(this, RealTimeMeasurement_CollectionChanged);
+            ApiService.TibberRealTimeMeasurementRegisterOnCollectionChanged(this, RealTimeMeasurement_CollectionChanged);
             ApiService.StateHasChanged += ApiService_StateHasChanged;
         }
 
@@ -121,7 +122,6 @@ namespace EnergyAutomate.Components.Pages
             // Offset auf UTC-Zeit addieren
             DateTimeOffset currentTime = new DateTimeOffset(DateTime.UtcNow).ToOffset(offset);
 
-            var hours = dataItems.Select(s => s.StartsAt.Hour);
             var dataPoints = dataItems.Select(x => (double?)x.Total).ToList();
 
             var dataToday = dataItems.Take(24).ToList();
@@ -129,8 +129,16 @@ namespace EnergyAutomate.Components.Pages
             double? avgToday = dataToday.Average(x => (double?)x.Total);
             double? avgTomorrow = dataTomorrow.Average(x => (double?)x.Total);
 
-            var dataAvgPoints = dataToday.Select(x => (double?)x.Total < avgToday ? (double?)x.Total : avgToday).Concat(dataTomorrow.Select(x => (double?)x.Total < avgTomorrow ? (double?)x.Total : avgTomorrow)).ToList();
-            var dataHighPrices = dataToday.Select(x => (int)(x.Level ?? 0) > 2 ? avgToday : null).Concat(dataTomorrow.Select(x => (int)(x.Level ?? 0) > 2 ? avgTomorrow : null)).ToList();
+            var dataAvgPoints = dataToday.Select(x => (double?)x.Total < avgToday ? (double?)x.Total : null)
+                .Concat(dataTomorrow.Select(x => (double?)x.Total < avgTomorrow ? (double?)x.Total : null)).ToList();
+
+            var dataAvgLinePoints = dataToday.Select(x => (double?)x.Total < avgToday ? (double?)x.Total : avgToday)
+                .Concat(dataTomorrow.Select(x => (double?)x.Total < avgTomorrow ? (double?)x.Total : avgTomorrow)).ToList();
+
+            var highFactor = 4;
+
+            var dataHighPrices = dataToday.Select(x => (int)(x.Level ?? 0) > 2 ? avgToday / highFactor : null).Concat(dataTomorrow.Select(x => (int)(x.Level ?? 0) > 2 ? avgTomorrow / highFactor : null)).ToList();
+            var dataLowPrices = dataToday.Select(x => (int)(x.Level ?? 0) > 0 && (int)(x.Level ?? 0) < 3 ? avgToday / highFactor : null).Concat(dataTomorrow.Select(x => (int)(x.Level ?? 0) > 0 && (int)(x.Level ?? 0) < 3 ? avgTomorrow / highFactor : null)).ToList();
 
             var dataCurrentHour = dataToday.Select((x, index) =>
                 index < 25 &&
@@ -141,69 +149,64 @@ namespace EnergyAutomate.Components.Pages
 
             priceData = new ChartData
             {
-                Labels = hours.Select(x => x.ToString()).ToList(),
+                Labels = dataItems.Select(x => x.StartsAt.Hour.ToString()).ToList(),
                 Datasets = new List<IChartDataset>()
                 {
                     new LineChartDataset()
                     {
                         Label = "Price",
-                        Data = dataPoints,
-                        BackgroundColor = "rgb(255, 166, 0)",
-                        BorderColor = "rgb(255, 166, 0)",
-                        BorderWidth = 2,
-                        PointRadius = new List<double>() { 0.0 },
-                        HoverBorderWidth = 4,
+                        Data = dataPoints,                      
                         Fill = true,
                         Stepped = true,
                         Order = 5
-                    },
+                    }.SetDefaultStyle("rgb(255, 255, 0)"),
                     new LineChartDataset()
                     {
                         Label = "Avg",
                         Data = dataAvgPoints,
-                        BackgroundColor = "rgb(88, 80, 141)",
-                        BorderWidth = 1,
-                        PointRadius = new List<double>() { 1 },
-                        HoverBorderWidth = 4,
                         Fill = true,
                         Stepped = true,
                         Order = 4
-                    },
+                    }.SetDefaultStyle("rgb(190, 190, 190)"),
                     new LineChartDataset()
                     {
-                        Label = "AvgLine",
-                        Data = dataAvgPoints,
-                        BackgroundColor = "rgb(0, 0, 0)",
-                        BorderColor = "rgb(0, 0, 0)",
-                        BorderWidth = 2,
-                        PointRadius = new List<double>() { 0.0 },
-                        Stepped = true,
-                        Order = 3
-                    },
-                    new LineChartDataset()
-                    {
-                        Label = "Avg high price",
-                        Data = dataHighPrices,
-                        BackgroundColor = "rgb(0, 128, 255)",
-                        BorderColor = "rgb(0, 128, 255)",
-                        BorderWidth = 2,
-                        PointRadius = new List<double>() { 0.0 },
-                        Stepped = true,
+                        Label = "Avg",
+                        Data = dataAvgLinePoints,
                         Fill = true,
-                        Order = 2
-                    },
+                        Stepped = true,
+                        Order = 4
+                    }.SetDefaultStyle("rgb(190, 190, 190)", radius: 0),
                     new LineChartDataset()
                     {
                         Label = "Current Hour",
                         Data = dataCurrentHour,
-                        BackgroundColor = "rgb(255, 0, 0)",
-                        BorderColor = "rgb(255, 0, 0)",
-                        BorderWidth = 2,
-                        PointRadius = new List<double>() { 0 },
                         Fill = true,
                         Stepped = true,
+                        Order = 3
+                    }.SetDefaultStyle("rgb(0, 0, 255)"),
+                    new LineChartDataset()
+                    {
+                        Label = "Avg high price",
+                        Data = dataHighPrices,
+                        Stepped = true,
+                        Fill = true,
+                        Order = 2
+                    }.SetDefaultStyle(backgroundColor: "rgb(255, 0, 0)", radius: 0, borderWidth: 0),
+                    new LineChartDataset()
+                    {
+                        Label = "Avg low price",
+                        Data = dataLowPrices,
+                        Stepped = true,
+                        Fill = true,
+                        Order = 2
+                    }.SetDefaultStyle(backgroundColor: "rgb(0, 255, 0)", radius: 0, borderWidth: 0),
+                    new LineChartDataset()
+                    {
+                        Label = "AvgLine",
+                        Data = dataAvgLinePoints,
+                        Stepped = true,
                         Order = 1
-                    }
+                    }.SetDefaultStyle("rgb(0, 0, 0)", radius: 0, borderWidth: 3)
                 }
             };
         }
@@ -346,7 +349,7 @@ namespace EnergyAutomate.Components.Pages
             realTimeMeasurementChartOptions.Interaction.Mode = InteractionMode.Index;
             realTimeMeasurementChartOptions.Plugins.Title!.Text = $"Tibber power consumption";
             realTimeMeasurementChartOptions.Plugins.Title.Display = true;
-            realTimeMeasurementChartOptions.Plugins.Title.Font = new ChartFont { Size = 20 };
+            realTimeMeasurementChartOptions.Plugins.Title.Font = new ChartFont { Size = 20 };          
             realTimeMeasurementChartOptions.Responsive = true;
             realTimeMeasurementChartOptions.Scales.X!.Title = new ChartAxesTitle { Text = "Seconds (one minute)", Display = true };
             realTimeMeasurementChartOptions.Scales.Y!.Title = new ChartAxesTitle { Text = "Watt", Display = true };
@@ -359,7 +362,7 @@ namespace EnergyAutomate.Components.Pages
             priceChartOptions.Interaction.Mode = InteractionMode.Index;
             priceChartOptions.Plugins.Title!.Text = "Tibber price forecast";
             priceChartOptions.Plugins.Title.Display = true;
-            priceChartOptions.Plugins.Title.Font = new ChartFont { Size = 20 };
+            priceChartOptions.Plugins.Title.Font = new ChartFont { Size = 20 };            
             priceChartOptions.Responsive = true;
             priceChartOptions.Scales.X!.Title = new ChartAxesTitle { Text = "Today / Tomorrow", Display = true };
             priceChartOptions.Scales.Y!.Title = new ChartAxesTitle { Text = "Euro", Display = true };

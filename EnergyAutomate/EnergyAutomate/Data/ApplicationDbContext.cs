@@ -23,15 +23,14 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
 
     #region Properties
 
-    public DbSet<DeviceMinInfoData> DeviceMinInfoData { get; set; }
-    public DbSet<DeviceMinLastData> DeviceMinLastData { get; set; }
-
-    public DbSet<DeviceNoahInfoData> DeviceNoahInfoData { get; set; }
-    public DbSet<DeviceNoahLastData> DeviceNoahLastData { get; set; }
-    public DbSet<DeviceList> Devices { get; set; }
+    public DbSet<DeviceMinInfoData> GrowattDeviceMinInfoData { get; set; }
+    public DbSet<DeviceMinLastData> GrowattDeviceMinLastData { get; set; }
+    public DbSet<DeviceNoahInfoData> GrowattDeviceNoahInfoData { get; set; }
+    public DbSet<DeviceNoahLastData> GrowattDeviceNoahLastData { get; set; }
+    public DbSet<DeviceList> GrowattDevices { get; set; }
     public DbSet<GrowattElement> GrowattElements { get; set; }
-    public DbSet<TibberPrice> Prices { get; set; }
-    public DbSet<RealTimeMeasurementExtention> RealTimeMeasurements { get; set; }
+    public DbSet<TibberPrice> TibberPrices { get; set; }
+    public DbSet<TibberRealTimeMeasurement> TibberRealTimeMeasurements { get; set; }
 
     #endregion Properties
 
@@ -48,7 +47,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
         modelBuilder.Entity<DeviceMinLastData>().HasKey(x => new { x.SerialNum, x.Time });
         modelBuilder.Entity<DeviceNoahLastData>().HasKey(x => new { x.deviceSn, x.time });
 
-        modelBuilder.Entity<RealTimeMeasurementExtention>()
+        modelBuilder.Entity<TibberRealTimeMeasurement>()
             .HasKey(x => new { x.Timestamp });
 
         modelBuilder.Entity<TibberPrice>().HasKey(x => new { x.Id });

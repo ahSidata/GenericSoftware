@@ -1,4 +1,5 @@
-﻿using EnergyAutomate.Definitions;
+﻿using BlazorBootstrap;
+using EnergyAutomate.Definitions;
 
 namespace EnergyAutomate.Extentions
 {
@@ -22,7 +23,7 @@ namespace EnergyAutomate.Extentions
 
         #endregion Growatt
 
-        #region Timbber
+        #region Tibber
 
         /// <summary>Builds a query for home consumption.</summary>
         /// <param name="homeQueryBuilder"></param>
@@ -51,6 +52,30 @@ namespace EnergyAutomate.Extentions
                         )
                 );
 
-        #endregion Timbber
+        #endregion Tibber
+
+        public static LineChartDataset SetDefaultStyle(this LineChartDataset lineChartDataset, string backgroundColor = "rgb(0, 0, 0)", string borderColor = "rgb(0, 0, 0)", double radius = 3, double borderWidth = 1)
+        {
+            lineChartDataset.PointRadius = [radius];
+            lineChartDataset.PointHoverRadius = [radius];
+            lineChartDataset.PointHitRadius = [radius];
+
+            lineChartDataset.BorderColor = borderColor;
+            lineChartDataset.HoverBorderColor = borderColor;
+            lineChartDataset.PointBorderColor = [borderColor];
+            lineChartDataset.PointHoverBorderColor = [borderColor];
+
+            lineChartDataset.BackgroundColor = backgroundColor;
+            lineChartDataset.HoverBackgroundColor = backgroundColor;
+            lineChartDataset.PointBackgroundColor = [backgroundColor];
+            lineChartDataset.PointHoverBackgroundColor = [backgroundColor];
+
+            lineChartDataset.BorderWidth = borderWidth;
+            lineChartDataset.HoverBorderWidth = borderWidth;
+            lineChartDataset.PointBorderWidth = [borderWidth];
+            lineChartDataset.PointHoverBorderWidth = [borderWidth];
+
+            return lineChartDataset;
+        }
     }
 }
