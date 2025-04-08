@@ -1,4 +1,6 @@
-﻿namespace EnergyAutomate.Definitions
+﻿using System;
+
+namespace EnergyAutomate.Tibber
 {
     public class TibberPrice
     {

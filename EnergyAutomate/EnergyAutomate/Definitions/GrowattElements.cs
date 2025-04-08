@@ -20,6 +20,14 @@
             IsActive = false
         };
 
+        public static readonly GrowattElement Adjustment3 = new GrowattElement
+        {
+            Id = new Guid("{35BF934B-8597-4D1B-ACAF-9D1A631201FA}"),
+            ElementType = GrowattElement.ElementTypes.Adjustment,
+            Name = "Adjustment 3",
+            IsActive = false
+        };
+
         public static readonly GrowattElement Calculation1 = new GrowattElement
         {
             Id = new Guid("{8818719E-2DF1-4415-B6CE-4ECD0F56B07E}"),
@@ -42,7 +50,7 @@
 
         public static IEnumerable<GrowattElement> GrowattDefaultElements()
         {
-            return new List<GrowattElement> { Adjustment1, Adjustment2, Calculation1, Calculation2 };
+            return new List<GrowattElement> { Adjustment1, Adjustment2, Adjustment3,  Calculation1, Calculation2 };
         }
 
         #endregion Public Methods

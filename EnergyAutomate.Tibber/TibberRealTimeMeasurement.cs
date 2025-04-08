@@ -1,6 +1,6 @@
-﻿using System.ComponentModel.DataAnnotations.Schema;
+﻿using System;
 
-namespace EnergyAutomate.Definitions
+namespace EnergyAutomate.Tibber
 {
     public class TibberRealTimeMeasurement : RealTimeMeasurement
     {
@@ -12,7 +12,7 @@ namespace EnergyAutomate.Definitions
         public TibberRealTimeMeasurement(RealTimeMeasurement measurement)
         {
             Timestamp = measurement.Timestamp;
-            TS = measurement.Timestamp.DateTime;
+            TS = measurement.Timestamp.ToUniversalTime();
             Power = measurement.Power;
             LastMeterConsumption = measurement.LastMeterConsumption;
             AccumulatedConsumption = measurement.AccumulatedConsumption;
@@ -44,12 +44,10 @@ namespace EnergyAutomate.Definitions
         #endregion Public Constructors
 
         #region Properties
-
-        public int ApiPenaltyFrequentlyAccess { get; set; }
         public int PowerAvgConsumption { get; set; }
         public int PowerAvgProduction { get; set; }
         public int? PowerValueNewCommited { get; set; }
-        public string? PowerValueNewDeviceSn { get; set; }
+        public string PowerValueNewDeviceSn { get; set; }
         public int? PowerValueNewRequested { get; set; }
         public int? PowerValueTotalCommited { get; set; }
         public int? PowerValueTotalRequested { get; set; }
@@ -60,10 +58,10 @@ namespace EnergyAutomate.Definitions
         public int SettingPowerLoadSeconds { get; set; }
         public bool SettingRestrictionMode { get; set; }
         public bool SettingRestrictionState { get; set; }
-        [NotMapped]
+
         public int TotalPower => Power > 0 ? (int)Power : -(int)(PowerProduction ?? 0);
 
-        public DateTime TS { get; set; }
+        public DateTimeOffset TS { get; set; }
 
         #endregion Properties
     }

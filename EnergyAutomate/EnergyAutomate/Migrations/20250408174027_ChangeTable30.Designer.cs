@@ -4,6 +4,7 @@ using EnergyAutomate.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace EnergyAutomate.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250408174027_ChangeTable30")]
+    partial class ChangeTable30
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -534,6 +537,28 @@ namespace EnergyAutomate.Migrations
                         .HasFilter("[NormalizedUserName] IS NOT NULL");
 
                     b.ToTable("AspNetUsers", (string)null);
+                });
+
+            modelBuilder.Entity("EnergyAutomate.Definitions.ApiAdjustmentValue", b =>
+                {
+                    b.Property<DateTimeOffset>("TS")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("DeviceSn")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PowerValueCommited")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PowerValueRequested")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTimeOffset?>("TSCommited")
+                        .HasColumnType("datetimeoffset");
+
+                    b.HasKey("TS");
+
+                    b.ToTable("ApiAdjustmentValues");
                 });
 
             modelBuilder.Entity("EnergyAutomate.Definitions.GrowattElement", b =>

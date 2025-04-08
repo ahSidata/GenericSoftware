@@ -69,7 +69,7 @@ namespace EnergyAutomate.Definitions
         {
             get
             {
-                var level = _apiService.TibberListPrices().OrderBy(o => o.StartsAt).FirstOrDefault(x => x.StartsAt > Now.AddHours(-1))?.Level;
+                var level = _apiService.TibberListPrices().OrderBy(o => o.StartsAt).FirstOrDefault(x => x.StartsAt > UtcNow.AddHours(-1))?.Level;
                 return level == PriceLevel.Cheap || level == PriceLevel.VeryCheap;
             }
         }
@@ -78,7 +78,7 @@ namespace EnergyAutomate.Definitions
         {
             get
             {
-                var level = _apiService.TibberListPrices().OrderBy(o => o.StartsAt).FirstOrDefault(x => x.StartsAt > Now.AddHours(-1))?.Level;
+                var level = _apiService.TibberListPrices().OrderBy(o => o.StartsAt).FirstOrDefault(x => x.StartsAt > UtcNow.AddHours(-1))?.Level;
                 return level == PriceLevel.Expensive || level == PriceLevel.VeryExpensive;
             }
         }
@@ -87,8 +87,8 @@ namespace EnergyAutomate.Definitions
         {
             get
             {
-                var avg = _apiService.TibberListPrices().Where(o => o.StartsAt.Date == Now.Date).ToList().Average(x => x.Total);
-                var currentStartAt = Now.Date.AddHours(Now.Hour - _apiService.ApiSettingTimeOffset);
+                var avg = _apiService.TibberListPrices().Where(o => o.StartsAt.Date == UtcNow.Date).ToList().Average(x => x.Total);
+                var currentStartAt = UtcNow.Date.AddHours(UtcNow.Hour - _apiService.ApiSettingTimeOffset);
                 var total = _apiService.TibberListPrices().FirstOrDefault(x => x.StartsAt == currentStartAt)?.Total;
                 return total < avg;
             }
@@ -110,7 +110,7 @@ namespace EnergyAutomate.Definitions
         public bool IsGrowattOnline => _apiService.GrowattOnlineNoahDevices().Any();
 
         /// <summary>Current UTC time with the API setting time offset applied.</summary>
-        public DateTime Now => DateTime.UtcNow.AddHours(_apiService.ApiSettingTimeOffset);
+        public DateTimeOffset UtcNow => DateTimeOffset.UtcNow;
 
         public TimeSpan? SunRise => Coordinate.CelestialInfo.SunRise != null ? new DateTimeOffset(Coordinate.CelestialInfo.SunRise.Value, new TimeSpan(0)).LocalDateTime.TimeOfDay : null;
 

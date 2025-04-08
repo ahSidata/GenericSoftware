@@ -30,29 +30,24 @@ namespace EnergyAutomate.Watchdogs
 
         #region Public Methods
 
-        public async Task RestartListener(CancellationToken cancellationToken = default)
+        public async Task RestartListener()
         {
             if (TibberHomeId.HasValue && TibberApiClient != null)
             {
                 try
                 {
-                    await StopListenerAsync();
-                }
-                catch (Exception ex)
-                {
-                    Logger.LogError(ex, ex.Message);
-                }
-                finally
-                {
+                    RealTimeMeasurementListener = null;
+                    RealTimeMeasurementObserver?.Dispose();
                     TibberApiClient?.Dispose();
                     TibberApiClient = null;
-                    RealTimeMeasurementListener = null;
+                }
+                catch (Exception)
+                {
                     GC.Collect();
                     GC.WaitForPendingFinalizers();
-
-                    Trace.WriteLine("StopRealTimeMeasurementListener finished ...", "Tibber");
+                    Trace.WriteLine("StopRealTimeMeasurementListener finished ...", "Tibber");  
                 }
-
+                await Task.Delay(5000);
                 _ = StartListener();
             }
         }
@@ -68,8 +63,11 @@ namespace EnergyAutomate.Watchdogs
 
             if (TibberApiClient != null)
             {
-                var basicData = await TibberApiClient.GetBasicData(cancellationToken);
-                TibberHomeId = basicData.Data.Viewer.Homes.FirstOrDefault()?.Id;
+                if (!TibberHomeId.HasValue)
+                {
+                    var basicData = await TibberApiClient.GetHomes(cancellationToken);
+                    TibberHomeId = basicData.Data.Viewer.Homes.FirstOrDefault()?.Id;
+                }
 
                 if (TibberHomeId.HasValue && TibberApiClient != null)
                 {
@@ -105,7 +103,7 @@ namespace EnergyAutomate.Watchdogs
                 await RealTimeMeasurementCancellationTokenSource.CancelAsync();
 
             if (TibberHomeId.HasValue && TibberApiClient != null)
-                await TibberApiClient.StopRealTimeMeasurementListener(TibberHomeId.Value);
+                await TibberApiClient.StopRealTimeMeasurementListener(TibberHomeId.Value, cancellationToken);
 
             if (RealTimeMeasurementObserver != null)
             {

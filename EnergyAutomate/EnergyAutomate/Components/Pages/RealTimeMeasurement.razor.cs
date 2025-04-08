@@ -56,7 +56,7 @@ namespace EnergyAutomate.Components.Pages
 
         protected override void OnInitialized()
         {
-            ApiService.TibberRealTimeMeasurementRegisterOnCollectionChanged(this, RealTimeMeasurement_CollectionChanged);
+            ApiService.TibberRealTimeMeasurementRegisterOnCollectionChanged(this.GetType().Name, RealTimeMeasurement_CollectionChanged);
             ApiService.StateHasChanged += ApiService_StateHasChanged;
         }
 
@@ -96,6 +96,9 @@ namespace EnergyAutomate.Components.Pages
                 switch(propertyName)
                 {
                     case "Requested":
+
+
+
                         return dataSource.Select(x => x.PowerValueNewDeviceSn == deviceSn ? (double?)x.PowerValueNewRequested : null).ToList();
                     default:
                         return new List<double?>();
@@ -104,7 +107,7 @@ namespace EnergyAutomate.Components.Pages
 
             deviceData = new ChartData
             {
-                Labels = dataSource.Select((x, index) => index % 5 == 0 ? x.Timestamp.TimeOfDay.ToString() : string.Empty).ToList(),
+                Labels = dataSource.Select((x, index) => index % 5 == 0 ? x.TS.ToLocalTime().TimeOfDay.ToString() : string.Empty).ToList(),
                 Datasets = new List<IChartDataset>()
                 {
                     new LineChartDataset()
@@ -217,7 +220,7 @@ namespace EnergyAutomate.Components.Pages
 
             priceData = new ChartData
             {
-                Labels = dataItems.Select(x => x.StartsAt.Hour.ToString()).ToList(),
+                Labels = dataItems.Select(x => x.StartsAt.ToLocalTime().Hour.ToString()).ToList(),
                 Datasets = new List<IChartDataset>()
                 {
                     new LineChartDataset()
@@ -281,13 +284,13 @@ namespace EnergyAutomate.Components.Pages
 
         private void GetRealTimeMeasurementData()
         {
-            var dataSource = ApiService.TibberListRealTimeMeasurement().OrderByDescending(x => x.Timestamp).Take(61).Reverse().ToList();
+            var dataSource = ApiService.TibberListRealTimeMeasurement().OrderByDescending(x => x.TS).Take(61).Reverse().ToList();
 
             var AvgPowerList = dataSource.Select(x => x.TotalPower).ToList();
 
             realTimeMeasurementData = new ChartData
             {
-                Labels = dataSource.Select((x, index) => index % 5 == 0 ? x.Timestamp.TimeOfDay.ToString() : string.Empty).ToList(),
+                Labels = dataSource.Select((x, index) => index % 5 == 0 ? x.TS.ToLocalTime().TimeOfDay.ToString() : string.Empty).ToList(),
                 Datasets = new List<IChartDataset>()
                 {
                     new LineChartDataset()
@@ -375,7 +378,7 @@ namespace EnergyAutomate.Components.Pages
         {
             if (isPriceChartInitialized && priceChart != null)
             {
-                GetRealTimeMeasurementData();
+                GetPriceData();
                 if (priceData != null)
                 {
                     await priceChart.UpdateValuesAsync(priceData);

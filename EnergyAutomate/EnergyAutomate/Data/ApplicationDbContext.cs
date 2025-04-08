@@ -47,10 +47,10 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
         modelBuilder.Entity<DeviceMinLastData>().HasKey(x => new { x.SerialNum, x.Time });
         modelBuilder.Entity<DeviceNoahLastData>().HasKey(x => new { x.deviceSn, x.time });
 
-        modelBuilder.Entity<TibberRealTimeMeasurement>()
-            .HasKey(x => new { x.Timestamp });
-
+        modelBuilder.Entity<TibberRealTimeMeasurement>().HasKey(x => new { x.TS });
+        modelBuilder.Entity<TibberRealTimeMeasurement>().Ignore(x => x.TotalPower);
         modelBuilder.Entity<TibberPrice>().HasKey(x => new { x.Id });
+
         modelBuilder.Entity<GrowattElement>().HasKey(x => new { x.Id });
 
         // Set all string properties to be nullable

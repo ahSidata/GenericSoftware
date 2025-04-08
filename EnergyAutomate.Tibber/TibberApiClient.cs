@@ -225,13 +225,13 @@ namespace EnergyAutomate.Tibber
         /// Stops real-time measurement listener.
         /// </summary>
         /// <param name="homeId"></param>
-        public async Task StopRealTimeMeasurementListener(Guid homeId)
+        public async Task StopRealTimeMeasurementListener(Guid homeId, CancellationToken cancellationToken)
         {
             await Semaphore.WaitAsync();
 
             try
             {
-                await _realTimeMeasurementListener.UnsubscribeHome(homeId, CancellationToken.None);
+                await _realTimeMeasurementListener.UnsubscribeHome(homeId, cancellationToken);
             }
             finally
             {

@@ -4,6 +4,7 @@ using EnergyAutomate.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace EnergyAutomate.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250408091214_ChangeTable27")]
+    partial class ChangeTable27
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -554,6 +557,162 @@ namespace EnergyAutomate.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("GrowattElements");
+                });
+
+            modelBuilder.Entity("EnergyAutomate.Definitions.TibberPrice", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool?>("AutoModeRestriction")
+                        .HasColumnType("bit");
+
+                    b.Property<int?>("Level")
+                        .HasColumnType("int");
+
+                    b.Property<DateTimeOffset>("StartsAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<decimal?>("Total")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("TibberPrices");
+                });
+
+            modelBuilder.Entity("EnergyAutomate.Definitions.TibberRealTimeMeasurement", b =>
+                {
+                    b.Property<DateTimeOffset>("Timestamp")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<decimal>("AccumulatedConsumption")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("AccumulatedConsumptionLastHour")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal?>("AccumulatedCost")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("AccumulatedProduction")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("AccumulatedProductionLastHour")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal?>("AccumulatedReward")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("AveragePower")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("Currency")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal?>("CurrentPhase1")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal?>("CurrentPhase2")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal?>("CurrentPhase3")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal?>("LastMeterConsumption")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal?>("LastMeterProduction")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("MaxPower")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal?>("MaxPowerProduction")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("MinPower")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal?>("MinPowerProduction")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("Power")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("PowerAvgConsumption")
+                        .HasColumnType("int");
+
+                    b.Property<int>("PowerAvgProduction")
+                        .HasColumnType("int");
+
+                    b.Property<decimal?>("PowerFactor")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal?>("PowerProduction")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal?>("PowerProductionReactive")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal?>("PowerReactive")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int?>("PowerValueNewCommited")
+                        .HasColumnType("int");
+
+                    b.Property<string>("PowerValueNewDeviceSn")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("PowerValueNewRequested")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("PowerValueTotalCommited")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("PowerValueTotalRequested")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("SettingAutoMode")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("SettingAvgPowerHysteresis")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("SettingBatteryPriorityMode")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("SettingOffSetAvg")
+                        .HasColumnType("int");
+
+                    b.Property<int>("SettingPowerLoadSeconds")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("SettingRestrictionMode")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("SettingRestrictionState")
+                        .HasColumnType("bit");
+
+                    b.Property<int?>("SignalStrength")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("TS")
+                        .HasColumnType("datetime2");
+
+                    b.Property<decimal?>("VoltagePhase1")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal?>("VoltagePhase2")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal?>("VoltagePhase3")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.HasKey("Timestamp");
+
+                    b.ToTable("TibberRealTimeMeasurements");
                 });
 
             modelBuilder.Entity("EnergyAutomate.Growatt.DeviceList", b =>
@@ -1454,162 +1613,6 @@ namespace EnergyAutomate.Migrations
                     b.HasKey("SerialNum", "Time");
 
                     b.ToTable("GrowattDeviceMinLastData");
-                });
-
-            modelBuilder.Entity("EnergyAutomate.Tibber.TibberPrice", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<bool?>("AutoModeRestriction")
-                        .HasColumnType("bit");
-
-                    b.Property<int?>("Level")
-                        .HasColumnType("int");
-
-                    b.Property<DateTimeOffset>("StartsAt")
-                        .HasColumnType("datetimeoffset");
-
-                    b.Property<decimal?>("Total")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("TibberPrices");
-                });
-
-            modelBuilder.Entity("EnergyAutomate.Tibber.TibberRealTimeMeasurement", b =>
-                {
-                    b.Property<DateTimeOffset>("TS")
-                        .HasColumnType("datetimeoffset");
-
-                    b.Property<decimal>("AccumulatedConsumption")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<decimal>("AccumulatedConsumptionLastHour")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<decimal?>("AccumulatedCost")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<decimal>("AccumulatedProduction")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<decimal>("AccumulatedProductionLastHour")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<decimal?>("AccumulatedReward")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<decimal>("AveragePower")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<string>("Currency")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<decimal?>("CurrentPhase1")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<decimal?>("CurrentPhase2")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<decimal?>("CurrentPhase3")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<decimal?>("LastMeterConsumption")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<decimal?>("LastMeterProduction")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<decimal>("MaxPower")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<decimal?>("MaxPowerProduction")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<decimal>("MinPower")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<decimal?>("MinPowerProduction")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<decimal>("Power")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<int>("PowerAvgConsumption")
-                        .HasColumnType("int");
-
-                    b.Property<int>("PowerAvgProduction")
-                        .HasColumnType("int");
-
-                    b.Property<decimal?>("PowerFactor")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<decimal?>("PowerProduction")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<decimal?>("PowerProductionReactive")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<decimal?>("PowerReactive")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<int?>("PowerValueNewCommited")
-                        .HasColumnType("int");
-
-                    b.Property<string>("PowerValueNewDeviceSn")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int?>("PowerValueNewRequested")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("PowerValueTotalCommited")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("PowerValueTotalRequested")
-                        .HasColumnType("int");
-
-                    b.Property<bool>("SettingAutoMode")
-                        .HasColumnType("bit");
-
-                    b.Property<int>("SettingAvgPowerHysteresis")
-                        .HasColumnType("int");
-
-                    b.Property<bool>("SettingBatteryPriorityMode")
-                        .HasColumnType("bit");
-
-                    b.Property<int>("SettingOffSetAvg")
-                        .HasColumnType("int");
-
-                    b.Property<int>("SettingPowerLoadSeconds")
-                        .HasColumnType("int");
-
-                    b.Property<bool>("SettingRestrictionMode")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("SettingRestrictionState")
-                        .HasColumnType("bit");
-
-                    b.Property<int?>("SignalStrength")
-                        .HasColumnType("int");
-
-                    b.Property<DateTimeOffset>("Timestamp")
-                        .HasColumnType("datetimeoffset");
-
-                    b.Property<decimal?>("VoltagePhase1")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<decimal?>("VoltagePhase2")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<decimal?>("VoltagePhase3")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.HasKey("TS");
-
-                    b.ToTable("TibberRealTimeMeasurements");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>

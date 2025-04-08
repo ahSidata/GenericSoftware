@@ -14,7 +14,7 @@
 
         public string? Exception { get; set; }
 
-        public DateTime TS { get; set; }
+        public DateTimeOffset TS { get; set; }
 
         #endregion Properties
     }

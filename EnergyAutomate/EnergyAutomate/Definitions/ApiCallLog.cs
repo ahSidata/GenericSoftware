@@ -8,7 +8,7 @@
 
         public bool RaisedError { get; set; }
 
-        public DateTime TimeStamp { get; set; }
+        public DateTimeOffset TS { get; set; }
 
         #endregion Properties
     }
