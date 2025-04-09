@@ -88,14 +88,14 @@
 <Card Class="my-3">
     <CardHeader>Devices</CardHeader>
     <CardBody>
-        @if (ApiService.GrowattListDevices() == null || !ApiService.GrowattListDevices().Any())
+        @if (ApiService.GrowattGetDeviceLists() == null || !ApiService.GrowattGetDeviceLists().Any())
         {
             <p>Loading...</p>
         }
         else
         {
             <ul>
-                @foreach (var device in ApiService.GrowattListDevices())
+                @foreach (var device in ApiService.GrowattGetDeviceLists())
                 {
                     <li>@device.DeviceType : @device.DeviceSn </li>
                 }
@@ -105,14 +105,14 @@
         <Button Color="ButtonColor.Primary" @onclick="ApiService.GrowattInvokeRefreshNoahs">Refresh Noah Devices</Button>
         <Button Color="ButtonColor.Primary" @onclick="ApiService.GrowattInvokeRefreshNoahsLastData">Refresh Noah Device last data</Button>
 
-        Growatt    @if (!ApiService.GrowattListNoahInfos().Any())
+        @if (!ApiService.GrowattGetNoahInfoDatas().Any())
         {
             <p>Loading...</p>
         }
         else
         {
             <Tabs @ref="tabsGrowattRef">
-                @foreach (var deviceInfo in ApiService.GrowattListNoahInfos())
+                @foreach (var deviceInfo in ApiService.GrowattGetNoahInfoDatas())
                 {
                     <Tab Title="@($"{deviceInfo.Model} : {deviceInfo.DeviceSn}")">
                         <Content>
@@ -127,7 +127,7 @@
                                 </div>
                                 <div class="flex-column ml-3">
                                     <ul>
-                                        @foreach (var lastData in ApiService.GrowattListNoahLastDatas().Where(x => x != null && x.deviceSn == deviceInfo.DeviceSn))
+                                        @foreach (var lastData in ApiService.GrowattGetNoahLastDatas().Where(x => x != null && x.deviceSn == deviceInfo.DeviceSn))
                                         {
 
                                             DateTime time = DateTimeOffset.FromUnixTimeMilliseconds(@lastData.time).DateTime;

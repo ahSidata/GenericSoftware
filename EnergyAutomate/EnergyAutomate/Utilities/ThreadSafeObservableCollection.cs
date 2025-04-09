@@ -7,7 +7,7 @@ public class ThreadSafeObservableCollection<T> : ObservableCollection<T>
     #region Fields
 
     public readonly Lock _syncRoot = new Lock();
-    private readonly Dictionary<string, Action> _callbacks = [];
+    private readonly Dictionary<object, Action> _callbacks = [];
 
     #endregion Fields
 
@@ -63,9 +63,14 @@ public class ThreadSafeObservableCollection<T> : ObservableCollection<T>
         }
     }
 
-    public void RegisterOnCollectionChanged(string origin, Action callback)
+    public void RegisterOnCollectionChanged(object sender, Action callback)
     {
-        _callbacks[origin] = callback;
+        _callbacks[sender] = callback;
+    }
+
+    public void UnRegisterOnCollectionChanged(object sender)
+    {
+        _callbacks.Remove(sender);
     }
 
     #endregion Public Methods

@@ -28,6 +28,7 @@ namespace EnergyAutomate.Definitions
         #region Properties
 
         public string ActiveRTMCondition { get; set; } = string.Empty;
+        public string ActiveB2500ModeCondition { get; set; } = string.Empty;
 
         public bool IsCloudy
         {
@@ -61,9 +62,9 @@ namespace EnergyAutomate.Definitions
         }
 
         /// <summary>Returns the total available power from all Growatt devices.</summary>
-        public int GrowattNoahTotalPPV => _apiService.GrowattGetNoahLastDatas().Sum(x => (int)(x?.ppv ?? 0));
+        public int GrowattNoahTotalPPV => _apiService.GrowattLatestNoahLastDatas().Sum(x => (int)(x?.ppv ?? 0));
 
-        public int GrowattNoahTotalDefaultPower => _apiService.GrowattGetNoahInfoDatas().Sum(x => (int)(x?.DefaultPower ?? 0));
+        public int GrowattNoahTotalDefaultPower => _apiService.GrowattLatestNoahInfoDatas().Sum(x => (int)(x?.DefaultPower ?? 0));
 
         public bool IsCheapRestrictionMode
         {
@@ -100,6 +101,13 @@ namespace EnergyAutomate.Definitions
         /// <summary>Full battery if all Growatt devices are full.</summary>
         public bool IsGrowattBatteryFull => _apiService.GrowattAllNoahDevices().All(x => x.IsBatteryFull);
 
+        public int GrowattGetNoahCurrentIsDischarchingState()
+        {
+            return _apiService.GrowattGetDeviceLists()
+                .Where(w => w.DeviceType == "noah")
+                .Max(noah => _apiService.GrowattGetNoahLastDataPerDevice(noah.DeviceSn)?.totalBatteryPackChargingStatus ?? 0);
+        }
+
         /// <summary>
         /// Returns true if the total available power from all Growatt devices is greater than the
         /// maximum power setting.
@@ -126,6 +134,18 @@ namespace EnergyAutomate.Definitions
             {
                 ActiveRTMCondition = condition;
                 _apiService.ApiSettingAvgPowerAdjustmentTraceValues.AddOrUpdate(new APiTraceValue() { Index = 51, Key = "ActiveRTMCondition", Value = condition });
+                return true;
+            }
+
+            return false;
+        }
+
+        public bool CheckB2500ModeCondition(string condition)
+        {
+            if (ActiveB2500ModeCondition != condition)
+            {
+                ActiveB2500ModeCondition = condition;
+                _apiService.ApiSettingAvgPowerAdjustmentTraceValues.AddOrUpdate(new APiTraceValue() { Index = 52, Key = "ActiveB2500ModeCondition", Value = condition });
                 return true;
             }
 

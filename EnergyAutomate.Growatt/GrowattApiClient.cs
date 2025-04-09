@@ -159,11 +159,26 @@ namespace EnergyAutomate.Growatt
             });
         }
 
-        public async Task SetPowerAsync(IDeviceQuery deviceQuery)
+        public async Task ExecuteDeviceQueryAsync(IDeviceQuery deviceQuery)
         {
-            await ExecuteWithExceptionHandlingAsync(async () =>
+            try
             {
-                var endpoint = "/v4/new-api/setPower";
+                string endpoint;
+                switch (deviceQuery)
+                {
+                    case DeviceNoahSetPowerQuery:
+                        endpoint = "/v4/new-api/setPower";
+                        break;
+                    case DeviceNoahSetTimeSegmentQuery:
+                        endpoint = "/v4/new-api/setTimeSegment";
+                        break;
+                    case DeviceNoahSetLowLimitSocQuery:
+                        endpoint = "/v4/new-api/setLowLimitSoc";
+                        break;
+                    default:
+                        throw new NotSupportedException($"Device query type {deviceQuery.GetType()} is not supported.");
+                }
+                
                 var content = deviceQuery.ToFormUrlEncodedContent();
 
                 var response = await _httpClient.PostAsync(endpoint, content);
@@ -176,32 +191,17 @@ namespace EnergyAutomate.Growatt
                 {
                     throw new ApiException($"API error: {result.Message}", result.Code);
                 }
-
-                return Task.CompletedTask;
-            });
-        }
-
-        public async Task SetTimeSegmentAsync(IDeviceQuery deviceQuery)
-        {
-            await ExecuteWithExceptionHandlingAsync(async () =>
+            }
+            catch (ApiException apiException)
             {
-                var endpoint = "/v4/new-api/setTimeSegment";
-                var content = deviceQuery.ToFormUrlEncodedContent();
-
-                var response = await _httpClient.PostAsync(endpoint, content);
-                response.EnsureSuccessStatusCode();
-
-                var responseString = await response.Content.ReadAsStringAsync();
-                var result = JsonConvert.DeserializeObject<ApiResponse>(responseString);
-
-                if (result != null && result.Code != 0)
-                {
-                    throw new ApiException($"API error: {result.Message}", result.Code);
-                }
-
-                return Task.CompletedTask;
-            });
+                throw apiException;
+            }
+            catch (Exception ex)
+            {
+                throw new ApiException("API error: Other", -10, ex);
+            }
         }
+
 
         #endregion Public Methods
     }

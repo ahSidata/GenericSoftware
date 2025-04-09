@@ -13,13 +13,13 @@ namespace EnergyAutomate.Components.Pages
     public partial class RealTimeMeasurement : IDisposable
     {
         #region Fields
-
-        private readonly IEnumerable<TickMark> ApiDataReadsDelaySecTickList = ApiService.GenerateTickTickMarks(0, 600, 60);
+       
         private readonly IEnumerable<TickMark> ApiOffsetAvgTickList = ApiService.GenerateTickTickMarks(-25, 150, 5);
-
         private readonly IEnumerable<TickMark> ApiSettingTimeOffsetTickList = ApiService.GenerateTickTickMarks(-12, 12, 1);
         private readonly IEnumerable<TickMark> ApiToleranceAvgTickList = ApiService.GenerateTickTickMarks(0, 300, 10);
         private readonly IEnumerable<TickMark> AvgPowerLoadSecondsTickList = ApiService.GenerateTickTickMarks(0, 180, 5);
+        private readonly IEnumerable<TickMark> ApiSettingPowerAdjustmentWaitCyclesTickList = ApiService.GenerateTickTickMarks(0, 5, 1);
+        private readonly IEnumerable<TickMark> ApiSettingPowerAdjustmentFactorTickList = ApiService.GenerateTickTickMarks(0, 100, 10);
         private Tabs tabsMainRef = default!;
 
         #endregion Fields
@@ -35,6 +35,7 @@ namespace EnergyAutomate.Components.Pages
 
         public void Dispose()
         {
+            ApiService.TibberRealTimeMeasurementUnRegisterOnCollectionChanged(this);
             Logger.LogTrace("Dispose RealTimeMeasurement");
             ApiService.StateHasChanged -= ApiService_StateHasChanged;
         }
@@ -56,7 +57,7 @@ namespace EnergyAutomate.Components.Pages
 
         protected override void OnInitialized()
         {
-            ApiService.TibberRealTimeMeasurementRegisterOnCollectionChanged(this.GetType().Name, RealTimeMeasurement_CollectionChanged);
+            ApiService.TibberRealTimeMeasurementRegisterOnCollectionChanged(this, RealTimeMeasurement_CollectionChanged);
             ApiService.StateHasChanged += ApiService_StateHasChanged;
         }
 
@@ -182,7 +183,6 @@ namespace EnergyAutomate.Components.Pages
         private void GetPriceData()
         {
             var dataItems = ApiService.TibberGetPriceDatas();
-            var today = DateTimeOffset.UtcNow;
 
             // Offset auslesen
             TimeSpan offset = dataItems.FirstOrDefault()?.StartsAt.Offset ?? new TimeSpan(0);

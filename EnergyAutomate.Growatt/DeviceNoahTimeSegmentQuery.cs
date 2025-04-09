@@ -2,7 +2,7 @@
 
 namespace EnergyAutomate.Growatt
 {
-    public class DeviceNoahTimeSegmentQuery : IDeviceQuery
+    public class DeviceNoahSetTimeSegmentQuery : IDeviceQuery
     {
         #region Properties
 

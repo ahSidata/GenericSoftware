@@ -27,9 +27,9 @@
                 <LineChart @ref="realTimeMeasurementChart" Class="tibberLineChart" Height="40" HeightUnit="Unit.Vh" />
                 <LineChart @ref="deviceChart" Class="tibberLineChart" Height="40" HeightUnit="Unit.Vh" />
                 <div class="row">
-                    @foreach (var device in ApiService.GrowattListDevices().Where(x => x.DeviceType == "noah"))
+                    @foreach (var device in ApiService.GrowattGetDeviceLists().Where(x => x.DeviceType == "noah"))
                     {
-                        var lastDeviceItem = ApiService.GrowattListDevices().FirstOrDefault(x => x.DeviceSn == device.DeviceSn);
+                        var lastDeviceItem = ApiService.GrowattGetDeviceLists().FirstOrDefault(x => x.DeviceSn == device.DeviceSn);
                         var lastInfoItem = ApiService.GrowattGetNoahInfoDataPerDevice(device.DeviceSn);
                         var lastDataItem = ApiService.GrowattGetNoahLastDataPerDevice(device.DeviceSn);
 
@@ -269,13 +269,19 @@
                     </CardHeader>
                     <CardBody>
                         <div>
-                            AvgPowerOffset <RangeInput TValue="int" @bind-Value="ApiService.ApiSettingAvgPowerOffset" Min="-25" Max="150" TickMarks="ApiOffsetAvgTickList" Step="5" />
+                            AvgPowerOffset <RangeInput TValue="int" @bind-Value="ApiService.ApiSettingAvgPowerOffset" Min="-25" Max="150" TickMarks="ApiOffsetAvgTickList" Step="3" />
                         </div>
                         <div>
                             AvgPowerHysteresis <RangeInput TValue="int" @bind-Value="ApiService.ApiSettingAvgPowerHysteresis" Min="0" Max="300" TickMarks="ApiToleranceAvgTickList" Step="10" />
                         </div>
                         <div>
                             AvgPowerLoadSeconds <RangeInput TValue="int" @bind-Value="ApiService.ApiSettingAvgPowerLoadSeconds" Min="0" Max="180" TickMarks="AvgPowerLoadSecondsTickList" Step="5" />
+                        </div>
+                        <div>
+                            PowerAdjustmentWaitCycles <RangeInput TValue="int" @bind-Value="ApiService.ApiSettingPowerAdjustmentWaitCycles" Min="0" Max="5" TickMarks="ApiSettingPowerAdjustmentWaitCyclesTickList" Step="1" />
+                        </div>
+                        <div>
+                            PowerAdjustmentFactor <RangeInput TValue="int" @bind-Value="ApiService.ApiSettingPowerAdjustmentFactor" Min="0" Max="100" TickMarks="ApiSettingPowerAdjustmentFactorTickList" Step="10" />
                         </div>
                     </CardBody>
                 </Card>

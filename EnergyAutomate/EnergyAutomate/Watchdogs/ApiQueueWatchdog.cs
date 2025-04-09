@@ -44,8 +44,9 @@ namespace EnergyAutomate.Watchdogs
             { nameof(DeviceMinLastDataQuery), 60 * 5 } ,
             { nameof(DeviceNoahInfoDataQuery), 60 * 5} ,
             { nameof(DeviceNoahLastDataQuery), 60 } ,
+            { nameof(DeviceNoahSetLowLimitSocQuery), 5 } ,
             { nameof(DeviceNoahSetPowerQuery), 5 } ,
-            { nameof(DeviceNoahTimeSegmentQuery), 5 } ,
+            { nameof(DeviceNoahSetTimeSegmentQuery), 5 } ,
             { nameof(DeviceListQuery), 60 * 5 }
         };
 
@@ -75,22 +76,56 @@ namespace EnergyAutomate.Watchdogs
         }
 
         public void Enqueue(T item)
-        {
-            lock (_lock)
+        {          
+            if (item.Force || CheckLimits(item))
             {
-                Collection.Add(item);
+                lock (_lock)
+                {
+                    Collection.Add(item);
+                }
             }
 
             ProceedingAsync();
         }
 
-        public void Enqueue(Queue<T> item)
+        private bool CheckLimits(T item, bool writelog = false)
+        {
+            var queryType = item.GetType().Name;
+            var delay = ApiSettingDataReadsDelaySec[queryType];
+
+            var result = GrowattDataReads.Where(x => x.MethodeName == queryType && x.TS > DateTimeOffset.UtcNow.AddSeconds(-delay)).Any();
+
+            if (result)
+                return false;
+
+            if (writelog)
+            {
+                Logger.LogTrace("ApiQueueWatchdog<{Type}>: {queryType} - {delay} sec", typeof(T).Name, queryType, delay);
+                var entry = new ApiCallLog()
+                {
+                    MethodeName = queryType,
+                    TS = DateTimeOffset.UtcNow,
+                    RaisedError = false
+                };
+
+                //Add log entry
+                GrowattDataReads.Add(entry);
+            }
+
+            return true;
+        }
+
+        public void Enqueue(Queue<T> items)
         {
             lock (_lock)
             {
-                while (item.Count > 0)
+                while (items.Count > 0)
                 {
-                    Collection.Add(item.Dequeue());
+                    var item = items.Dequeue();
+                    if (item.Force || CheckLimits(item))
+                    {
+                        Collection.Add(item);
+                    }
                 }
             }
 
@@ -108,7 +143,6 @@ namespace EnergyAutomate.Watchdogs
             do
             {
                 T? item = default;
-                bool blocked = false;
 
                 lock (_lock)
                 {
@@ -120,27 +154,9 @@ namespace EnergyAutomate.Watchdogs
                     if (Collection.Count == 0)
                         break;
                     item ??= Dequeue();
-
-                    var queryType = item.GetType().Name;
-
-                    var delay = ApiSettingDataReadsDelaySec[queryType];
-
-                    blocked = GrowattDataReads.Where(x => x.MethodeName == queryType && x.TS > DateTimeOffset.UtcNow.AddSeconds(-delay)).Any();
-                    if (!blocked)
-                    {
-                        var entry = new ApiCallLog()
-                        {
-                            MethodeName = queryType,
-                            TS = DateTimeOffset.UtcNow,
-                            RaisedError = false
-                        };
-
-                        //Add log entry
-                        GrowattDataReads.Add(entry);
-                    }
                 }
 
-                if (!blocked)
+                if (CheckLimits(item, true))
                 {
                     item = await InvokeQueryAsync(item);
                 }
