@@ -1,5 +1,7 @@
-﻿using Newtonsoft.Json;
+﻿using EnergyAutomate.Definitions;
+using Newtonsoft.Json;
 using System.Collections.ObjectModel;
+using static EnergyAutomate.Growatt.DeviceNoahHistoricalDataQuery;
 
 namespace EnergyAutomate.Watchdogs
 {
@@ -12,7 +14,6 @@ namespace EnergyAutomate.Watchdogs
         public ApiQueueWatchdog(IServiceProvider serviceProvider)
         {
             ServiceProvider = serviceProvider;
-            Collection.CollectionChanged += (sender, e) => ProceedingAsync();
         }
 
         #endregion Public Constructors
@@ -26,7 +27,7 @@ namespace EnergyAutomate.Watchdogs
 
         #region Properties
 
-        private ObservableCollection<T> Collection { get; set; } = new();
+        private List<T> Collection { get; set; } = new();
 
         public int Count => Collection.Count;
 
@@ -35,6 +36,18 @@ namespace EnergyAutomate.Watchdogs
         private ILogger<ApiQueueWatchdog<T>> Logger => ServiceProvider.GetRequiredService<ILogger<ApiQueueWatchdog<T>>>();
 
         private IServiceProvider ServiceProvider { get; init; }
+
+        private List<ApiCallLog> GrowattDataReads { get; set; } = [];
+
+        public Dictionary<string, int> ApiSettingDataReadsDelaySec { get; set; } = new Dictionary<string, int>() {
+            { nameof(DeviceMinInfoDataQuery), 60 * 5 } ,
+            { nameof(DeviceMinLastDataQuery), 60 * 5 } ,
+            { nameof(DeviceNoahInfoDataQuery), 60 * 5} ,
+            { nameof(DeviceNoahLastDataQuery), 60 } ,
+            { nameof(DeviceNoahSetPowerQuery), 5 } ,
+            { nameof(DeviceNoahTimeSegmentQuery), 5 } ,
+            { nameof(DeviceListQuery), 60 * 5 }
+        };
 
         #endregion Properties
 
@@ -67,6 +80,8 @@ namespace EnergyAutomate.Watchdogs
             {
                 Collection.Add(item);
             }
+
+            ProceedingAsync();
         }
 
         public void Enqueue(Queue<T> item)
@@ -78,25 +93,22 @@ namespace EnergyAutomate.Watchdogs
                     Collection.Add(item.Dequeue());
                 }
             }
-        }
 
-        public T Peek()
-        {
-            lock (_lock)
-            {
-                if (Collection.Count == 0)
-                    throw new InvalidOperationException("Die Warteschlange ist leer.");
-
-                return Collection[0];
-            }
+            ProceedingAsync();
         }
 
         private async void ProceedingAsync()
         {
+            if(IsProceeding)
+                return;
+
+            IsProceeding = true;
+
             var count = 0;
             do
             {
                 T? item = default;
+                bool blocked = false;
 
                 lock (_lock)
                 {
@@ -107,28 +119,50 @@ namespace EnergyAutomate.Watchdogs
 
                     if (Collection.Count == 0)
                         break;
-
                     item ??= Dequeue();
+
+                    var queryType = item.GetType().Name;
+
+                    var delay = ApiSettingDataReadsDelaySec[queryType];
+
+                    blocked = GrowattDataReads.Where(x => x.MethodeName == queryType && x.TS > DateTimeOffset.UtcNow.AddSeconds(-delay)).Any();
+                    if (!blocked)
+                    {
+                        var entry = new ApiCallLog()
+                        {
+                            MethodeName = queryType,
+                            TS = DateTimeOffset.UtcNow,
+                            RaisedError = false
+                        };
+
+                        //Add log entry
+                        GrowattDataReads.Add(entry);
+                    }
                 }
 
-                item = await InvokeQueryAsync(item);
+                if (!blocked)
+                {
+                    item = await InvokeQueryAsync(item);
+                }
 
                 lock (_lock)
                 {
-                    if (item != null)
+                    if (item != null && item.Force)
                     {
-                        Enqueue(item);
+                        Collection.Add(item);
                     }
 
                     count = Collection.Count;
                 }
             } while (count > 0);
+
+            IsProceeding = false;
         }
 
         private async Task<T?> InvokeQueryAsync(T? item)
         {
             try
-            {                
+            {
                 if (OnItemDequeued != null && item != null)
                 {
                     ApiException? result = await OnItemDequeued.Invoke(item, ServiceProvider.GetRequiredService<GrowattApiClient>());
@@ -155,6 +189,7 @@ namespace EnergyAutomate.Watchdogs
 
             return item;
         }
+
 
         #endregion Public Methods
     }

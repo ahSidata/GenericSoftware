@@ -26,12 +26,16 @@ namespace EnergyAutomate.Watchdogs
         private IServiceProvider ServiceProvider { get; init; }
         private Guid? TibberHomeId { get; set; }
 
+        public bool RestartRequested { get; set; }
+
         #endregion Properties
 
         #region Public Methods
 
         public async Task RestartListener()
         {
+            await Task.Delay(5000);
+
             if (TibberHomeId.HasValue && TibberApiClient != null)
             {
                 try
@@ -47,8 +51,10 @@ namespace EnergyAutomate.Watchdogs
                     GC.WaitForPendingFinalizers();
                     Trace.WriteLine("StopRealTimeMeasurementListener finished ...", "Tibber");  
                 }
-                await Task.Delay(5000);
+     
                 _ = StartListener();
+
+                RestartRequested = false;
             }
         }
 
@@ -76,7 +82,7 @@ namespace EnergyAutomate.Watchdogs
                         Trace.WriteLine("StartRealTimeMeasurementListener calling ...", "Tibber");
 
                         RealTimeMeasurementListener = await TibberApiClient.StartRealTimeMeasurementListener(TibberHomeId.Value, null, cancellationToken);
-                        RealTimeMeasurementObserver = RealTimeMeasurementListener.Subscribe(new RealTimeMeasurementObserver(ApiService));
+                        RealTimeMeasurementObserver = RealTimeMeasurementListener.Subscribe(new RealTimeMeasurementObserver(this, ApiService));
                     }
                     catch (OperationCanceledException ex) when (ex.CancellationToken == cancellationToken)
                     {

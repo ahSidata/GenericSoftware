@@ -4,9 +4,10 @@
     {
         #region Public Constructors
 
-        public RealTimeMeasurementObserver(ApiService apiService)
+        public RealTimeMeasurementObserver(ApiRealTimeMeasurementWatchdog apiRealTimeMeasurementWatchdog, ApiService apiService)
         {
             ApiService = apiService;
+            Watchdog = apiRealTimeMeasurementWatchdog;
         }
 
         #endregion Public Constructors
@@ -14,6 +15,8 @@
         #region Properties
 
         private ApiService? ApiService { get; set; }
+
+        private ApiRealTimeMeasurementWatchdog Watchdog { get; set; }
 
         #endregion Properties
 
@@ -24,11 +27,28 @@
             ApiService = null;
         }
 
-        public void OnCompleted() => ApiService?.OnCompleted();
+        public async void OnCompleted() 
+        {
+            if (!Watchdog.RestartRequested)
+            {
+                Watchdog.RestartRequested = true;
+                await Watchdog.RestartListener();
+            }
+        }
 
-        public void OnError(Exception error) => ApiService?.OnError(error);
+        public async void OnError(Exception error)
+        {
+            if (!Watchdog.RestartRequested)
+            {
+                Watchdog.RestartRequested = true;
+                await Watchdog.RestartListener();
+            }
+        }
 
-        public void OnNext(RealTimeMeasurement value) => ApiService?.OnNext(value);
+        public void OnNext(RealTimeMeasurement value) 
+        {
+            ApiService?.OnNext(value); 
+        }
 
         #endregion Public Methods
     }

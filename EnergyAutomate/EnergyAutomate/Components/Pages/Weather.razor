@@ -13,7 +13,7 @@
 <PageTitle>Weather</PageTitle>
 
 <CardGroup Class="my-3">
-    <Card Class="mb-4">
+    <Card Class="mb-2">
         <CardHeader>Time points</CardHeader>
         <CardBody>
             <div class="form-group row mb-3">
@@ -34,7 +34,7 @@
             </div>
         </CardBody>
     </Card>
-    <Card Class="mb-4">
+    <Card Class="mb-2">
         <CardHeader>Durations</CardHeader>
         <CardBody>
             <div class="form-group row mb-3">
@@ -62,6 +62,28 @@
                         var sunshine_duration = TimeSpan.FromSeconds(Convert.ToInt64(seconds));
                         @($"{sunshine_duration.ToString()} (hh:mm:ss)")
                     }
+                </div>
+            </div>
+        </CardBody>
+    </Card>
+    <Card Class="mb-2">
+        <CardHeader>Location</CardHeader>
+        <CardBody>
+            <div class="form-group row mb-3">
+                <label class="col-md-3 col-form-label">
+                    <strong>Latitude:</strong>
+                </label>
+                <div class="col-md-3">
+                    @ApiService.CurrentState.WeatherForecast?.Latitude
+                </div>
+            </div>
+
+            <div class="form-group row mb-3">
+                <label class="col-md-3 col-form-label">
+                    <strong>Longitude:</strong>
+                </label>
+                <div class="col-md-3">
+                    @ApiService.CurrentState.WeatherForecast?.Longitude
                 </div>
             </div>
         </CardBody>

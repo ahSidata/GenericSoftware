@@ -211,12 +211,12 @@ namespace EnergyAutomate.Components.Pages
             var dataHighPrices = dataToday.Select(x => (int)(x.Level ?? 0) > 2 ? avgToday / highFactor : null).Concat(dataTomorrow.Select(x => (int)(x.Level ?? 0) > 2 ? avgTomorrow / highFactor : null)).ToList();
             var dataLowPrices = dataToday.Select(x => (int)(x.Level ?? 0) > 0 && (int)(x.Level ?? 0) < 3 ? avgToday / highFactor : null).Concat(dataTomorrow.Select(x => (int)(x.Level ?? 0) > 0 && (int)(x.Level ?? 0) < 3 ? avgTomorrow / highFactor : null)).ToList();
 
-            var dataCurrentHour = dataToday.Select((x, index) =>
-                index < 25 &&
+            var nextHour = currentTime.AddHours(1);
+            var dataCurrentHour = dataItems.Select(x =>
                 (x.StartsAt.Date == currentTime.Date && x.StartsAt.Hour == currentTime.Hour) || 
-                (x.StartsAt.Date == currentTime.Date && x.StartsAt.Hour == currentTime.Hour + 1)
+                (x.StartsAt.Date == nextHour.Date && x.StartsAt.Hour == nextHour.Hour)
                 ? (double?)x.Total : null
-                ).Concat(dataTomorrow.Select(x => (double?)null)).ToList();
+                ).ToList();
 
             priceData = new ChartData
             {
