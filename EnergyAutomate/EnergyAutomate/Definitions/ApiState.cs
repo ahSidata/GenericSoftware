@@ -32,6 +32,7 @@ namespace EnergyAutomate.Definitions
 
         private ILogger<ApiState> Logger { get; set; }
 
+        public string ActiveRTMAdjustment { get; set; } = string.Empty;
         public string ActiveRTMCondition { get; set; } = string.Empty;
         public string ActiveTPCondition { get; set; } = string.Empty;
 
@@ -158,6 +159,19 @@ namespace EnergyAutomate.Definitions
                 ActiveRTMCondition = condition;
                 _apiService.ApiSettingAvgPowerAdjustmentTraceValues.AddOrUpdate(new APiTraceValue() { Index = 51, Key = "ActiveRTMCondition", Value = condition });
                 Logger.LogTrace("CheckRTMCondition {condition}", condition);
+                return true;
+            }
+
+            return false;
+        }
+
+        public bool CheckRTMAdjustment(string condition)
+        {
+            if (ActiveRTMAdjustment != condition)
+            {
+                ActiveRTMAdjustment = condition;
+                _apiService.ApiSettingAvgPowerAdjustmentTraceValues.AddOrUpdate(new APiTraceValue() { Index = 51, Key = "ActiveRTMAdjustment", Value = condition });
+                Logger.LogTrace("CheckRTMAdjustment {condition}", condition);
                 return true;
             }
 

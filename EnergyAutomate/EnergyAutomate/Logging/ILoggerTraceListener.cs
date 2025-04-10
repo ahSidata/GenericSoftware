@@ -35,7 +35,7 @@ public class ILoggerTraceListener : TraceListener
 
     public override void WriteLine(string? message)
     {
-        if (!string.IsNullOrWhiteSpace(message))
+        if (!string.IsNullOrWhiteSpace(message) && !message.StartsWith("EnergyAutomate."))
         {
             lock (LoggerProvider.LogMessages_Lock)
             {

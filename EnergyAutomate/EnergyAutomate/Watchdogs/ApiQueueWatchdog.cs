@@ -21,7 +21,7 @@ namespace EnergyAutomate.Watchdogs
         #region Events
 
         //Action delegate T item
-        public event Func<T, GrowattApiClient, Task<ApiException?>>? OnItemDequeued;
+        public event Func<T, GrowattApiClient, ILogger, Task<ApiException?>>? OnItemDequeued;
 
         #endregion Events
 
@@ -76,7 +76,7 @@ namespace EnergyAutomate.Watchdogs
         }
 
         public void Enqueue(T item)
-        {          
+        {
             if (item.Force || CheckLimits(item))
             {
                 lock (_lock)
@@ -134,18 +134,18 @@ namespace EnergyAutomate.Watchdogs
 
         private async void ProceedingAsync()
         {
-            if(IsProceeding)
+            if (IsProceeding)
                 return;
 
             IsProceeding = true;
-
-            var count = 0;
-            do
+            lock (_lock)
             {
-                T? item = default;
-
-                lock (_lock)
+                var count = 0;
+                do
                 {
+                    T? item = default;
+
+
                     if (Collection.Count > 10)
                     {
                         Collection.Where(x => !x.Force).ToList().ForEach(x => Collection.Remove(x));
@@ -154,65 +154,46 @@ namespace EnergyAutomate.Watchdogs
                     if (Collection.Count == 0)
                         break;
                     item ??= Dequeue();
-                }
 
-                if (CheckLimits(item, true))
-                {
-                    item = await InvokeQueryAsync(item);
-                }
 
-                lock (_lock)
-                {
-                    count = Collection.Count;
-                }
-            } while (count > 0);
-
-            IsProceeding = false;
-        }
-
-        private async Task<T?> InvokeQueryAsync(T? item)
-        {
-            try
-            {
-                if (OnItemDequeued != null && item != null)
-                {
-                    ApiException? result = await OnItemDequeued.Invoke(item, ServiceProvider.GetRequiredService<GrowattApiClient>());
-                    if (result != default)
+                    if (CheckLimits(item, true))
                     {
-                        throw result;
-                    }
-                }
-
-                item = null;
-            }
-            catch (ApiException ex)
-            {
-                Logger.LogError("ApiQueueWatchdog<{Type}> ErrorCode: {ErrorCode}", typeof(T).Name, ex.ErrorCode);
-                if (item != null)
-                {
-                    Logger.LogError("ItemType: {itemType}", item.GetType().Name);
-                    Logger.LogError(JsonConvert.SerializeObject(item).ToString());
-                }
-
-                if (item != null)
-                {
-                    if (item.Force)
-                    {
-                        lock (_lock)
+                        try
                         {
-                            Collection.Add(item);
+                            if (OnItemDequeued != null && item != null)
+                            {
+                                ApiException? result = OnItemDequeued.Invoke(item, ServiceProvider.GetRequiredService<GrowattApiClient>(), Logger).GetAwaiter().GetResult();
+                                if (result != default)
+                                {
+                                    throw result;
+                                }
+                            }
+                        }
+                        catch (ApiException ex)
+                        {
+                            Logger.LogError("ApiQueueWatchdog<{Type}> ErrorCode: {ErrorCode}", typeof(T).Name, ex.ErrorCode);
+                            if (item != null)
+                            {
+                                Logger.LogError("ItemType: {itemType}", item.GetType().Name);
+                                Logger.LogError(JsonConvert.SerializeObject(item).ToString());
+                            }
+
+                            if (item != null)
+                            {
+                                if (item.Force)
+                                {
+                                    Collection.Add(item);
+                                }
+                            }
                         }
                     }
-                    else
-                    {
-                        item = null;
-                    }
-                }
+
+                    count = Collection.Count;
+
+                } while (count > 0);
             }
-
-            return item;
+            IsProceeding = false;
         }
-
 
         #endregion Public Methods
     }

@@ -2,6 +2,7 @@ using BlazorBootstrap;
 using EnergyAutomate.Definitions;
 using EnergyAutomate.Extentions;
 using Microsoft.EntityFrameworkCore;
+using System.Diagnostics;
 using System.Text;
 
 namespace EnergyAutomate.Services
@@ -58,7 +59,12 @@ namespace EnergyAutomate.Services
         private ThreadSafeObservableCollection<DeviceNoahLastData> GrowattDeviceNoahLastData { get; set; } = [];
         private ApiQueueWatchdog<IDeviceQuery> GrowattDeviceQueryQueueWatchdog => ServiceProvider.GetRequiredService<ApiQueueWatchdog<IDeviceQuery>>();
         private ThreadSafeObservableCollection<DeviceList> GrowattDevices { get; set; } = [];
+        
         private ILogger Logger => ServiceProvider.GetRequiredService<ILogger<ApiService>>();
+
+        private ILogger LoggerRTM => ServiceProvider.GetRequiredService<ILogger<RealTimeMeasurement>>();
+
+
         private IServiceProvider ServiceProvider { get; set; }
         private Guid? TibberHomeId { get; set; }
         private ThreadSafeObservableCollection<TibberPrice> TibberPrices { get; set; } = [];
@@ -637,7 +643,7 @@ namespace EnergyAutomate.Services
             await Task.CompletedTask;
         }
 
-        private async Task<ApiException?> GrowattDeviceQueryQueueWatchdog_OnItemDequeued(IDeviceQuery item, GrowattApiClient growattApiClient)
+        private async Task<ApiException?> GrowattDeviceQueryQueueWatchdog_OnItemDequeued(IDeviceQuery item, GrowattApiClient growattApiClient, ILogger logger)
         {
             if (item == null)
                 return default;
@@ -665,7 +671,7 @@ namespace EnergyAutomate.Services
                         if (apiExceptionSetLowLimitSco != null)
                             return apiExceptionSetLowLimitSco;
 
-                        Logger.LogTrace($"Device {setLowLimitSoc.DeviceType} {setLowLimitSoc.DeviceSn} set LowLimitSoc to: {setLowLimitSoc.Value} W");
+                        logger.LogTrace($"Device {setLowLimitSoc.DeviceType} {setLowLimitSoc.DeviceSn} set LowLimitSoc to: {setLowLimitSoc.Value} W");
 
                         ApiInvokeStateHasChanged();
 
@@ -689,7 +695,7 @@ namespace EnergyAutomate.Services
                         if (apiExceptionSetPower != null)
                             return apiExceptionSetPower;
 
-                        Logger.LogTrace($"Commited lastRequestedPowerValue: {setPowerQuery.Value} W");
+                        logger.LogTrace($"Commited lastRequestedPowerValue: {setPowerQuery.Value} W");
 
                         if (device != null)
                         {
@@ -1545,7 +1551,7 @@ namespace EnergyAutomate.Services
             {
                 if (CurrentState.IsGrowattBatteryEmpty)
                 {
-                    Logger.LogInformation($"Battery is empty, set power to 0");
+                    LoggerRTM.LogInformation($"Battery is empty, set power to 0");
                 }
                 else
                 {
@@ -1559,7 +1565,7 @@ namespace EnergyAutomate.Services
                         // activate avg injection
                         if (CurrentState.CheckRTMCondition($"SetPower_Avg_{ApiSettingAvgPower}"))
                         {
-                            Logger.LogInformation($"No solar power, set power to AVG power output value");
+                            LoggerRTM.LogInformation($"No solar power, set power to AVG power output value");
                             await GrowattClearAllDeviceNoahTimeSegments();
                             await GrowattClearSetPowerAsync(ApiSettingAvgPower);
                         }
@@ -1570,7 +1576,7 @@ namespace EnergyAutomate.Services
             {
                 if (CurrentState.IsGrowattBatteryFull)
                 {
-                    Logger.LogInformation($"Battery is full, no action needed");
+                    LoggerRTM.LogInformation($"Battery is full, no action needed");
 
                     await TibberRTMDefaultBatteryPriority();
                 }
@@ -1647,35 +1653,14 @@ namespace EnergyAutomate.Services
             }
         }
 
-        private async Task<bool> TibberRTMAdjustment3CheckCondition(TibberRealTimeMeasurement value)
-        {
-            var filteredMeasurements = TibberRealTimeMeasurement.Where(x => x.PowerValueNewRequested != null);
-            DateTimeOffset? maxTSRequested = filteredMeasurements.Any() ? filteredMeasurements.Max(m => m.TS) : null;
-            var lastRTMRequested = filteredMeasurements.Any() ? TibberRealTimeMeasurement.FirstOrDefault(m => m.TS == maxTSRequested) : null;
-            int? countSinceLastRTMRequested = filteredMeasurements.Any() ? TibberRealTimeMeasurement.Where(x => x.TS > maxTSRequested).Count() : null;
-            int? countAfterMaxTS = filteredMeasurements.Any() ? TibberRealTimeMeasurement.Where(x => x.TS > maxTSRequested && x.PowerValueNewRequested == null).Count() : null;
-
-            var condition = value.TotalPower > 0 &&
-            (
-                lastRTMRequested != null &&
-                lastRTMRequested.PowerValueNewRequested.HasValue &&
-                !lastRTMRequested.PowerValueNewCommited.HasValue &&
-                countAfterMaxTS.HasValue &&
-                countAfterMaxTS.Value < 5
-            );
-
-            Logger.LogTrace($"No last commited power value >> countSinceLastCommit: {countSinceLastRTMRequested} < {ApiSettingPowerAdjustmentWaitCycles},  countAfterMaxTS: {countAfterMaxTS} < 5");
-
-            return await Task.FromResult(condition);
-        }
-
         private async Task TibberRTMAdjustment3PowerCalc(TibberRealTimeMeasurement value)
         {
-
             // If last RTM not commited
-            if (_adjustmentWaitCycles < ApiSettingPowerAdjustmentWaitCycles && await TibberRTMAdjustment3CheckCondition(value))
+            if (_adjustmentWaitCycles < ApiSettingPowerAdjustmentWaitCycles)
             {
                 _adjustmentWaitCycles++;
+
+                LoggerRTM.LogTrace($"Wait because WaitCycles : {_adjustmentWaitCycles} < {ApiSettingPowerAdjustmentWaitCycles}");
 
                 value.PowerValueNewRequested = null;
                 value.PowerValueNewCommited = null;
@@ -1694,22 +1679,42 @@ namespace EnergyAutomate.Services
                 var lowerlimit = ApiSettingAvgPowerOffset - (ApiSettingAvgPowerHysteresis / 2);
                 ApiSettingAvgPowerAdjustmentTraceValues.AddOrUpdate(new APiTraceValue(value.TS, 203, "LowerLimit", lowerlimit.ToString()));
 
-                int calcTotalPower = 0;
+                int? calcTotalPower = null;
 
-                // If the total power is greater than 0, it indicates power consumption
-                if (value.TotalPower > 0 && value.TotalPower > upperlimit)
+                if (value.TotalPower > 0)
                 {
-                    calcTotalPower = value.PowerValueTotalCommited + deltaTotalPower * ApiSettingPowerAdjustmentFactor / 100;
+                    if (value.TotalPower > upperlimit)
+                    {
+                        calcTotalPower = value.PowerValueTotalCommited - deltaTotalPower * ApiSettingPowerAdjustmentFactor / 100;
+                    }
+                    else if (value.TotalPower < lowerlimit)
+                    {
+                        calcTotalPower = value.PowerValueTotalCommited + deltaTotalPower * ApiSettingPowerAdjustmentFactor / 100;
+                    }
                 }
-                // If the total power is less than 0, it indicates power production
-                else if (value.TotalPower < 0 && value.TotalPower < lowerlimit)
+                else if (value.TotalPower < 0)
                 {
-                    calcTotalPower = value.PowerValueTotalCommited - deltaTotalPower * ApiSettingPowerAdjustmentFactor / 100;
+                    if (value.TotalPower < lowerlimit)
+                    {
+                        calcTotalPower = value.PowerValueTotalCommited - deltaTotalPower * ApiSettingPowerAdjustmentFactor / 100;
+                    }
+                    else if (value.TotalPower > upperlimit)
+                    {
+                        calcTotalPower = value.PowerValueTotalCommited + deltaTotalPower * ApiSettingPowerAdjustmentFactor / 100;
+                    }
                 }
 
-                ApiSettingAvgPowerAdjustmentTraceValues.AddOrUpdate(new APiTraceValue(value.TS, 206, "CalcTotalPower", calcTotalPower.ToString()));
+                if (calcTotalPower.HasValue)
+                {
+                    ApiSettingAvgPowerAdjustmentTraceValues.AddOrUpdate(new APiTraceValue(value.TS, 206, "CalcTotalPower", calcTotalPower.Value.ToString()));
 
-                await TibberRTMAdjustment3TotalPowerBalance(value, calcTotalPower);
+                    if (calcTotalPower.Value == 0)
+                    {
+                        Debugger.Break();
+                    }
+
+                    await TibberRTMAdjustment3TotalPowerBalance(value, calcTotalPower.Value);
+                }
 
                 value.PowerValueNewRequested = null;
                 value.PowerValueNewCommited = null;
@@ -1725,7 +1730,7 @@ namespace EnergyAutomate.Services
         {
             if (CurrentState.CheckRTMCondition("RTMPowerAdjustment3PowerCalc"))
             {
-                Logger.LogInformation($"No solar power, set power to AVG power output value");
+                LoggerRTM.LogInformation($"No solar power, set power to AVG power output value");
                 await GrowattClearAllDeviceNoahTimeSegments();
             }
             // If the battery is not full and the restriction mode is not cheap activate zero injection
@@ -1736,89 +1741,66 @@ namespace EnergyAutomate.Services
         {
             // Validate the requested total power value against the maximum power limit and the
             // minimum power limit
-            int validatedTotalPower = requestedTotalPower > ApiSettingMaxPower ? ApiSettingMaxPower : requestedTotalPower < 0 ? 0 : requestedTotalPower;
 
-            if (validatedTotalPower == 0)
+
+            if (CurrentState.CheckRTMAdjustment($"SetPower_Requested_{requestedTotalPower}"))
             {
-                if (CurrentState.CheckRTMCondition($"SetPower_Avg_0"))
+                var devices = GrowattGetDevicesNoahOnline();
+
+                var maxPowerPerDevice = ApiSettingMaxPower / devices.Count;
+
+                var deltaTotalPower = Math.Abs(value.PowerValueTotalCommited - requestedTotalPower);
+
+                int powerValue = 0;
+
+                var device = value.TotalPower switch
                 {
-                    Logger.LogTrace($"Clear power value to zero ! (ValidatedTotalPower: {validatedTotalPower}) = 0");
-                    await GrowattClearSetPowerAsync(0);
+                    > 0 => devices.OrderBy(x => x.PowerValueCommited).FirstOrDefault(), // add delta to the device with the minimum power
+                    < 0 => devices.OrderByDescending(x => x.PowerValueCommited).FirstOrDefault(), // subtract delta from the device with the maximum power
+                    _ => null // default case, falls TotalPower == 0
+                };
+
+                bool notOverflow = false;
+
+                if (value.TotalPower > 0)
+                {
+                    //Fetch the minimum commited power value or set 0
+                    var minimumCommited = devices.Any() ? devices.Min(x => x.PowerValueCommited) : 0;
+                    var reserve = maxPowerPerDevice - minimumCommited;
+                    notOverflow = reserve >= deltaTotalPower;
+                    powerValue = notOverflow ? minimumCommited + deltaTotalPower : maxPowerPerDevice;
                 }
-                return;
-            }
-            else if (validatedTotalPower == ApiSettingMaxPower)
-            {
-                if (CurrentState.CheckRTMCondition($"SetPower_Avg_{ApiSettingAvgPower}"))
+
+                if (value.TotalPower < 0)
                 {
-                    Logger.LogTrace($"Clear power value to max ! (ValidatedTotalPower: {validatedTotalPower}) = {ApiSettingMaxPower}");
-                    await GrowattClearSetPowerAsync(ApiSettingMaxPower);
+                    //Fetch the maximum commited power value or set maxPowerPerDevice
+                    var maxCommited = devices.Any() ? devices.Max(x => x.PowerValueCommited) : 0;
+                    notOverflow = maxCommited >= deltaTotalPower;
+                    powerValue = notOverflow ? maxCommited - deltaTotalPower : 0;
                 }
-                return;
-            }
-            else
-            {
-                if (CurrentState.CheckRTMCondition($"SetPower_Avg_{requestedTotalPower}"))
+
+                //Override wait cyle
+                if (!notOverflow)
+                    _adjustmentWaitCycles = ApiSettingPowerAdjustmentWaitCycles;
+
+                if (device != null)
                 {
-                    Logger.LogTrace($"Set power value to requested ! (ValidatedTotalPower: {validatedTotalPower}) = (requestedTotalPower: {requestedTotalPower})");
-
-                    var devices = GrowattGetDevicesNoahOnline();
-
-                    var maxPowerPerDevice = ApiSettingMaxPower / devices.Count;
-
-                    var deltaTotalPower = Math.Abs(value.PowerValueTotalCommited - requestedTotalPower);
-
-                    int powerValue = 0;
-
-                    var device = value.TotalPower switch
+                    GrowattDeviceQueryQueueWatchdog.Enqueue(new DeviceNoahSetPowerQuery()
                     {
-                        > 0 => devices.OrderBy(x => x.PowerValueCommited).FirstOrDefault(), // add delta to the device with the minimum power
-                        < 0 => devices.OrderByDescending(x => x.PowerValueCommited).FirstOrDefault(), // subtract delta from the device with the maximum power
-                        _ => null // default case, falls TotalPower == 0
-                    };
+                        DeviceType = "noah",
+                        DeviceSn = device.DeviceSn,
+                        Value = powerValue,
+                        TS = value.TS,
+                        Force = true
+                    });
+                    Logger.LogTrace($"Enqueue SetPowerQuery: {powerValue} W");
 
-                    bool notOverflow = false;
-
-                    if (value.TotalPower > 0)
-                    {
-                        //Fetch the minimum commited power value or set 0
-                        var minimumCommited = devices.Any() ? devices.Min(x => x.PowerValueCommited) : 0;
-                        var reserve = maxPowerPerDevice - minimumCommited;
-                        notOverflow = reserve >= deltaTotalPower;
-                        powerValue = notOverflow ? minimumCommited + deltaTotalPower : maxPowerPerDevice;
-
-
-                    }
-
-                    if (value.TotalPower < 0)
-                    {
-                        //Fetch the maximum commited power value or set maxPowerPerDevice
-                        var maxCommited = devices.Any() ? devices.Max(x => x.PowerValueCommited) : 0;
-                        notOverflow = maxCommited > deltaTotalPower;
-                        powerValue = notOverflow ? maxCommited - deltaTotalPower : 0;
-                    }
-
-                    //Override wait cyle
-                    if (!notOverflow)
-                        _adjustmentWaitCycles = ApiSettingPowerAdjustmentWaitCycles;
-
-                    if (device != null)
-                    {
-                        GrowattDeviceQueryQueueWatchdog.Enqueue(new DeviceNoahSetPowerQuery()
-                        {
-                            DeviceType = "noah",
-                            DeviceSn = device.DeviceSn,
-                            Value = powerValue,
-                            TS = value.TS,
-                            Force = true
-                        });
-                        Logger.LogTrace($"Enqueue SetPowerQuery: {powerValue} W");
-
-                        device.PowerValueLastChanged = value.TS;
-                        device.PowerValueRequested = powerValue;
-                    }
+                    device.PowerValueLastChanged = value.TS;
+                    device.PowerValueRequested = powerValue;
                 }
             }
+
+            await Task.CompletedTask;
         }
 
         private async Task TibberRTMCalculation1(TibberRealTimeMeasurement value)
