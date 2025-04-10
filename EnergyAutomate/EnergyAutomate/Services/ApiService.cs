@@ -506,14 +506,14 @@ namespace EnergyAutomate.Services
         private static bool GrowattNearofBatterySocEmpty(DeviceNoahLastData deviceNoahLastData)
         {
             return deviceNoahLastData.totalBatteryPackChargingStatus == 0
-                ? Math.Abs(deviceNoahLastData.battery1Soc - deviceNoahLastData.dischargeSocLimit) < 2
+                ? Math.Abs(deviceNoahLastData.battery1Soc - deviceNoahLastData.dischargeSocLimit) == 0
                 : false;
         }
 
         private static bool GrowattNearofBatterySocFull(DeviceNoahLastData deviceNoahLastData)
         {
             return deviceNoahLastData.totalBatteryPackChargingStatus == 0
-                ? Math.Abs(deviceNoahLastData.battery1Soc - deviceNoahLastData.chargeSocLimit) < 2
+                ? Math.Abs(deviceNoahLastData.battery1Soc - deviceNoahLastData.chargeSocLimit) < 6
                 : false;
         }
 
@@ -1541,7 +1541,7 @@ namespace EnergyAutomate.Services
 
         private async Task TibberRTMAdjustment3(TibberRealTimeMeasurement value)
         {
-            if (CurrentState.GrowattNoahTotalPPV < ApiSettingAvgPower + 50)
+            if (CurrentState.GrowattNoahGetAvgPpvLast5Minutes() < ApiSettingAvgPower + 50)
             {
                 if (CurrentState.IsGrowattBatteryEmpty)
                 {
@@ -1566,7 +1566,7 @@ namespace EnergyAutomate.Services
                     }
                 }
             }
-            else if (CurrentState.GrowattNoahTotalPPV > 840)
+            else if (CurrentState.GrowattNoahGetAvgPpvLast5Minutes() > 840)
             {
                 if (CurrentState.IsGrowattBatteryFull)
                 {
@@ -2034,7 +2034,7 @@ namespace EnergyAutomate.Services
 
                 if (!TibberPrices.Any() || (CurrentState.UtcNow.Hour > 13 && CurrentState.UtcNow.Date.AddDays(1) != TibberPrices.Max(x => x.StartsAt).Date))
                 {
-                    if (CurrentState.CheckRTMCondition($"GetTomorrowPrices_{CurrentState.UtcNow.Hour}"))
+                    if (CurrentState.CheckTibberPricesCondition($"GetTomorrowPrices_{CurrentState.UtcNow.Hour}"))
                     {
                         await TibberGetTomorrowPrices();
                     }

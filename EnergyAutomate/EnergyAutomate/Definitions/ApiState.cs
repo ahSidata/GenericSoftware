@@ -13,6 +13,8 @@ namespace EnergyAutomate.Definitions
         private readonly ApiService _apiService;
         private IServiceProvider _serviceProvider;
 
+
+
         #endregion Fields
 
         #region Public Constructors
@@ -21,14 +23,17 @@ namespace EnergyAutomate.Definitions
         {
             _serviceProvider = serviceProvider;
             _apiService = apiService;
+            Logger = _serviceProvider.GetRequiredService<ILogger<ApiState>>();
         }
 
         #endregion Public Constructors
 
         #region Properties
 
+        private ILogger<ApiState> Logger { get; set; }
+
         public string ActiveRTMCondition { get; set; } = string.Empty;
-        public string ActiveB2500ModeCondition { get; set; } = string.Empty;
+        public string ActiveTPCondition { get; set; } = string.Empty;
 
         public bool IsCloudy
         {
@@ -63,6 +68,24 @@ namespace EnergyAutomate.Definitions
 
         /// <summary>Returns the total available power from all Growatt devices.</summary>
         public int GrowattNoahTotalPPV => _apiService.GrowattLatestNoahLastDatas().Sum(x => (int)(x?.ppv ?? 0));
+
+        public double GrowattNoahGetAvgPpvLast5Minutes()
+        {
+            // Aktuelle Zeit
+            var now = UtcNow;
+
+            // Hole die letzten Daten
+            var lastDatas = _apiService.GrowattLatestNoahLastDatas();
+
+            // Filtere die Daten der letzten 5 Minuten
+            var ppvValues = lastDatas
+                .Where(data => data != null && (now - data.TS).TotalMinutes <= 5)
+                .Select(data => data.ppv);
+
+            // Berechne den Durchschnitt
+            return ppvValues.Any() ? ppvValues.Average() : 0;
+        }
+
 
         public int GrowattNoahTotalDefaultPower => _apiService.GrowattLatestNoahInfoDatas().Sum(x => (int)(x?.DefaultPower ?? 0));
 
@@ -134,23 +157,26 @@ namespace EnergyAutomate.Definitions
             {
                 ActiveRTMCondition = condition;
                 _apiService.ApiSettingAvgPowerAdjustmentTraceValues.AddOrUpdate(new APiTraceValue() { Index = 51, Key = "ActiveRTMCondition", Value = condition });
+                Logger.LogTrace("CheckRTMCondition {condition}", condition);
                 return true;
             }
 
             return false;
         }
 
-        public bool CheckB2500ModeCondition(string condition)
+        public bool CheckTibberPricesCondition(string condition)
         {
-            if (ActiveB2500ModeCondition != condition)
+            if (ActiveTPCondition != condition)
             {
-                ActiveB2500ModeCondition = condition;
-                _apiService.ApiSettingAvgPowerAdjustmentTraceValues.AddOrUpdate(new APiTraceValue() { Index = 52, Key = "ActiveB2500ModeCondition", Value = condition });
+                ActiveTPCondition = condition;
+                _apiService.ApiSettingAvgPowerAdjustmentTraceValues.AddOrUpdate(new APiTraceValue() { Index = 51, Key = "ActiveTPCondition", Value = condition });
+                Logger.LogTrace("CheckTPCondition {condition}", condition);
                 return true;
             }
 
             return false;
         }
+
 
         public WeatherForecast? WeatherForecast { get; set; }
 
