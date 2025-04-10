@@ -49,8 +49,9 @@ namespace EnergyAutomate.Tibber
         public int? PowerValueNewCommited { get; set; }
         public string PowerValueNewDeviceSn { get; set; }
         public int? PowerValueNewRequested { get; set; }
-        public int? PowerValueTotalCommited { get; set; }
-        public int? PowerValueTotalRequested { get; set; }
+        public int PowerValueTotalDefault { get; set; }
+        public int PowerValueTotalCommited { get; set; }
+        public int PowerValueTotalRequested { get; set; }
         public bool SettingAutoMode { get; set; }
         public int SettingAvgPowerHysteresis { get; set; }
         public bool SettingBatteryPriorityMode { get; set; }

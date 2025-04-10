@@ -163,11 +163,6 @@ namespace EnergyAutomate.Watchdogs
 
                 lock (_lock)
                 {
-                    if (item != null && item.Force)
-                    {
-                        Collection.Add(item);
-                    }
-
                     count = Collection.Count;
                 }
             } while (count > 0);
@@ -199,8 +194,20 @@ namespace EnergyAutomate.Watchdogs
                     Logger.LogError(JsonConvert.SerializeObject(item).ToString());
                 }
 
-                if (item != null && !item.Force)
-                    item = null;
+                if (item != null)
+                {
+                    if (item.Force)
+                    {
+                        lock (_lock)
+                        {
+                            Collection.Add(item);
+                        }
+                    }
+                    else
+                    {
+                        item = null;
+                    }
+                }
             }
 
             return item;
