@@ -1750,7 +1750,7 @@ namespace EnergyAutomate.Services
             if (device != null)
             {
                 var filteredMeasurements = TibberRealTimeMeasurement.Where(x => x.PowerValueNewRequested != null);
-                var maxTSRequested = filteredMeasurements.Max(m => m.TS);
+                DateTimeOffset? maxTSRequested = filteredMeasurements.Any() ? filteredMeasurements.Max(m => m.TS) : null;
                 var lastRTMRequested = filteredMeasurements.Any() ? TibberRealTimeMeasurement.FirstOrDefault(m => m.TS == maxTSRequested) : null;
                 int? countSinceLastRTMRequested = filteredMeasurements.Any() ? TibberRealTimeMeasurement.Where(x => x.TS > maxTSRequested).Count() : null;
                 int? countAfterMaxTS = filteredMeasurements.Any() ? TibberRealTimeMeasurement.Where(x => x.TS > maxTSRequested && x.PowerValueNewRequested == null).Count() : null;
