@@ -1981,8 +1981,9 @@ namespace EnergyAutomate.Services
                     TibberPrices.Add(price);
                 }
 
+                var exists = await dbContext.TibberPrices.AnyAsync(x => x.StartsAt == price.StartsAt);
                 // Prüfe, ob der Datensatz bereits existiert
-                if (await dbContext.TibberPrices.AnyAsync(x => x.StartsAt == price.StartsAt))
+                if (!exists)
                 {
                     // Füge den neuen Datensatz hinzu
                     dbContext.TibberPrices.Add(price);
@@ -2028,7 +2029,7 @@ namespace EnergyAutomate.Services
                     return;
                 }
 
-                if (!TibberPrices.Any() || (CurrentState.UtcNow.Hour > 13 && CurrentState.UtcNow.Date.AddDays(1) != TibberPrices.Max(x => x.StartsAt).Date))
+                if (!TibberPrices.Any() || (CurrentState.UtcNow.Hour > 13 && CurrentState.UtcNow.AddDays(1).Date != TibberPrices.Max(x => x.StartsAt).Date))
                 {
                     if (CurrentState.CheckTibberPricesCondition($"GetTomorrowPrices_{CurrentState.UtcNow.Hour}"))
                     {
