@@ -14,8 +14,8 @@ namespace EnergyAutomate.Services
         private readonly Lock lockAdjustPower = new();
         private readonly Lock lockLoadBalance = new();
 
-        private readonly string messageTemplateCommited = "{CurrentState.UtcNow} Commited PowerValue: {powerValue} W";
-        private readonly string messageTemplateRequested = "{CurrentState.UtcNow} Requested PowerValue: {powerValue} W";
+        private readonly string messageTemplateCommited = "{CurrentState.UtcNow} Commited ({device}) PowerValue: {powerValue} W";
+        private readonly string messageTemplateRequested = "{CurrentState.UtcNow} Requested ({device}) PowerValue: {powerValue} W";
 
         private int _adjustmentWaitCycles = 0;
 
@@ -688,7 +688,7 @@ namespace EnergyAutomate.Services
                         {
                             await growattApiClient.ExecuteDeviceQueryAsync(item);
 
-                            LoggerRTM.LogTrace(messageTemplateCommited, CurrentState.UtcNow, setPowerQuery.Value);
+                            LoggerRTM.LogTrace(messageTemplateCommited, CurrentState.UtcNow, device.DeviceSn, setPowerQuery.Value);
 
                             if (device != null)
                             {
@@ -809,7 +809,7 @@ namespace EnergyAutomate.Services
             device.PowerValueRequested = powerValue;
             device.PowerValueLastChanged = ts;
 
-            LoggerRTM.LogTrace(messageTemplateRequested, CurrentState.UtcNow, device.PowerValueRequested);
+            LoggerRTM.LogTrace(messageTemplateRequested, CurrentState.UtcNow, device.DeviceSn, device.PowerValueRequested);
 
             GrowattDeviceQueryQueueWatchdog.Enqueue(item);
 
@@ -1069,7 +1069,7 @@ namespace EnergyAutomate.Services
                     {
                         device.PowerValueCommited = (int)deviceNoahLastData.pac;
 
-                        LoggerRTM.LogTrace(messageTemplateCommited, CurrentState.UtcNow, device.PowerValueCommited);
+                        LoggerRTM.LogTrace(messageTemplateCommited, CurrentState.UtcNow, device.DeviceSn, device.PowerValueCommited);
 
                         device.IsBatteryEmpty = deviceNoahLastData.totalBatteryPackChargingStatus == 0 && GrowattNearofBatterySocEmpty(deviceNoahLastData);
                         device.IsBatteryFull = deviceNoahLastData.totalBatteryPackChargingStatus == 0 && GrowattNearofBatterySocFull(deviceNoahLastData);
