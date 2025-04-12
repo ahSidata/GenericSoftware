@@ -13,8 +13,6 @@ namespace EnergyAutomate.Definitions
         private readonly ApiService _apiService;
         private IServiceProvider _serviceProvider;
 
-
-
         #endregion Fields
 
         #region Public Constructors
@@ -30,12 +28,35 @@ namespace EnergyAutomate.Definitions
 
         #region Properties
 
-        private ILogger<ApiState> Logger { get; set; }
-
         public string ActiveRTMAdjustment { get; set; } = string.Empty;
         public string ActiveRTMCondition { get; set; } = string.Empty;
         public string ActiveTPCondition { get; set; } = string.Empty;
+        public int GrowattNoahTotalDefaultPower => _apiService.GrowattLatestNoahInfoDatas().Sum(x => (int)(x?.DefaultPower ?? 0));
+        /// <summary>Returns the total available power from all Growatt devices.</summary>
+        public int GrowattNoahTotalPPV => _apiService.GrowattLatestNoahLastDatas().Sum(x => (int)(x?.ppv ?? 0));
 
+        public int PowerValueTotalCommited => _apiService.GrowattGetDevicesNoahOnline().Any() ? _apiService.GrowattGetDevicesNoahOnline().Sum(x => x.PowerValueCommited) : 0;
+
+        public int PowerValueTotalRequested => _apiService.GrowattGetDevicesNoahOnline().Any() ? _apiService.GrowattGetDevicesNoahOnline().Sum(x => x.PowerValueRequested) : 0;
+
+        public bool IsBelowAvgPrice
+        {
+            get
+            {
+                var avg = _apiService.TibberListPrices().Where(o => o.StartsAt.Date == UtcNow.Date).ToList().Average(x => x.Total);
+                var currentStartAt = UtcNow.Date.AddHours(UtcNow.Hour - _apiService.ApiSettingTimeOffset);
+                var total = _apiService.TibberListPrices().FirstOrDefault(x => x.StartsAt == currentStartAt)?.Total;
+                return total < avg;
+            }
+        }
+        public bool IsCheapRestrictionMode
+        {
+            get
+            {
+                var level = _apiService.TibberListPrices().OrderBy(o => o.StartsAt).FirstOrDefault(x => x.StartsAt > UtcNow.AddHours(-1))?.Level;
+                return level == PriceLevel.Cheap || level == PriceLevel.VeryCheap;
+            }
+        }
         public bool IsCloudy
         {
             get
@@ -66,39 +87,6 @@ namespace EnergyAutomate.Definitions
                 return false;
             }
         }
-
-        /// <summary>Returns the total available power from all Growatt devices.</summary>
-        public int GrowattNoahTotalPPV => _apiService.GrowattLatestNoahLastDatas().Sum(x => (int)(x?.ppv ?? 0));
-
-        public double GrowattNoahGetAvgPpvLast5Minutes()
-        {
-            // Aktuelle Zeit
-            var now = UtcNow;
-
-            // Hole die letzten Daten
-            var lastDatas = _apiService.GrowattLatestNoahLastDatas();
-
-            // Filtere die Daten der letzten 5 Minuten
-            var ppvValues = lastDatas
-                .Where(data => data != null && (now - data.TS).TotalMinutes <= 5)
-                .Select(data => data.ppv);
-
-            // Berechne den Durchschnitt
-            return ppvValues.Any() ? ppvValues.Average() : 0;
-        }
-
-
-        public int GrowattNoahTotalDefaultPower => _apiService.GrowattLatestNoahInfoDatas().Sum(x => (int)(x?.DefaultPower ?? 0));
-
-        public bool IsCheapRestrictionMode
-        {
-            get
-            {
-                var level = _apiService.TibberListPrices().OrderBy(o => o.StartsAt).FirstOrDefault(x => x.StartsAt > UtcNow.AddHours(-1))?.Level;
-                return level == PriceLevel.Cheap || level == PriceLevel.VeryCheap;
-            }
-        }
-
         public bool IsExpensiveRestrictionMode
         {
             get
@@ -107,63 +95,25 @@ namespace EnergyAutomate.Definitions
                 return level == PriceLevel.Expensive || level == PriceLevel.VeryExpensive;
             }
         }
-
-        public bool IsBelowAvgPrice
-        {
-            get
-            {
-                var avg = _apiService.TibberListPrices().Where(o => o.StartsAt.Date == UtcNow.Date).ToList().Average(x => x.Total);
-                var currentStartAt = UtcNow.Date.AddHours(UtcNow.Hour - _apiService.ApiSettingTimeOffset);
-                var total = _apiService.TibberListPrices().FirstOrDefault(x => x.StartsAt == currentStartAt)?.Total;
-                return total < avg;
-            }
-        }
-
         /// <summary>Battery is empty if all Growatt devices are empty.</summary>
         public bool IsGrowattBatteryEmpty => _apiService.GrowattAllNoahDevices().All(x => x.IsBatteryEmpty);
-
         /// <summary>Full battery if all Growatt devices are full.</summary>
         public bool IsGrowattBatteryFull => _apiService.GrowattAllNoahDevices().All(x => x.IsBatteryFull);
-
-        public int GrowattGetNoahCurrentIsDischarchingState()
-        {
-            return _apiService.GrowattGetDeviceLists()
-                .Where(w => w.DeviceType == "noah")
-                .Max(noah => _apiService.GrowattGetNoahLastDataPerDevice(noah.DeviceSn)?.totalBatteryPackChargingStatus ?? 0);
-        }
-
         /// <summary>
         /// Returns true if the total available power from all Growatt devices is greater than the
         /// maximum power setting.
         /// </summary>
         public bool IsGrowattNoahSufficientSurplusAvailable => GrowattNoahTotalPPV >= _apiService.ApiSettingMaxPower;
-
         /// <summary>Returns true if all Growatt devices are offline.</summary>
         public bool IsGrowattOnline => _apiService.GrowattGetDevicesNoahOnline().Any();
-
+        public TimeSpan? SunRise => Coordinate.CelestialInfo.SunRise != null ? new DateTimeOffset(Coordinate.CelestialInfo.SunRise.Value, new TimeSpan(0)).LocalDateTime.TimeOfDay : null;
+        public TimeSpan? SunSet => Coordinate.CelestialInfo.SunSet != null ? new DateTimeOffset(Coordinate.CelestialInfo.SunSet.Value, new TimeSpan(0)).LocalDateTime.TimeOfDay : null;
         /// <summary>Current UTC time with the API setting time offset applied.</summary>
         public DateTimeOffset UtcNow => DateTimeOffset.UtcNow;
-
-        public TimeSpan? SunRise => Coordinate.CelestialInfo.SunRise != null ? new DateTimeOffset(Coordinate.CelestialInfo.SunRise.Value, new TimeSpan(0)).LocalDateTime.TimeOfDay : null;
-
-        public TimeSpan? SunSet => Coordinate.CelestialInfo.SunSet != null ? new DateTimeOffset(Coordinate.CelestialInfo.SunSet.Value, new TimeSpan(0)).LocalDateTime.TimeOfDay : null;
-
+        public WeatherForecast? WeatherForecast { get; set; }
         private Coordinate Coordinate => _serviceProvider.GetRequiredService<Coordinate>();
-
+        private ILogger<ApiState> Logger { get; set; }
         private OpenMeteo.OpenMeteoClient OpenMeteoClient { get; set; } = new OpenMeteo.OpenMeteoClient();
-
-        public bool CheckRTMCondition(string condition)
-        {
-            if (ActiveRTMCondition != condition)
-            {
-                ActiveRTMCondition = condition;
-                _apiService.ApiSettingAvgPowerAdjustmentTraceValues.AddOrUpdate(new APiTraceValue() { Index = 51, Key = "ActiveRTMCondition", Value = condition });
-                Logger.LogTrace("CheckRTMCondition {condition}", condition);
-                return true;
-            }
-
-            return false;
-        }
 
         public bool CheckRTMAdjustment(string condition)
         {
@@ -172,6 +122,19 @@ namespace EnergyAutomate.Definitions
                 ActiveRTMAdjustment = condition;
                 _apiService.ApiSettingAvgPowerAdjustmentTraceValues.AddOrUpdate(new APiTraceValue() { Index = 51, Key = "ActiveRTMAdjustment", Value = condition });
                 Logger.LogTrace("CheckRTMAdjustment {condition}", condition);
+                return true;
+            }
+
+            return false;
+        }
+
+        public bool CheckRTMCondition(string condition)
+        {
+            if (ActiveRTMCondition != condition)
+            {
+                ActiveRTMCondition = condition;
+                _apiService.ApiSettingAvgPowerAdjustmentTraceValues.AddOrUpdate(new APiTraceValue() { Index = 51, Key = "ActiveRTMCondition", Value = condition });
+                Logger.LogTrace("CheckRTMCondition {condition}", condition);
                 return true;
             }
 
@@ -190,9 +153,6 @@ namespace EnergyAutomate.Definitions
 
             return false;
         }
-
-
-        public WeatherForecast? WeatherForecast { get; set; }
 
         public async Task<WeatherForecast?> GetWeatherForecastAsync()
         {
@@ -218,6 +178,38 @@ namespace EnergyAutomate.Definitions
             options.Longitude = (float)longitude;
 
             return await OpenMeteoClient.QueryAsync(options);
+        }
+
+        public int GrowattGetNoahCurrentIsDischarchingState()
+        {
+            return _apiService.GrowattGetDeviceLists()
+                .Where(w => w.DeviceType == "noah")
+                .Max(noah => _apiService.GrowattGetNoahLastDataPerDevice(noah.DeviceSn)?.totalBatteryPackChargingStatus ?? 0);
+        }
+
+        public double GrowattNoahGetAvgPpvLast5Minutes()
+        {
+            // Aktuelle Zeit
+            var now = UtcNow;
+
+            // Hole die letzten Daten
+            var lastDatas = _apiService.GrowattGetNoahLastDatas();
+
+            // Filtere die Daten der letzten 5 Minuten
+            var groupedPpvSums = lastDatas
+                .Where(data => data != null && (now - data.TS).TotalMinutes <= 5)
+                .GroupBy(data => data.deviceSn)
+                .Select(group => new
+                {
+                    DeviceSn = group.Key,
+                    PpvSum = group.Average(data => data.ppv) // Berechne die Summe der ppv-Werte pro Gerät
+                })
+                .ToList();
+
+            
+
+            // Berechne den Durchschnitt
+            return groupedPpvSums.Any() ? groupedPpvSums.Sum(x => x.PpvSum) : 0;
         }
 
         #endregion Properties

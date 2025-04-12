@@ -214,7 +214,7 @@
                                     </div>
                                 </li>
                                 @{
-                                    var enumerator = ApiService.ApiSettingAvgPowerAdjustmentTraceValues.GetEnumerator();
+                                    var enumerator = ApiService.ApiSettingAvgPowerAdjustmentTraceValues.OrderBy(x => x.Key).GetEnumerator();
                                 }
 
                                 @while (enumerator.MoveNext())

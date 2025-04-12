@@ -137,8 +137,8 @@ namespace EnergyAutomate.Components.Pages
                     {
                         Label = "New Requested",
                         Data = dataSource.Select(x => (double?)x.PowerValueNewRequested).ToList(),
-                        BackgroundColor = "rgb(255, 0, 0)",
-                        BorderColor = "rgb(255, 0, 0)",
+                        BackgroundColor = "rgb(255, 150, 0)",
+                        BorderColor = "rgb(255, 150, 0)",
                         BorderWidth = 2,
                         PointRadius = new List<double>() { 0 },
                         Stepped = true,
@@ -149,8 +149,8 @@ namespace EnergyAutomate.Components.Pages
                     {
                         Label = "New Commited",
                         Data = dataSource.Select(x => (double?)x.PowerValueNewCommited).ToList(),
-                        BackgroundColor = "rgb(0, 255, 0)",
-                        BorderColor = "rgb(0, 255, 0)",
+                        BackgroundColor = "rgb(150, 255, 0)",
+                        BorderColor = "rgb(150, 255, 0)",
                         BorderWidth = 2,
                         PointRadius = new List<double>() { 0 },
                         Stepped = true,
@@ -450,7 +450,7 @@ namespace EnergyAutomate.Components.Pages
             deviceChartOptions.Plugins.Title.Display = true;
             deviceChartOptions.Plugins.Title.Font = new ChartFont { Size = 20 };
             deviceChartOptions.Responsive = true;
-            deviceChartOptions.Scales.Y = new ChartAxes() { Min = 0, Max = 800 };
+            deviceChartOptions.Scales.Y = new ChartAxes() { Min = 0, Max = 1000 };
             deviceChartOptions.Scales.X!.Title = new ChartAxesTitle { Text = "Seconds (one minute)", Display = true };
             deviceChartOptions.Scales.Y!.Title = new ChartAxesTitle { Text = "Watt", Display = true };
             deviceChartOptions.MaintainAspectRatio = false;

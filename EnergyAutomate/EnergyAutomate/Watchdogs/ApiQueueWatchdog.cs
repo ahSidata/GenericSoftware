@@ -40,14 +40,14 @@ namespace EnergyAutomate.Watchdogs
         private List<ApiCallLog> GrowattDataReads { get; set; } = [];
 
         public Dictionary<string, int> ApiSettingDataReadsDelaySec { get; set; } = new Dictionary<string, int>() {
-            { nameof(DeviceMinInfoDataQuery), 60 * 5 } ,
-            { nameof(DeviceMinLastDataQuery), 60 * 5 } ,
-            { nameof(DeviceNoahInfoDataQuery), 60 * 5} ,
-            { nameof(DeviceNoahLastDataQuery), 60 } ,
+            { nameof(DeviceMinInfoDataQuery), 60 * 5 + 1 } ,
+            { nameof(DeviceMinLastDataQuery), 60 * 5 + 1 } ,
+            { nameof(DeviceNoahInfoDataQuery), 60 * 5 + 1 } ,
+            { nameof(DeviceNoahLastDataQuery), 61 } ,
             { nameof(DeviceNoahSetLowLimitSocQuery), 5 } ,
             { nameof(DeviceNoahSetPowerQuery), 5 } ,
             { nameof(DeviceNoahSetTimeSegmentQuery), 5 } ,
-            { nameof(DeviceListQuery), 60 * 5 }
+            { nameof(DeviceListQuery), 60 * 5 + 1 }
         };
 
         #endregion Properties
@@ -77,18 +77,15 @@ namespace EnergyAutomate.Watchdogs
 
         public void Enqueue(T item)
         {
-            if (item.Force || CheckLimits(item))
+            lock (_lock)
             {
-                lock (_lock)
-                {
-                    Collection.Add(item);
-                }
+                Collection.Add(item);
             }
 
             ProceedingAsync();
         }
 
-        private bool CheckLimits(T item, bool writelog = false)
+        public bool CheckLimits(T item, bool writelog = false)
         {
             var queryType = item.GetType().Name;
             var delay = ApiSettingDataReadsDelaySec[queryType];
@@ -122,10 +119,7 @@ namespace EnergyAutomate.Watchdogs
                 while (items.Count > 0)
                 {
                     var item = items.Dequeue();
-                    if (item.Force || CheckLimits(item))
-                    {
-                        Collection.Add(item);
-                    }
+                    Collection.Add(item);
                 }
             }
 
@@ -138,60 +132,55 @@ namespace EnergyAutomate.Watchdogs
                 return;
 
             IsProceeding = true;
-            lock (_lock)
+
+            T? item = default;
+            var count = 0;
+            
+            do
             {
-                var count = 0;
-                do
+                if (Collection.Count == 0)
+                    break;
+
+                item ??= Dequeue();
+
+                if (CheckLimits(item, true))
                 {
-                    T? item = default;
-
-
-                    if (Collection.Count > 10)
+                    try
                     {
-                        Collection.Where(x => !x.Force).ToList().ForEach(x => Collection.Remove(x));
-                    }
-
-                    if (Collection.Count == 0)
-                        break;
-                    item ??= Dequeue();
-
-
-                    if (CheckLimits(item, true))
-                    {
-                        try
+                        if (OnItemDequeued != null && item != null)
                         {
-                            if (OnItemDequeued != null && item != null)
+                            ApiException? result = await OnItemDequeued.Invoke(item, ServiceProvider.GetRequiredService<GrowattApiClient>(), Logger);
+                            if (result != default)
                             {
-                                ApiException? result = OnItemDequeued.Invoke(item, ServiceProvider.GetRequiredService<GrowattApiClient>(), Logger).GetAwaiter().GetResult();
-                                if (result != default)
-                                {
-                                    throw result;
-                                }
+                                throw result;
                             }
+                            item = null;
                         }
-                        catch (ApiException ex)
+                    }
+                    catch (ApiException ex)
+                    {
+                        Logger.LogError("ApiQueueWatchdog<{Type}> ErrorCode: {ErrorCode}", typeof(T).Name, ex.ErrorCode);
+                        if (item != null)
                         {
-                            Logger.LogError("ApiQueueWatchdog<{Type}> ErrorCode: {ErrorCode}", typeof(T).Name, ex.ErrorCode);
-                            if (item != null)
-                            {
-                                Logger.LogError("ItemType: {itemType}", item.GetType().Name);
-                                Logger.LogError(JsonConvert.SerializeObject(item).ToString());
-                            }
+                            Logger.LogError("ItemType: {itemType}", item.GetType().Name);
+                            Logger.LogError(JsonConvert.SerializeObject(item).ToString());
 
-                            if (item != null)
+                            if (item.Force)
                             {
-                                if (item.Force)
-                                {
-                                    Collection.Add(item);
-                                }
+                                Collection.Add(item);
                             }
                         }
                     }
+                }
+                else if(!item.Force)
+                {
+                    item = null;
+                }                
 
-                    count = Collection.Count;
+                count = Collection.Count;
 
-                } while (count > 0);
-            }
+            } while (count > 0);
+
             IsProceeding = false;
         }
 

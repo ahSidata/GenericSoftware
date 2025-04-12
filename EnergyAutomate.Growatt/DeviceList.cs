@@ -15,6 +15,8 @@
         public bool IsBatteryEmpty { get; set; }
         public bool IsBatteryFull { get; set; }
 
+        public int Soc { get; set; }
+
         #endregion Properties
     }
 }
