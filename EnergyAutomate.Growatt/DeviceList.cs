@@ -17,6 +17,8 @@
 
         public int Soc { get; set; }
 
+        public int SocMin { get; set; }
+
         #endregion Properties
     }
 }

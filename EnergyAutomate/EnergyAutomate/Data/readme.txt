@@ -1,1 +1,2 @@
 Add-Migration InitialSetup -Context ApplicationDbContext
+Add-Migration ChangeTable -Context ApplicationDbContext
