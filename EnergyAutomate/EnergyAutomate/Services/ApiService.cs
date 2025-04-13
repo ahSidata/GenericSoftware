@@ -1525,7 +1525,8 @@ namespace EnergyAutomate.Services
                 {
                     if (CurrentState.CheckRTMCondition($"LoadPriority_SetPower_Avg_{ApiSettingAvgPower}"))
                     {
-                        await GrowattQueryLoadPriorityDeviceNoahTimeSegmentsAsync(ApiSettingAvgPower);
+                        await GrowattClearAllDeviceNoahTimeSegments();
+                        await GrowattClearSetPowerAsync(value.TS, ApiSettingAvgPower);
                     }
 
                     LoggerRTM.LogInformation($"Battery is empty, set power to 0");    
