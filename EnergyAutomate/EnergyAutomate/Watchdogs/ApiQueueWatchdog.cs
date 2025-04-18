@@ -40,9 +40,9 @@ namespace EnergyAutomate.Watchdogs
         private List<ApiCallLog> GrowattDataReads { get; set; } = [];
 
         public Dictionary<string, int> ApiSettingDataReadsDelaySec { get; set; } = new Dictionary<string, int>() {
-            { nameof(DeviceMinInfoDataQuery), 60 * 5 + 1 } ,
-            { nameof(DeviceMinLastDataQuery), 60 * 5 + 1 } ,
-            { nameof(DeviceNoahInfoDataQuery), 60 * 5 + 1 } ,
+            { nameof(DeviceMinInfoDataQuery), 60 * 5 } ,
+            { nameof(DeviceMinLastDataQuery), 60 * 5 } ,
+            { nameof(DeviceNoahInfoDataQuery), 60 * 5 } ,
             { nameof(DeviceNoahLastDataQuery), 61 } ,
             { nameof(DeviceNoahSetLowLimitSocQuery), 5 } ,
             { nameof(DeviceNoahSetPowerQuery), 5 } ,
@@ -62,16 +62,18 @@ namespace EnergyAutomate.Watchdogs
             }
         }
 
-        public T Dequeue()
+        public T? Dequeue()
         {
             lock (_lock)
             {
-                if (Collection.Count == 0)
-                    throw new InvalidOperationException("Die Warteschlange ist leer.");
-
-                var item = Collection[0];
-                Collection.RemoveAt(0);
-                return item;
+                if (Collection.Count != 0)
+                {
+                    var item = Collection[0];
+                    Collection.RemoveAt(0);
+                    return item;
+                }
+                else
+                    return default;
             }
         }
 
@@ -83,33 +85,6 @@ namespace EnergyAutomate.Watchdogs
             }
 
             ProceedingAsync();
-        }
-
-        public bool CheckLimits(T item, bool writelog = false)
-        {
-            var queryType = item.GetType().Name;
-            var delay = ApiSettingDataReadsDelaySec[queryType];
-
-            var result = GrowattDataReads.Where(x => x.MethodeName == queryType && x.TS > DateTimeOffset.UtcNow.AddSeconds(-delay)).Any();
-
-            if (result)
-                return false;
-
-            if (writelog)
-            {
-                Logger.LogTrace("ApiQueueWatchdog<{Type}>: {queryType} - {delay} sec", typeof(T).Name, queryType, delay);
-                var entry = new ApiCallLog()
-                {
-                    MethodeName = queryType,
-                    TS = DateTimeOffset.UtcNow,
-                    RaisedError = false
-                };
-
-                //Add log entry
-                GrowattDataReads.Add(entry);
-            }
-
-            return true;
         }
 
         public void Enqueue(Queue<T> items)
@@ -128,60 +103,89 @@ namespace EnergyAutomate.Watchdogs
 
         private async void ProceedingAsync()
         {
-            if (IsProceeding)
-                return;
+            lock (_lock)
+            {
+                if (IsProceeding)
+                    return;
 
-            IsProceeding = true;
+                IsProceeding = true;
+            }
 
-            T? item = default;
-            var count = 0;
-            
             do
             {
-                if (Collection.Count == 0 && item == null)
+                if (Collection.Count == 0)
                     break;
 
-                item ??= Dequeue();
+                var item = Dequeue();
 
-                if (CheckLimits(item, true))
+                if(item == null)
+                    break;
+
+                var queryType = item.GetType().Name;
+                var delay = ApiSettingDataReadsDelaySec[queryType];
+
+                var isNotLocked = !GrowattDataReads.Where(x => x.MethodeName == queryType && x.TS.UtcDateTime >= DateTimeOffset.UtcNow.AddSeconds(-delay)).Any();
+
+                if (item != null && isNotLocked)
                 {
-                    try
+                    var ts = DateTimeOffset.UtcNow;
+                    Logger.LogTrace("ApiQueueWatchdog<{Type}>: {queryType} - {delay} sec >> {TS}", typeof(T).Name, queryType, delay, ts);
+                    var entry = new ApiCallLog()
                     {
-                        if (OnItemDequeued != null && item != null)
-                        {
-                            ApiException? result = await OnItemDequeued.Invoke(item, ServiceProvider.GetRequiredService<GrowattApiClient>(), Logger);
-                            if (result != default)
-                            {
-                                throw result;
-                            }
-                            item = null;
-                        }
-                    }
-                    catch (ApiException ex)
-                    {
-                        Logger.LogError("ApiQueueWatchdog<{Type}> ErrorCode: {ErrorCode}", typeof(T).Name, ex.ErrorCode);
-                        if (item != null)
-                        {
-                            Logger.LogError("ItemType: {itemType}", item.GetType().Name);
-                            Logger.LogError(JsonConvert.SerializeObject(item).ToString());
+                        MethodeName = queryType,
+                        TS = ts,
+                        RaisedError = false
+                    };
 
-                            if (item.Force)
+                    //Add log entry
+                    GrowattDataReads.Add(entry);
+
+                    // Starten des Tasks ohne await und Verarbeitung des Ergebnisses im Hintergrund
+                    _ = OnItemDequeued?.Invoke(item, ServiceProvider.GetRequiredService<GrowattApiClient>(), Logger)
+                        .ContinueWith(task =>
+                        {
+                            if (task.IsFaulted)
                             {
-                                Collection.Add(item);
+                                Logger.LogError("ApiQueueWatchdog<{Type}>: Fehler bei der Verarbeitung von {ItemType}",
+                                    typeof(T).Name, item.GetType().Name);
+                                Logger.LogError("Exception: {Exception}", task.Exception?.InnerException);
+
+                                if (item.Force)
+                                {
+                                    lock (_lock)
+                                    {
+                                        Collection.Add(item);
+                                    }
+                                }
                             }
-                        }
-                    }
+                            else if (task.Result != default)
+                            {
+                                Logger.LogError("ApiQueueWatchdog<{Type}> ErrorCode: {ErrorCode}",
+                                    typeof(T).Name, task.Result.ErrorCode);
+                                Logger.LogError("Error ItemType: {itemType}", item.GetType().Name);
+                                Logger.LogError(JsonConvert.SerializeObject(item).ToString());
+
+                                if (item.Force)
+                                {
+                                    lock (_lock)
+                                    {
+                                        Collection.Add(item);
+                                    }
+                                }
+                            }
+                        }, TaskScheduler.Current);
                 }
-                else if(!item.Force)
+                else if (item != null && item.Force)
                 {
-                    item = null;
-                }                
+                    Collection.Add(item);
+                }
 
-                count = Collection.Count;
+            } while (Collection.Count > 0);
 
-            } while (count > 0);
-
-            IsProceeding = false;
+            lock (_lock)
+            {
+                IsProceeding = false;
+            }
         }
 
         #endregion Public Methods

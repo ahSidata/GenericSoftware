@@ -43,9 +43,9 @@ namespace EnergyAutomate.Definitions
         {
             get
             {
-                var avg = _apiService.TibberListPrices().Where(o => o.StartsAt.Date == UtcNow.Date).ToList().Average(x => x.Total);
+                var avg = _apiService.TibberListPrices().Where(o => o.StartsAt.UtcDateTime.Date == UtcNow.Date).ToList().Average(x => x.Total);
                 var currentStartAt = UtcNow.Date.AddHours(UtcNow.Hour - _apiService.ApiSettingTimeOffset);
-                var total = _apiService.TibberListPrices().FirstOrDefault(x => x.StartsAt == currentStartAt)?.Total;
+                var total = _apiService.TibberListPrices().FirstOrDefault(x => x.StartsAt.UtcDateTime.Date == UtcNow.Date && x.StartsAt.UtcDateTime.Hour == UtcNow.Hour)?.Total;
                 return total < avg;
             }
         }

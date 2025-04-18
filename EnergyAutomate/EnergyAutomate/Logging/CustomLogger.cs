@@ -31,7 +31,7 @@ public class CustomLogger : ILogger
                     EventId = eventId,
                     Message = state?.ToString(),
                     Exception = exception?.ToString(),
-                    TS = DateTime.Now
+                    TS = DateTimeOffset.UtcNow
                 });
             }
         }

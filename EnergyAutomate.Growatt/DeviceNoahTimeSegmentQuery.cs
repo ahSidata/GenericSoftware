@@ -46,7 +46,35 @@ namespace EnergyAutomate.Growatt
 
             return new FormUrlEncodedContent(keyValuePairs);
         }
+        public override bool Equals(object obj)
+        {
+            if (obj is DeviceNoahSetTimeSegmentQuery other)
+            {
+
+                return this.DeviceSn == other.DeviceSn &&
+                       this.Enable == other.Enable &&
+                       this.EndTime == other.EndTime &&
+                       this.Mode == other.Mode &&
+                       this.Power == other.Power &&
+                       this.StartTime == other.StartTime &&
+                       this.Type == other.Type;
+            }
+            return false;
+        }
+
+        public override int GetHashCode()
+        {
+            // Split the arguments into smaller groups to avoid exceeding the limit of HashCode.Combine
+            int hash1 = HashCode.Combine(this.DeviceSn, this.Enable, this.EndTime);
+            int hash2 = HashCode.Combine(this.Mode, this.Power, this.StartTime, this.Type);
+
+            // Combine the intermediate hashes
+            return HashCode.Combine(hash1, hash2);
+        }
+
 
         #endregion Public Methods
+
+
     }
 }

@@ -24,7 +24,7 @@
                             {
                                 <tr>
                                     <td>@log.TS</td>
-                                    <td>@log.Category</td>
+                                    <td>@log.Category?.Split(".").Last()</td>
                                     <td>@log.Message</td>
                                 </tr>
                             }
