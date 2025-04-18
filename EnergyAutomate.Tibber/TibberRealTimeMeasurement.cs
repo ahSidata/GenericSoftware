@@ -44,19 +44,23 @@ namespace EnergyAutomate.Tibber
         #endregion Public Constructors
 
         #region Properties
-        public int PowerAvgConsumption { get; set; }
-        public int PowerAvgProduction { get; set; }
+
+        public int? PowerAvgConsumption { get; set; }
+        public int? PowerAvgProduction { get; set; }
+        public int? PowerValueBattery { get; set; }
         public int? PowerValueNewCommited { get; set; }
         public string PowerValueNewDeviceSn { get; set; }
         public int? PowerValueNewRequested { get; set; }
-        public int PowerValueTotalDefault { get; set; }
-        public int PowerValueTotalCommited { get; set; }
-        public int PowerValueTotalRequested { get; set; }
+        public int? PowerValueOutput { get; set; }
+        public int? PowerValueSolar { get; set; }
+        public int? PowerValueTotalCommited { get; set; }
+        public int? PowerValueTotalDefault { get; set; }
+        public int? PowerValueTotalRequested { get; set; }
         public bool SettingAutoMode { get; set; }
-        public int SettingAvgPowerHysteresis { get; set; }
+        public int? SettingAvgPowerHysteresis { get; set; }
         public bool SettingBatteryPriorityMode { get; set; }
-        public int SettingOffSetAvg { get; set; }
-        public int SettingPowerLoadSeconds { get; set; }
+        public int? SettingOffSetAvg { get; set; }
+        public int? SettingPowerLoadSeconds { get; set; }
         public bool SettingRestrictionMode { get; set; }
         public bool SettingRestrictionState { get; set; }
 

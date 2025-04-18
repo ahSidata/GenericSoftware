@@ -12,6 +12,13 @@
         public DateTimeOffset? PowerValueLastChanged { get; set; }
         public int PowerValueRequested { get; set; }
 
+        public int PowerValueDefault { get; set; }
+
+        public int PowerValueOutput { get; set; }
+
+        public int PowerValueSolar { get; set; }
+        public int PowerValueBattery { get; set; }
+
         public bool IsBatteryEmpty { get; set; }
         public bool IsBatteryFull { get; set; }
 

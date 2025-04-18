@@ -139,6 +139,24 @@ public class DeviceNoahInfoData
         }
     }
 
+    public void SetTimeSegment(DeviceNoahSetTimeSegmentQuery deviceNoahSetTimeSegmentQuery)
+    {
+        if (deviceNoahSetTimeSegmentQuery == null)
+            throw new ArgumentNullException(nameof(deviceNoahSetTimeSegmentQuery));
+
+        if (!int.TryParse(deviceNoahSetTimeSegmentQuery.Type, out int index) || index < 1 || index > 9)
+            throw new ArgumentOutOfRangeException(nameof(deviceNoahSetTimeSegmentQuery.Type), "Index muss zwischen 1 und 9 liegen");
+
+        var properties = GetType().GetProperties();
+
+        // Setze die entsprechenden Properties basierend auf dem Index
+        properties.First(p => p.Name == $"Time{index}Start")?.SetValue(this, deviceNoahSetTimeSegmentQuery.StartTime);
+        properties.First(p => p.Name == $"Time{index}End")?.SetValue(this, deviceNoahSetTimeSegmentQuery.EndTime);
+        properties.First(p => p.Name == $"Time{index}Mode")?.SetValue(this, int.Parse(deviceNoahSetTimeSegmentQuery.Mode));
+        properties.First(p => p.Name == $"Time{index}Power")?.SetValue(this, int.Parse(deviceNoahSetTimeSegmentQuery.Power));
+        properties.First(p => p.Name == $"Time{index}Enable")?.SetValue(this, int.Parse(deviceNoahSetTimeSegmentQuery.Enable));
+    }
+
     [JsonIgnore]
     public DateTimeOffset TS { get; set; }
 

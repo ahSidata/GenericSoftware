@@ -138,7 +138,7 @@ namespace EnergyAutomate.Watchdogs
             
             do
             {
-                if (Collection.Count == 0)
+                if (Collection.Count == 0 && item == null)
                     break;
 
                 item ??= Dequeue();

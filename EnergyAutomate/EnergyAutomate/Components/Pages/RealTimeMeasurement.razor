@@ -29,7 +29,7 @@
                 <div class="row">
                     @foreach (var device in ApiService.GrowattGetDeviceLists().Where(x => x.DeviceType == "noah"))
                     {
-                        var lastDeviceItem = ApiService.GrowattGetDeviceLists().FirstOrDefault(x => x.DeviceSn == device.DeviceSn);
+                        var deviceItem = ApiService.GrowattGetDeviceLists().FirstOrDefault(x => x.DeviceSn == device.DeviceSn);
                         var lastInfoItem = ApiService.GrowattGetNoahInfoDataPerDevice(device.DeviceSn);
                         var lastDataItem = ApiService.GrowattGetNoahLastDataPerDevice(device.DeviceSn);
 
@@ -56,6 +56,29 @@
                                     </div>
                                 </div>
                                 <ul class="list-group list-group-flush">
+                                    <li class="list-group-item">
+                                        <div class="row w-100">
+         
+                                            <div class="col-md-4">
+                                                <Icon Name="IconName.Plugin" Size="IconSize.None" />
+                                                <span class="mx-3">
+                                                    @((int)(deviceItem?.PowerValueOutput ?? 0)) W
+                                                </span>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <Icon Name="IconName.Plug" Size="IconSize.None" />
+                                                <span class="mx-3">
+                                                    <strong>@(deviceItem?.PowerValueCommited ?? 0) W</strong>
+                                                </span>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <Icon Name="IconName.Gear" Size="IconSize.None" />
+                                                <span class="mx-3">
+                                                    @((int)(deviceItem?.PowerValueDefault ?? 0)) W
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </li>
                                     <li class="list-group-item d-flex align-items-center">
                                         <div class="row w-100">
                                             <div class="col-md-4">
@@ -74,28 +97,6 @@
                                                 <Icon Name="IconName.Sunset" Size="IconSize.None" />
                                                 <span class="mx-3">
                                                     @((int)(lastDataItem?.pv2Current ?? 0) * (int)(lastDataItem?.pv2Voltage ?? 0)) W
-                                                </span>
-                                            </div>
-                                        </div>
-                                    </li>
-                                    <li class="list-group-item">
-                                        <div class="row w-100">
-                                            <div class="col-md-4">
-                                                <Icon Name="IconName.Gear" Size="IconSize.None" />
-                                                <span class="mx-3">
-                                                    @((int)(lastInfoItem?.DefaultPower ?? 0)) W
-                                                </span>
-                                            </div>
-                                            <div class="col-md-4">
-                                                <Icon Name="IconName.Plugin" Size="IconSize.None" />
-                                                <span class="mx-3">
-                                                    @((int)(lastDeviceItem?.PowerValueCommited ?? 0)) W
-                                                </span>
-                                            </div>
-                                            <div class="col-md-4">
-                                                <Icon Name="IconName.Plug" Size="IconSize.None" />
-                                                <span class="mx-3">
-                                                    <strong>@(lastDeviceItem?.PowerValueRequested ?? 0) W</strong>
                                                 </span>
                                             </div>
                                         </div>

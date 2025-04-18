@@ -4,6 +4,7 @@ using EnergyAutomate.Definitions;
 using EnergyAutomate.Extentions;
 using Microsoft.AspNetCore.Components;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
+using OpenMeteo;
 using System.Collections.Specialized;
 using System.Data;
 using System.Diagnostics;
@@ -200,16 +201,19 @@ namespace EnergyAutomate.Components.Pages
             double? avgToday = dataToday.Average(x => (double?)x.Total);
             double? avgTomorrow = dataTomorrow.Average(x => (double?)x.Total);
 
+            var dataLevelPoints = dataToday.Select(x => avgToday / 10 * (double?)x.Level)
+                .Concat(dataTomorrow.Select(x => avgTomorrow /10 * (double?)x.Level)).ToList();
+
             var dataAvgPoints = dataToday.Select(x => (double?)x.Total < avgToday ? (double?)x.Total : null)
                 .Concat(dataTomorrow.Select(x => (double?)x.Total < avgTomorrow ? (double?)x.Total : null)).ToList();
 
             var dataAvgLinePoints = dataToday.Select(x => (double?)x.Total < avgToday ? (double?)x.Total : avgToday)
                 .Concat(dataTomorrow.Select(x => (double?)x.Total < avgTomorrow ? (double?)x.Total : avgTomorrow)).ToList();
 
-            var highFactor = 4;
-
-            var dataHighPrices = dataToday.Select(x => (int)(x.Level ?? 0) > 2 ? avgToday / highFactor : null).Concat(dataTomorrow.Select(x => (int)(x.Level ?? 0) > 2 ? avgTomorrow / highFactor : null)).ToList();
-            var dataLowPrices = dataToday.Select(x => (int)(x.Level ?? 0) > 0 && (int)(x.Level ?? 0) < 3 ? avgToday / highFactor : null).Concat(dataTomorrow.Select(x => (int)(x.Level ?? 0) > 0 && (int)(x.Level ?? 0) < 3 ? avgTomorrow / highFactor : null)).ToList();
+            var dataHighPrices = dataToday.Select(x => (int)(x.Level ?? 0) > 2 ? avgToday / 10 * (double?)x.Level : null)
+                .Concat(dataTomorrow.Select(x => (int)(x.Level ?? 0) > 2 ? avgTomorrow / 10 * (double?)x.Level: null)).ToList();
+            var dataLowPrices = dataToday.Select(x => (int)(x.Level ?? 0) > 0 && (int)(x.Level ?? 0) < 3 ? avgToday / 10 * (int)(x.Level ?? 0) : null)
+                .Concat(dataTomorrow.Select(x => (int)(x.Level ?? 0) > 0 && (int)(x.Level ?? 0) < 3 ? avgTomorrow / 10 * (int)(x.Level ?? 0) : null)).ToList();
 
             var nextHour = currentTime.AddHours(1);
             var dataCurrentHour = dataItems.Select(x =>
@@ -217,6 +221,32 @@ namespace EnergyAutomate.Components.Pages
                 (x.StartsAt.Date == nextHour.Date && x.StartsAt.Hour == nextHour.Hour)
                 ? (double?)x.Total : null
                 ).ToList();
+
+            double? lastValue = null;
+
+            for (int index = 0; index < dataHighPrices.Count; index++)
+            {
+                var point = dataHighPrices[index];
+                if (lastValue != null)
+                {
+                    dataHighPrices[index] ??= lastValue;
+                }
+
+                lastValue = point;
+            }
+
+            lastValue = null;
+
+            for (int index = 0; index < dataLowPrices.Count; index++)
+            {
+                var point = dataLowPrices[index];
+                if (lastValue != null)
+                {
+                    dataLowPrices[index] ??= lastValue;
+                }
+
+                lastValue = point;
+            }
 
             priceData = new ChartData
             {
@@ -277,7 +307,14 @@ namespace EnergyAutomate.Components.Pages
                         Data = dataAvgLinePoints,
                         Stepped = true,
                         Order = 1
-                    }.SetDefaultStyle("rgb(0, 0, 0)", radius: 0, borderWidth: 3)
+                    }.SetDefaultStyle("rgb(0, 0, 0)", radius: 0, borderWidth: 3),
+                    new LineChartDataset()
+                    {
+                        Label = "Level",
+                        Data = dataLevelPoints,
+                        Stepped = true,
+                        Order = 1
+                    }.SetDefaultStyle("rgb(190, 190, 190)", radius: 0),
                 }
             };
         }

@@ -115,32 +115,6 @@ namespace EnergyAutomate.Definitions
         private ILogger<ApiState> Logger { get; set; }
         private OpenMeteo.OpenMeteoClient OpenMeteoClient { get; set; } = new OpenMeteo.OpenMeteoClient();
 
-        public bool CheckRTMAdjustment(string condition)
-        {
-            if (ActiveRTMAdjustment != condition)
-            {
-                ActiveRTMAdjustment = condition;
-                _apiService.ApiSettingAvgPowerAdjustmentTraceValues.AddOrUpdate(new APiTraceValue() { Index = 51, Key = "ActiveRTMAdjustment", Value = condition });
-                Logger.LogTrace("CheckRTMAdjustment {condition}", condition);
-                return true;
-            }
-
-            return false;
-        }
-
-        public bool CheckRTMCondition(string condition)
-        {
-            if (ActiveRTMCondition != condition)
-            {
-                ActiveRTMCondition = condition;
-                _apiService.ApiSettingAvgPowerAdjustmentTraceValues.AddOrUpdate(new APiTraceValue() { Index = 51, Key = "ActiveRTMCondition", Value = condition });
-                Logger.LogTrace("CheckRTMCondition {condition}", condition);
-                return true;
-            }
-
-            return false;
-        }
-
         public bool CheckTibberPricesCondition(string condition)
         {
             if (ActiveTPCondition != condition)
