@@ -3,6 +3,7 @@ using EnergyAutomate.Definitions;
 using EnergyAutomate.Extentions;
 using Microsoft.EntityFrameworkCore;
 using System.Numerics;
+using System.Threading.Tasks;
 
 namespace EnergyAutomate.Services
 {
@@ -1160,7 +1161,7 @@ namespace EnergyAutomate.Services
                         }
                         else
                         {
-                            await TibberRTMDefaultBatteryPriorityAsync(value.TS);
+                            await TibberRTMDefaultBatteryPriorityAsync(value);
                         }
 
                         CurrentState.IsRTMRestrictionModeRunning = true;
@@ -1194,7 +1195,7 @@ namespace EnergyAutomate.Services
 
                     if (ApiSettingBatteryPriorityMode)
                     {
-                        await TibberRTMDefaultBatteryPriorityAsync(value.TS);
+                        await TibberRTMDefaultBatteryPriorityAsync(value);
                     }
                     else
                     {
@@ -1368,7 +1369,7 @@ namespace EnergyAutomate.Services
                     }
                     else
                     {
-                        await TibberRTMDefaultLoadPriorityAvgAsync(value.TS);
+                        await TibberRTMDefaultLoadPriorityAvgAsync(value);
                     }
                 }
             }
@@ -1378,7 +1379,7 @@ namespace EnergyAutomate.Services
                 {
                     Logger.LogInformation($"Battery is full, no action needed");
 
-                    await TibberRTMDefaultBatteryPriorityAsync(value.TS);
+                    await TibberRTMDefaultBatteryPriorityAsync(value);
                 }
                 else
                 {
@@ -1407,7 +1408,7 @@ namespace EnergyAutomate.Services
                     }
                     else
                     {
-                        await TibberRTMDefaultBatteryPriorityAsync(value.TS);
+                        await TibberRTMDefaultBatteryPriorityAsync(value);
                     }
                 }
                 else
@@ -1421,7 +1422,7 @@ namespace EnergyAutomate.Services
                         }
                         else
                         {
-                            await TibberRTMDefaultBatteryPriorityAsync(value.TS);
+                            await TibberRTMDefaultBatteryPriorityAsync(value);
                         }
                     }
                     else
@@ -1547,7 +1548,7 @@ namespace EnergyAutomate.Services
             {
                 if (CurrentState.IsGrowattBatteryEmpty)
                 {
-                    await TibberRTMDefaultLoadPriorityAvgAsync(value.TS);
+                    await TibberRTMDefaultLoadPriorityAvgAsync(value);
 
                     LoggerRTM.LogInformation($"Battery is empty, set power to 0");
                 }
@@ -1555,7 +1556,7 @@ namespace EnergyAutomate.Services
                 {
                     // If the battery is not full and the restriction mode is cheap load with
                     // full soloar power
-                    await TibberRTMDefaultLoadPriorityAvgAsync(value.TS);
+                    await TibberRTMDefaultLoadPriorityAvgAsync(value);
                 }
                 else
                 {
@@ -1565,13 +1566,13 @@ namespace EnergyAutomate.Services
                     }
                     else if (CurrentState.IsCheapRestrictionMode)
                     {
-                        await TibberRTMDefaultBatteryPriorityAsync(value.TS);
+                        await TibberRTMDefaultBatteryPriorityAsync(value);
                     }
                     else
                     {
                         if (CurrentState.IsCloudy && !CurrentState.IsBelowAvgPrice)
                         {
-                            await TibberRTMDefaultLoadPriorityAvgAsync(value.TS);
+                            await TibberRTMDefaultLoadPriorityAvgAsync(value);
                         }
                         else
                         {
@@ -1586,7 +1587,7 @@ namespace EnergyAutomate.Services
                 {
                     LoggerRTM.LogInformation($"Battery is full, no action needed");
 
-                    await TibberRTMDefaultBatteryPriorityAsync(value.TS);
+                    await TibberRTMDefaultBatteryPriorityAsync(value);
                 }
                 else
                 {
@@ -1603,7 +1604,7 @@ namespace EnergyAutomate.Services
                         {
                             // If the battery is not full and the restriction mode is cheap load
                             // with full soloar power
-                            await TibberRTMDefaultBatteryPriorityAsync(value.TS);
+                            await TibberRTMDefaultBatteryPriorityAsync(value);
                         }
                         else
                         {
@@ -1622,7 +1623,7 @@ namespace EnergyAutomate.Services
                     }
                     else
                     {
-                        await TibberRTMDefaultBatteryPriorityAsync(value.TS);
+                        await TibberRTMDefaultBatteryPriorityAsync(value);
                     }
                 }
                 else
@@ -1636,7 +1637,7 @@ namespace EnergyAutomate.Services
                         }
                         else
                         {
-                            await TibberRTMDefaultBatteryPriorityAsync(value.TS);
+                            await TibberRTMDefaultBatteryPriorityAsync(value);
                         }
                     }
                     else
@@ -2027,7 +2028,7 @@ namespace EnergyAutomate.Services
             }
         }
 
-        private async Task TibberRTMDefaultBatteryPriorityAsync(DateTimeOffset ts)
+        private async Task TibberRTMDefaultBatteryPriorityAsync(TibberRealTimeMeasurement value)
         {
             await TibberRTMCheckConditionAsync("BatteryPriority_SetPower_0",
                 async () =>
@@ -2035,7 +2036,7 @@ namespace EnergyAutomate.Services
                     // If the battery is full and the restriction mode is not expensive activate battery
                     // priority and use only surplus power
                     await GrowattQueryBattPriorityDeviceNoahTimeSegmentsAsync();
-                    await GrowattClearSetPowerAsync(ts, 0);
+                    await GrowattClearSetPowerAsync(value.TS, 0);
                 }, async () =>
                 {
                     // Check if any time segments are enabled
@@ -2047,11 +2048,14 @@ namespace EnergyAutomate.Services
                     // Check if power default and commited values are equal to avg
                     var allDevicesConform = GrowattGetDevicesNoahOnline().All(x => x.PowerValueCommited == 0);
 
+                    LoggerRTM.LogTrace("anyTimesegmentEnabled: {anyTimesegmentEnabled}, allOtherTimesegmentsDisabled: {allOtherTimesegmentsDisabled}, allDevicesConform: {allDevicesConform}",
+                        anyTimesegmentEnabled, allOtherTimesegmentsDisabled, allDevicesConform);
+
                     return await Task.FromResult(anyTimesegmentEnabled && allOtherTimesegmentsDisabled && allDevicesConform);
                 });
         }
 
-        private async Task TibberRTMDefaultLoadPriorityAvgAsync(DateTimeOffset ts)
+        private async Task TibberRTMDefaultLoadPriorityAvgAsync(TibberRealTimeMeasurement value)
         {
             // If the battery is not empty and the restriction mode is not expensive activate avg injection
             await TibberRTMCheckConditionAsync($"LoadPriority_SetPower_Avg_{ApiSettingAvgPower}",
@@ -2059,7 +2063,7 @@ namespace EnergyAutomate.Services
                 {
                     LoggerRTM.LogInformation($"No solar power, set power to AVG power output value");
                     await GrowattClearAllDeviceNoahTimeSegments();
-                    await GrowattClearSetPowerAsync(ts, ApiSettingAvgPower);
+                    await GrowattClearSetPowerAsync(value.TS, ApiSettingAvgPower);
                 }, async() =>
                 {
                     // Check if any time segments are enabled
@@ -2070,6 +2074,9 @@ namespace EnergyAutomate.Services
 
                     // Check if power default and commited values are equal to avg
                     var allDevicesConform = GrowattGetDevicesNoahOnline().All(x => x.PowerValueCommited == avgPerDevice);
+
+                    LoggerRTM.LogTrace("allTimesegmentsDisabled: {allTimesegmentsDisabled}, allDevicesConform: {allDevicesConform}",
+                        allTimesegmentsDisabled, allDevicesConform);
 
                     return await Task.FromResult(allTimesegmentsDisabled && allDevicesConform);
                 }
@@ -2092,6 +2099,9 @@ namespace EnergyAutomate.Services
 
                 // Check if power default and commited values are equal to avg
                 var allDevicesConform = GrowattGetDevicesNoahOnline().All(x => x.PowerValueCommited == ApiSettingMaxPower);
+
+                LoggerRTM.LogTrace("anyEnabledTimesegments: {anyEnabledTimesegments}, allDevicesConform: {allDevicesConform}",
+                    anyEnabledTimesegments, allDevicesConform);
 
                 return await Task.FromResult(!anyEnabledTimesegments && allDevicesConform);
             });
