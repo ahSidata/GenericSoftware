@@ -42,7 +42,7 @@ namespace EnergyAutomate.Services
         public int ApiSettingAvgPower { get; set; } = 200;
         public List<APiTraceValue> ApiSettingAvgPowerAdjustmentTraceValues { get; set; } = [];
         public int ApiSettingAvgPowerHysteresis { get; set; } = 40;
-        public int ApiSettingAvgPowerLoadSeconds { get; set; } = 0;
+        public int ApiSettingAvgPowerLoadSeconds { get; set; } = 60;
         public int ApiSettingAvgPowerOffset { get; set; } = 25;
         public bool ApiSettingBatteryPriorityMode { get; set; } = false;
         public int ApiSettingMaxPower { get; set; } = 840;
@@ -564,7 +564,7 @@ namespace EnergyAutomate.Services
         {
             Queue<IDeviceQuery> DeviceTimeSegmentQueue = new();
 
-            await GrowattQueryClearDeviceNoahTimeSegments(DeviceTimeSegmentQueue);
+            await GrowattQueryClearDeviceNoahTimeSegments(DeviceTimeSegmentQueue, GrowattGetDevicesNoahOnline());
 
             await GrowattDeviceQueryQueueWatchdog.EnqueueAsync(DeviceTimeSegmentQueue);
         }
@@ -778,21 +778,23 @@ namespace EnergyAutomate.Services
         {
             Queue<IDeviceQuery> DeviceTimeSegmentQueue = new();
 
-            await GrowattQueryClearDeviceNoahTimeSegments(DeviceTimeSegmentQueue, 1);
+            var deviceLists = GrowattGetDevicesNoahOnline();
 
-            var deviceSnList = GrowattDevices.Where(x => x.DeviceType == "noah").Select(x => x.DeviceSn).ToList();
+            var deviceSnList = deviceLists.Select(x => x.DeviceSn).ToList();
 
             foreach (var deviceSn in deviceSnList)
             {
                 DeviceTimeSegmentQueue.Enqueue(GrowattQueryDefaultBattPriorityDeviceNoahTimeSegment(deviceSn));
             }
 
+            await GrowattQueryClearDeviceNoahTimeSegments(DeviceTimeSegmentQueue, deviceLists, 1);
+
             await GrowattDeviceQueryQueueWatchdog.EnqueueAsync(DeviceTimeSegmentQueue);
         }
 
-        private async Task GrowattQueryClearDeviceNoahTimeSegments(Queue<IDeviceQuery> DeviceTimeSegmentQueue, int skip = 0)
+        private async Task GrowattQueryClearDeviceNoahTimeSegments(Queue<IDeviceQuery> DeviceTimeSegmentQueue, List<DeviceList> deviceLists, int skip = 0)
         {
-            var deviceSnList = GrowattDevices.Where(x => x.DeviceType == "noah").Select(x => x.DeviceSn).ToList();
+            var deviceSnList = deviceLists.Select(x => x.DeviceSn).ToList();
 
             foreach (var deviceSn in deviceSnList)
             {
@@ -813,7 +815,7 @@ namespace EnergyAutomate.Services
                                 DeviceSn = deviceSn,
                                 DeviceType = "noah",
                                 Type = segment.Type,
-                                StartTime = "00:00",
+                                StartTime = "0:0",
                                 EndTime = "23:59",
                                 Mode = "0",
                                 Power = "0",
@@ -847,9 +849,11 @@ namespace EnergyAutomate.Services
         {
             Queue<IDeviceQuery> DeviceTimeSegmentQueue = new();
 
-            await GrowattQueryClearDeviceNoahTimeSegments(DeviceTimeSegmentQueue);
+            var deviceLists = GrowattGetDevicesNoahOnline();
 
-            var deviceSnList = GrowattDevices.Where(x => x.DeviceType == "noah").Select(x => x.DeviceSn).ToList();
+            await GrowattQueryClearDeviceNoahTimeSegments(DeviceTimeSegmentQueue, deviceLists);
+
+            var deviceSnList = deviceLists.Select(x => x.DeviceSn).ToList();
 
             var powerValuePerDevice = powerValue / deviceSnList.Count;
 
@@ -861,7 +865,7 @@ namespace EnergyAutomate.Services
                     DeviceSn = deviceSn,
                     DeviceType = "noah",
                     Type = "1",
-                    StartTime = "08:00",
+                    StartTime = "8:0",
                     EndTime = "23:59",
                     Mode = "0",
                     Power = powerValuePerDevice.ToString(),
@@ -1626,16 +1630,17 @@ namespace EnergyAutomate.Services
 
         private async Task TibberRTMAdjustment3AutoMode(TibberRealTimeMeasurement value)
         {
-            await TibberRTMCheckConditionAsync("LoadPriority_SetPower", async () =>
-            {
-                await GrowattClearAllDeviceNoahTimeSegments();
-            }, () =>
-            {
-                // Check if any time segments are enabled
-                var anyEnabledTimesegments = GrowattLatestNoahInfoDatas().Any(x => x!.TimeSegments.Any(x => x.Enable == "1"));
+            await TibberRTMCheckConditionAsync("LoadPriority_SetPower", [ new( async () =>
+                {
+                    await GrowattClearAllDeviceNoahTimeSegments();
+                }, () =>
+                {
+                    // Check if any time segments are enabled
+                    var anyEnabledTimesegments = GrowattLatestNoahInfoDatas().Any(x => x!.TimeSegments.Any(x => x.Enable == "1"));
 
-                return Task.FromResult(!anyEnabledTimesegments);
-            });
+                    return Task.FromResult(!anyEnabledTimesegments);
+                })
+            ]);
 
             await TibberRTMAdjustment3SetPower(value);
         }
@@ -1866,7 +1871,7 @@ namespace EnergyAutomate.Services
                 var measurementsQuery = TibberRealTimeMeasurement;
 
                 if (ApiSettingAvgPowerLoadSeconds > 0)
-                    measurementsQuery.Where(m => m.TS >= CurrentState.UtcNow.AddSeconds(-ApiSettingAvgPowerLoadSeconds));
+                    measurementsQuery.Where(m => m.TS.UtcDateTime >= CurrentState.UtcNow.AddSeconds(-ApiSettingAvgPowerLoadSeconds));
 
                 var measurements = measurementsQuery.ToList();
 
@@ -1910,7 +1915,7 @@ namespace EnergyAutomate.Services
                 var measurementsQuery = TibberRealTimeMeasurement;
 
                 if (ApiSettingAvgPowerLoadSeconds > 0)
-                    measurementsQuery.Where(m => m.TS >= CurrentState.UtcNow.AddSeconds(-ApiSettingAvgPowerLoadSeconds));
+                    measurementsQuery.Where(m => m.TS.UtcDateTime >= CurrentState.UtcNow.AddSeconds(-ApiSettingAvgPowerLoadSeconds));
 
                 var measurements = measurementsQuery.ToList();
 
@@ -1953,35 +1958,41 @@ namespace EnergyAutomate.Services
             {
                 CurrentState.ActiveRTMAdjustment = condition;
                 ApiSettingAvgPowerAdjustmentTraceValues.AddOrUpdate(new APiTraceValue() { Index = 51, Key = "ActiveRTMAdjustment", Value = condition });
-                Logger.LogTrace("CheckRTMAdjustment {condition}", condition);
+                LoggerRTM.LogTrace("CheckRTMAdjustment {condition}", condition);
 
                 await callback.Invoke();
             }
         }
 
-        private async Task TibberRTMCheckConditionAsync(string condition, Func<Task> callback, Func<Task<bool>>? validation = null)
+        private async Task TibberRTMCheckConditionAsync(string condition, List<ApiCondition> apiConditions)
         {
-            if (CurrentState.ActiveRTMCondition != condition)
+            foreach (var apiCondition in apiConditions)
             {
-                CurrentState.ActiveRTMCondition = condition;
-                ApiSettingAvgPowerAdjustmentTraceValues.AddOrUpdate(new APiTraceValue() { Index = 51, Key = "ActiveRTMCondition", Value = condition });
-                Logger.LogTrace("CheckRTMCondition {condition}", condition);
 
-                await callback.Invoke();
-            }
-            else
-            {
-                if (validation != null)
+                if (CurrentState.ActiveRTMCondition != condition)
                 {
-                    var result = await validation.Invoke();
-                    if (result)
+                    CurrentState.ActiveRTMCondition = condition;
+                    ApiSettingAvgPowerAdjustmentTraceValues.AddOrUpdate(new APiTraceValue() { Index = 51, Key = "ActiveRTMCondition", Value = condition });
+                    LoggerRTM.LogTrace("CheckRTMCondition {condition}", condition);
+
+                    if (apiCondition.Callback != null)
+                        await apiCondition.Callback.Invoke();
+                }
+                else
+                {
+                    if (apiCondition.Validation != null)
                     {
-                        LoggerRTM.LogTrace("CheckRTMCondition {condition} validation success", condition);
-                    }
-                    else
-                    {
-                        LoggerRTM.LogTrace("CheckRTMCondition {condition} validation failed, set values again !", condition);
-                        await callback.Invoke();
+                        var result = await apiCondition.Validation.Invoke();
+                        if (result)
+                        {
+                            LoggerRTM.LogTrace("CheckRTMCondition {condition} validation success", condition);
+                        }
+                        else
+                        {
+                            LoggerRTM.LogTrace("CheckRTMCondition {condition} validation failed, set values again !", condition);
+                            if (apiCondition.Callback != null)
+                                await apiCondition.Callback.Invoke();
+                        }
                     }
                 }
             }
@@ -1989,89 +2000,133 @@ namespace EnergyAutomate.Services
 
         private async Task TibberRTMDefaultBatteryPriorityAsync(TibberRealTimeMeasurement value)
         {
-            await TibberRTMCheckConditionAsync("BatteryPriority_SetPower_0",
-                async () =>
-                {
-                    // If the battery is full and the restriction mode is not expensive activate
-                    // battery priority and use only surplus power
-                    await GrowattQueryBattPriorityDeviceNoahTimeSegmentsAsync();
-                    await GrowattClearSetPowerAsync(value.TS, 0);
-                }, async () =>
-                {
-                    // Check if any time segments are enabled
-                    var anyTimesegmentEnabled = GrowattLatestNoahInfoDatas()
-                        .All(n => n.TimeSegments.Any(t => t.Equals(GrowattQueryDefaultBattPriorityDeviceNoahTimeSegment(n.DeviceSn, false))));
-                    var allOtherTimesegmentsDisabled = GrowattLatestNoahInfoDatas()
-                        .All(n => n.TimeSegments.Where(t => !t.Equals(GrowattQueryDefaultBattPriorityDeviceNoahTimeSegment(n.DeviceSn, false))).All(y => y.Enable == "0"));
+            await TibberRTMCheckConditionAsync("BatteryPriority_SetPower_0", [ 
+                new(
+                    async () => {
+                        await GrowattQueryBattPriorityDeviceNoahTimeSegmentsAsync();
+                    }, 
+                    async () => {
+                        // Check if any time segments are enabled
+                        var anyTimesegmentEnabled = GrowattLatestNoahInfoDatas()
+                            .All(n => n.TimeSegments.Any(t => t.Equals(GrowattQueryDefaultBattPriorityDeviceNoahTimeSegment(n.DeviceSn, false))));
+                        var allOtherTimesegmentsDisabled = GrowattLatestNoahInfoDatas()
+                            .All(n => n.TimeSegments.Where(t => !t.Equals(GrowattQueryDefaultBattPriorityDeviceNoahTimeSegment(n.DeviceSn, false))).All(y => y.Enable == "0"));
 
-                    // Check if power default and commited values are equal to avg
-                    var allDevicesConform = GrowattGetDevicesNoahOnline().All(x => x.PowerValueCommited == 0);
+                        LoggerRTM.LogTrace("allOtherTimesegmentsDisabled: {allOtherTimesegmentsDisabled}, anyTimesegmentEnabled: {anyTimesegmentEnabled}",
+                            allOtherTimesegmentsDisabled, anyTimesegmentEnabled);
 
-                    LoggerRTM.LogTrace("anyTimesegmentEnabled: {anyTimesegmentEnabled}, allOtherTimesegmentsDisabled: {allOtherTimesegmentsDisabled}, allDevicesConform: {allDevicesConform}",
-                        anyTimesegmentEnabled, allOtherTimesegmentsDisabled, allDevicesConform);
+                        return await Task.FromResult(anyTimesegmentEnabled && allOtherTimesegmentsDisabled);
+                    }
+                ),
+                new(
+                    async () => {
+                        await GrowattClearSetPowerAsync(value.TS, 0);
+                    },
+                    async () => {
+                        // Check if power default and commited values are equal to avg
+                        var allDevicesConform = GrowattGetDevicesNoahOnline().All(x => x.PowerValueCommited == 0);
 
-                    return await Task.FromResult(anyTimesegmentEnabled && allOtherTimesegmentsDisabled && allDevicesConform);
-                });
+                        LoggerRTM.LogTrace("allDevicesConform: {allDevicesConform}",
+                            allDevicesConform);
+
+                        return await Task.FromResult( allDevicesConform);
+                    }
+                )
+            ]);
         }
 
         private async Task TibberRTMDefaultLoadPriorityAvgAsync(TibberRealTimeMeasurement value)
         {
             // If the battery is not empty and the restriction mode is not expensive activate avg injection
-            await TibberRTMCheckConditionAsync($"LoadPriority_SetPower_Avg_{ApiSettingAvgPower}",
-                async () =>
-                {
-                    LoggerRTM.LogInformation($"No solar power, set power to AVG power output value");
-                    await GrowattClearAllDeviceNoahTimeSegments();
-                    await GrowattClearSetPowerAsync(value.TS, ApiSettingAvgPower);
-                }, async () =>
-                {
-                    // Check if any time segments are enabled
-                    var allTimesegmentsDisabled = GrowattLatestNoahInfoDatas().All(x => x!.TimeSegments.All(x => x.Enable == "0"));
+            await TibberRTMCheckConditionAsync($"LoadPriority_SetPower_Avg_{ApiSettingAvgPower}", [ 
+                new (
+                    async () =>
+                    {
+                        await GrowattClearAllDeviceNoahTimeSegments();
+                    },
+                    async () =>
+                    {
+                        // Check if any time segments are enabled
+                        var allTimesegmentsDisabled = GrowattLatestNoahInfoDatas().All(x => x!.TimeSegments.All(x => x.Enable == "0"));
 
-                    var avgPerDevice = ApiSettingAvgPower / GrowattGetDevicesNoahOnline().Count;
+                        LoggerRTM.LogTrace("allTimesegmentsDisabled: {allTimesegmentsDisabled}",
+                            allTimesegmentsDisabled);
 
-                    // Check if power default and commited values are equal to avg
-                    var allDevicesConform = GrowattGetDevicesNoahOnline().All(x => x.PowerValueCommited == avgPerDevice);
+                        return await Task.FromResult(allTimesegmentsDisabled);
+                    }
+                ),
+                new (
+                    async () =>
+                    {                       
+                        await GrowattClearSetPowerAsync(value.TS, ApiSettingAvgPower);
+                    },
+                    async () =>
+                    {
+                        var avgPerDevice = ApiSettingAvgPower / GrowattGetDevicesNoahOnline().Count;
 
-                    LoggerRTM.LogTrace("allTimesegmentsDisabled: {allTimesegmentsDisabled}, allDevicesConform: {allDevicesConform}",
-                        allTimesegmentsDisabled, allDevicesConform);
+                        // Check if power default and commited values are equal to avg
+                        var allDevicesConform = GrowattGetDevicesNoahOnline().All(x => x.PowerValueCommited == avgPerDevice);
 
-                    return await Task.FromResult(allTimesegmentsDisabled && allDevicesConform);
-                }
-            );
+                        LoggerRTM.LogTrace(" allDevicesConform: {allDevicesConform}",
+                            allDevicesConform);
+
+                        return await Task.FromResult(allDevicesConform);
+                    }
+                )
+            ]);
         }
 
         private async Task TibberRTMDefaultLoadPriorityMaxAsync(TibberRealTimeMeasurement value, string deviceSn = "")
         {
-            await TibberRTMCheckConditionAsync($"LoadPriority_SetPower_{ApiSettingMaxPower}", async () =>
-            {
-                await GrowattClearAllDeviceNoahTimeSegments();
-                await GrowattClearSetPowerAsync(value.TS, ApiSettingMaxPower);
+            await TibberRTMCheckConditionAsync($"LoadPriority_SetPower_{ApiSettingMaxPower}", [
+                new (
+                    async () => {
+                        value.PowerValueNewRequested = ApiSettingMaxPower;
+                        value.PowerValueNewDeviceSn = deviceSn;
 
-                value.PowerValueNewRequested = ApiSettingMaxPower;
-                value.PowerValueNewDeviceSn = deviceSn;
-            }, async () =>
-            {
-                // Check if any time segments are enabled
-                var anyEnabledTimesegments = GrowattLatestNoahInfoDatas().Any(x => x!.TimeSegments.Any(x => x.Enable == "1"));
+                        await Task.CompletedTask;
+                    }, null
+                ),
+                new (
+                    async () => {
+                        await GrowattClearAllDeviceNoahTimeSegments();
+                    }, async () => {
+                        // Check if any time segments are enabled
+                        var anyEnabledTimesegments = GrowattLatestNoahInfoDatas().Any(x => x!.TimeSegments.Any(x => x.Enable == "1"));
 
-                // Check if power default and commited values are equal to avg
-                var allDevicesConform = GrowattGetDevicesNoahOnline().All(x => x.PowerValueCommited == ApiSettingMaxPower);
+                        LoggerRTM.LogTrace("anyEnabledTimesegments: {anyEnabledTimesegments}",
+                            anyEnabledTimesegments);
 
-                LoggerRTM.LogTrace("anyEnabledTimesegments: {anyEnabledTimesegments}, allDevicesConform: {allDevicesConform}",
-                    anyEnabledTimesegments, allDevicesConform);
+                        return await Task.FromResult(!anyEnabledTimesegments);
+                    }
+                ),
+                new (
+                    async () => {
+                        await GrowattClearSetPowerAsync(value.TS, ApiSettingMaxPower);
+                    }, async () => {
+                        // Check if power default and commited values are equal to avg
+                        var allDevicesConform = GrowattGetDevicesNoahOnline().All(x => x.PowerValueCommited == ApiSettingMaxPower);
 
-                return await Task.FromResult(!anyEnabledTimesegments && allDevicesConform);
-            });
+                        LoggerRTM.LogTrace("allDevicesConform: {allDevicesConform}",
+                            allDevicesConform);
+
+                        return await Task.FromResult(allDevicesConform);
+                    }
+                )
+            ]);
         }
 
         private async Task TibberRTMDefaultLoadPrioritySolarInputAsync(TibberRealTimeMeasurement value, int reductionPerMinute = 0)
         {
-            await TibberRTMCheckConditionAsync("BatteryPriority_SetPower_SolarInput", async () =>
-            {
-                await GrowattClearAllDeviceNoahTimeSegments();
-                await GrowattClearSetPowerAsync(value.TS, 0);
-            });
+            await TibberRTMCheckConditionAsync("BatteryPriority_SetPower_SolarInput", [ 
+                new(
+                    async () => {
+                        await GrowattClearAllDeviceNoahTimeSegments();
+                        await GrowattClearSetPowerAsync(value.TS, 0);
+                    },
+                null
+                )
+            ]);
 
             Queue<IDeviceQuery> queue = [];
 
@@ -2173,7 +2228,7 @@ namespace EnergyAutomate.Services
                     return;
                 }
 
-                if (!TibberPrices.Where(x => x.StartsAt.Date == CurrentState.UtcNow.Date).Any() || (CurrentState.UtcNow.Hour > 13 && CurrentState.UtcNow.AddDays(1).Date != TibberPrices.Max(x => x.StartsAt).Date))
+                if (!TibberPrices.Where(x => x.StartsAt.UtcDateTime.Date == CurrentState.UtcNow.Date).Any() || (CurrentState.UtcNow.Hour > 13 && CurrentState.UtcNow.AddDays(1).Date != TibberPrices.Max(x => x.StartsAt.UtcDateTime).Date))
                 {
                     if (CurrentState.CheckTibberPricesCondition($"GetTomorrowPrices_{CurrentState.UtcNow.Hour}"))
                     {
