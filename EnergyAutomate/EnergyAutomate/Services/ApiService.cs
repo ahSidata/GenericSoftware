@@ -2,8 +2,6 @@
 using EnergyAutomate.Definitions;
 using EnergyAutomate.Extentions;
 using Microsoft.EntityFrameworkCore;
-using System.Numerics;
-using System.Threading.Tasks;
 
 namespace EnergyAutomate.Services
 {
@@ -64,25 +62,12 @@ namespace EnergyAutomate.Services
         private ThreadSafeObservableCollection<DeviceNoahLastData> GrowattDeviceNoahLastData { get; set; } = [];
         private ApiQueueWatchdog<IDeviceQuery> GrowattDeviceQueryQueueWatchdog => ServiceProvider.GetRequiredService<ApiQueueWatchdog<IDeviceQuery>>();
         private ThreadSafeObservableCollection<DeviceList> GrowattDevices { get; set; } = [];
-
         private ILogger Logger => ServiceProvider.GetRequiredService<ILogger<ApiService>>();
-
         private ILogger LoggerRTM => ServiceProvider.GetRequiredService<ILogger<RealTimeMeasurement>>();
-
         private IServiceProvider ServiceProvider { get; set; }
         private Guid? TibberHomeId { get; set; }
         private ThreadSafeObservableCollection<TibberPrice> TibberPrices { get; set; } = [];
         private ThreadSafeObservableCollection<TibberRealTimeMeasurement> TibberRealTimeMeasurement { get; set; } = [];
-
-        public static IEnumerable<TickMark> GenerateTickTickMarks(int start, int end, int step)
-        {
-            var tickMarks = new List<TickMark>();
-            for (int i = start; i <= end; i += step)
-            {
-                tickMarks.Add(new TickMark { Label = i.ToString(), Value = i.ToString() });
-            }
-            return tickMarks;
-        }
 
         #endregion Properties
 
@@ -151,11 +136,6 @@ namespace EnergyAutomate.Services
         {
             lock (GrowattDevices._syncRoot)
                 return GrowattDevices.Where(x => x.DeviceType == "noah").ToList();
-        }
-
-        public async Task<int> GrowattDeviceQueryQueueWatchdogCountAsync()
-        {
-            return await GrowattDeviceQueryQueueWatchdog.CountAsync();
         }
 
         public List<DeviceList> GrowattGetDeviceLists()
@@ -525,18 +505,6 @@ namespace EnergyAutomate.Services
 
         #region Private Methods
 
-        private static bool GrowattNearofBatterySocEmpty(DeviceNoahLastData deviceNoahLastData)
-        {
-            return Math.Abs(deviceNoahLastData.totalBatteryPackSoc - deviceNoahLastData.dischargeSocLimit) < 2;
-        }
-
-        private static bool GrowattNearofBatterySocFull(DeviceNoahLastData deviceNoahLastData)
-        {
-            return deviceNoahLastData.totalBatteryPackChargingStatus == 0
-                ? Math.Abs(deviceNoahLastData.totalBatteryPackSoc - deviceNoahLastData.chargeSocLimit) < 6
-                : false;
-        }
-
         private async Task ApiAutoModeDisabledLoadBalanceRule(TibberRealTimeMeasurement tibberRealTimeMeasurement)
         {
             // If the automatic mode is disabled, the power value is set to 0
@@ -622,7 +590,6 @@ namespace EnergyAutomate.Services
 
                 await GrowattDeviceQueryQueueWatchdog.EnqueueAsync(item);
                 LoggerRTM.LogTrace(messageTemplatePowerSet, "Enqueued", CurrentState.UtcNow, device.DeviceSn, device.PowerValueRequested);
-
 
                 ApiSettingAvgPowerAdjustmentTraceValues.AddOrUpdate(new APiTraceValue() { Index = 204, Key = "TotalPowerRequested", Value = powerValue.ToString() });
             }
@@ -807,19 +774,6 @@ namespace EnergyAutomate.Services
             return string.Join(",", GrowattDevices.Where(x => x.DeviceType == "noah").Select(x => x.DeviceSn).ToList());
         }
 
-        private DeviceNoahSetTimeSegmentQuery GrowattQueryDefaultBattPriorityDeviceNoahTimeSegment(string deviceSn, bool force = true) => new()
-        {
-            Force = force,
-            DeviceSn = deviceSn,
-            DeviceType = "noah",
-            Type = "1",
-            StartTime = "0:0",
-            EndTime = "23:59",
-            Mode = "1",
-            Power = "0",
-            Enable = "1"
-        };
-
         private async Task GrowattQueryBattPriorityDeviceNoahTimeSegmentsAsync()
         {
             Queue<IDeviceQuery> DeviceTimeSegmentQueue = new();
@@ -875,6 +829,19 @@ namespace EnergyAutomate.Services
 
             await Task.CompletedTask;
         }
+
+        private DeviceNoahSetTimeSegmentQuery GrowattQueryDefaultBattPriorityDeviceNoahTimeSegment(string deviceSn, bool force = true) => new()
+        {
+            Force = force,
+            DeviceSn = deviceSn,
+            DeviceType = "noah",
+            Type = "1",
+            StartTime = "0:0",
+            EndTime = "23:59",
+            Mode = "1",
+            Power = "0",
+            Enable = "1"
+        };
 
         private async Task GrowattQueryLoadPriorityDeviceNoahTimeSegmentsAsync(int powerValue = 0)
         {
@@ -1512,7 +1479,6 @@ namespace EnergyAutomate.Services
                     {
                         Logger.LogTrace($"PowerValue {device.DeviceSn} already set to {powerValue}");
                     }
-
                 }
                 else
                 {
@@ -1536,7 +1502,7 @@ namespace EnergyAutomate.Services
 
         private async Task TibberRTMAdjustment3(TibberRealTimeMeasurement value)
         {
-            if(ApiSettingAutoMode)
+            if (ApiSettingAutoMode)
             {
                 await TibberRTMAdjustment3AutoMode(value);
                 return;
@@ -1554,8 +1520,8 @@ namespace EnergyAutomate.Services
                 }
                 else if (CurrentState.IsGrowattBatteryFull)
                 {
-                    // If the battery is not full and the restriction mode is cheap load with
-                    // full soloar power
+                    // If the battery is not full and the restriction mode is cheap load with full
+                    // soloar power
                     await TibberRTMDefaultLoadPriorityAvgAsync(value);
                 }
                 else
@@ -1657,6 +1623,7 @@ namespace EnergyAutomate.Services
                 }
             }
         }
+
         private async Task TibberRTMAdjustment3AutoMode(TibberRealTimeMeasurement value)
         {
             await TibberRTMCheckConditionAsync("LoadPriority_SetPower", async () =>
@@ -1892,14 +1859,6 @@ namespace EnergyAutomate.Services
             await Task.CompletedTask;
         }
 
-        // Hilfsfunktion für aktuelle Einspeisung
-        private int GetSumOfDeviceCommitedPower()
-        {
-            var onlineDevices = GrowattGetDevicesNoahOnline();
-            if (onlineDevices == null) return 0;
-            return onlineDevices.Sum(d => d.PowerValueCommited);
-        }
-
         private async Task TibberRTMCalculation1(TibberRealTimeMeasurement value)
         {
             lock (TibberRealTimeMeasurement._syncRoot)
@@ -2033,8 +1992,8 @@ namespace EnergyAutomate.Services
             await TibberRTMCheckConditionAsync("BatteryPriority_SetPower_0",
                 async () =>
                 {
-                    // If the battery is full and the restriction mode is not expensive activate battery
-                    // priority and use only surplus power
+                    // If the battery is full and the restriction mode is not expensive activate
+                    // battery priority and use only surplus power
                     await GrowattQueryBattPriorityDeviceNoahTimeSegmentsAsync();
                     await GrowattClearSetPowerAsync(value.TS, 0);
                 }, async () =>
@@ -2064,11 +2023,10 @@ namespace EnergyAutomate.Services
                     LoggerRTM.LogInformation($"No solar power, set power to AVG power output value");
                     await GrowattClearAllDeviceNoahTimeSegments();
                     await GrowattClearSetPowerAsync(value.TS, ApiSettingAvgPower);
-                }, async() =>
+                }, async () =>
                 {
                     // Check if any time segments are enabled
                     var allTimesegmentsDisabled = GrowattLatestNoahInfoDatas().All(x => x!.TimeSegments.All(x => x.Enable == "0"));
-
 
                     var avgPerDevice = ApiSettingAvgPower / GrowattGetDevicesNoahOnline().Count;
 
@@ -2126,28 +2084,26 @@ namespace EnergyAutomate.Services
                 var lastData = GrowattGetNoahLastDataPerDevice(device.DeviceSn);
                 var powerValue = (int)(lastData?.ppv - reductionPerMinute ?? 0);
 
-
-                    totalPPV += powerValue;
-                    var item = new DeviceNoahSetPowerQuery()
-                    {
-                        DeviceType = "noah",
-                        DeviceSn = device.DeviceSn,
-                        Value = powerValue,
-                        Force = true,
-                        TS = value.TS
-                    };
+                totalPPV += powerValue;
+                var item = new DeviceNoahSetPowerQuery()
+                {
+                    DeviceType = "noah",
+                    DeviceSn = device.DeviceSn,
+                    Value = powerValue,
+                    Force = true,
+                    TS = value.TS
+                };
 
                 queue.Enqueue(item);
             }
 
             await TibberRTMCheckAdjustmentAsync($"LoadPriority_SolarInput_{totalPPV}", async () =>
             {
-                await GrowattDeviceQueryQueueWatchdog.EnqueueAsync(queue);              
+                await GrowattDeviceQueryQueueWatchdog.EnqueueAsync(queue);
                 ApiSettingAvgPowerAdjustmentTraceValues.AddOrUpdate(new APiTraceValue() { Index = 204, Key = "TotalPowerRequested", Value = totalPPV.ToString() });
 
                 await Task.CompletedTask;
             });
-
         }
 
         private async Task TibberSavePricesAsync(IList<TibberPrice> prices)
@@ -2293,5 +2249,31 @@ namespace EnergyAutomate.Services
         }
 
         #endregion IObservable
+
+        #region Static
+
+        public static IEnumerable<TickMark> GenerateTickTickMarks(int start, int end, int step)
+        {
+            var tickMarks = new List<TickMark>();
+            for (int i = start; i <= end; i += step)
+            {
+                tickMarks.Add(new TickMark { Label = i.ToString(), Value = i.ToString() });
+            }
+            return tickMarks;
+        }
+
+        private static bool GrowattNearofBatterySocEmpty(DeviceNoahLastData deviceNoahLastData)
+        {
+            return Math.Abs(deviceNoahLastData.totalBatteryPackSoc - deviceNoahLastData.dischargeSocLimit) < 2;
+        }
+
+        private static bool GrowattNearofBatterySocFull(DeviceNoahLastData deviceNoahLastData)
+        {
+            return deviceNoahLastData.totalBatteryPackChargingStatus == 0
+                ? Math.Abs(deviceNoahLastData.totalBatteryPackSoc - deviceNoahLastData.chargeSocLimit) < 6
+                : false;
+        }
+
+        #endregion Static
     }
 }
