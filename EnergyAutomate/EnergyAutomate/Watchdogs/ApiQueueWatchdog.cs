@@ -7,7 +7,7 @@ namespace EnergyAutomate.Watchdogs
 {
     public class ApiQueueWatchdog<T> where T : class, IDeviceQuery
     {
-        private readonly Lock _lock = new();
+        private readonly SemaphoreSlim _semaphore = new(1, 1);
 
         #region Public Constructors
 
@@ -54,17 +54,36 @@ namespace EnergyAutomate.Watchdogs
 
         #region Public Methods
 
-        public void Clear()
+        public async Task<int> CountAsync()
         {
-            lock (_lock)
+            await _semaphore.WaitAsync();
+            try
+            {
+                return Collection.Count;
+            }
+            finally
+            {
+                _semaphore.Release();
+            }
+        }        
+
+        public async Task ClearAsync()
+        {
+            await _semaphore.WaitAsync();
+            try
             {
                 Collection.Clear();
             }
+            finally
+            {
+                _semaphore.Release();
+            }
         }
 
-        public T? Dequeue()
+        public async Task<T?> DequeueAsync()
         {
-            lock (_lock)
+            await _semaphore.WaitAsync();
+            try
             {
                 if (Collection.Count != 0)
                 {
@@ -75,21 +94,31 @@ namespace EnergyAutomate.Watchdogs
                 else
                     return default;
             }
+            finally
+            {
+                _semaphore.Release();
+            }
         }
 
-        public void Enqueue(T item)
+        public async Task EnqueueAsync(T item)
         {
-            lock (_lock)
+            await _semaphore.WaitAsync();
+            try
             {
                 Collection.Add(item);
             }
+            finally
+            {
+                _semaphore.Release();
+            }
 
-            ProceedingAsync();
+            _ = Task.Run(Proceeding);
         }
 
-        public void Enqueue(Queue<T> items)
+        public async Task EnqueueAsync(Queue<T> items)
         {
-            lock (_lock)
+            await _semaphore.WaitAsync();
+            try
             {
                 while (items.Count > 0)
                 {
@@ -97,28 +126,29 @@ namespace EnergyAutomate.Watchdogs
                     Collection.Add(item);
                 }
             }
+            finally
+            {
+                _semaphore.Release();
+            }
 
-            ProceedingAsync();
+            _ = Task.Run(Proceeding);
         }
 
-        private async void ProceedingAsync()
+        private async Task Proceeding()
         {
-            lock (_lock)
-            {
-                if (IsProceeding)
-                    return;
+            if (IsProceeding)
+                return;
 
-                IsProceeding = true;
-            }
+            IsProceeding = true;
 
             do
             {
-                if (Collection.Count == 0)
+                if (await CountAsync() == 0)
                     break;
 
-                var item = Dequeue();
+                var item = await DequeueAsync();
 
-                if(item == null)
+                if (item == null)
                     break;
 
                 var queryType = item.GetType().Name;
@@ -144,48 +174,23 @@ namespace EnergyAutomate.Watchdogs
                     _ = OnItemDequeued?.Invoke(item, ServiceProvider.GetRequiredService<GrowattApiClient>(), Logger)
                         .ContinueWith(task =>
                         {
-                            if (task.IsFaulted)
+                            if (task.IsFaulted || task.Result != default)
                             {
-                                Logger.LogError("ApiQueueWatchdog<{Type}>: Fehler bei der Verarbeitung von {ItemType}",
-                                    typeof(T).Name, item.GetType().Name);
                                 Logger.LogError("Exception: {Exception}", task.Exception?.InnerException);
-
-                                if (item.Force)
-                                {
-                                    lock (_lock)
-                                    {
-                                        Collection.Add(item);
-                                    }
-                                }
-                            }
-                            else if (task.Result != default)
-                            {
                                 Logger.LogError("ApiQueueWatchdog<{Type}> ErrorCode: {ErrorCode}",
-                                    typeof(T).Name, task.Result.ErrorCode);
-                                Logger.LogError("Error ItemType: {itemType}", item.GetType().Name);
+                                    item.GetType().Name, task.Result?.ErrorCode);
                                 Logger.LogError(JsonConvert.SerializeObject(item).ToString());
-
-                                if (item.Force)
-                                {
-                                    lock (_lock)
-                                    {
-                                        Collection.Add(item);
-                                    }
-                                }
                             }
                         }, TaskScheduler.Current);
                 }
                 else if (item != null && item.Force)
                 {
-                    Collection.Add(item);
+                    await EnqueueAsync(item);
                 }
 
-            } while (Collection.Count > 0);
+            } while (await CountAsync() > 0);
 
-            lock (_lock)
-            {
-                IsProceeding = false;
-            }
+            IsProceeding = false;
         }
 
         #endregion Public Methods

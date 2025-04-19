@@ -66,8 +66,6 @@ namespace EnergyAutomate.Components.Pages
 
         #region Private Methods
 
-
-
         private async void ApiService_StateHasChanged(object? sender, EventArgs e)
         {
             await InvokeAsync(StateHasChanged);
