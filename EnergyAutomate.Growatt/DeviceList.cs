@@ -5,8 +5,8 @@
         #region Properties
 
         public DateTime CreateDate { get; set; }
-        public string DeviceSn { get; set; }
-        public string DeviceType { get; set; }
+        public string? DeviceSn { get; set; }
+        public string? DeviceType { get; set; }
         public DateTimeOffset? IsOfflineSince { get; set; }
         public int PowerValueCommited { get; set; }
         public DateTimeOffset? PowerValueLastChanged { get; set; }

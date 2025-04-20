@@ -1,26 +1,16 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <AssemblyTitle>Tibber SDK.NET</AssemblyTitle>
-    <Description>Package for accessing Tibber API using .NET</Description>
-    <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <NoWarn>$(NoWarn);1591</NoWarn>
-    <Authors>Tibber</Authors>
-    <Company>Tibber</Company>
-    <Version>0.5.1-beta</Version>
-    <TargetFramework>netstandard2.0</TargetFramework>
-    <LangVersion>latest</LangVersion>
-    <Copyright>Copyright 2017-2022</Copyright>
-    <Title>Tibber SDK.NET</Title>
-    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+	<TargetFramework>netstandard2.0</TargetFramework>
+	<LangVersion>latest</LangVersion>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
-    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+	<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)'=='Debug'">
-    <DefineConstants>TRACE</DefineConstants>
+	<DefineConstants>TRACE</DefineConstants>
   </PropertyGroup>
 
   <PropertyGroup Condition="$([System.Text.RegularExpressions.Regex]::IsMatch('$(TargetFrameworks)', '^net\d'))">
@@ -28,7 +18,7 @@
   </PropertyGroup>
 	
   <ItemGroup>
-    <PackageReference Include="Newtonsoft.Json" Version="13.*" />
+	<PackageReference Include="Newtonsoft.Json" Version="13.*" />
   </ItemGroup>
 
 </Project>
