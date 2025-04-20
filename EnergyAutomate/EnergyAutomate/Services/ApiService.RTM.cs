@@ -50,24 +50,27 @@ namespace EnergyAutomate.Services
             LoggerRTM.LogTrace("Found {DeviceCount} online devices", onlineDevices.Count);
             int maxPowerPerDevice = onlineDevices.Count > 0 ? ApiSettingMaxPower / onlineDevices.Count : 0;
 
-            // Handle grid feed-in (negative TotalPower) or excessive positive power
-            if (value.TotalPower < 0 && Math.Abs(value.TotalPower) > ApiSettingMaxPower)
+            // Handle excessive positive power
+            if (Math.Abs(value.TotalPower) > ApiSettingMaxPower)
             {
-                // Requirement #3: For negative TotalPower exceeding limit, set all to 0
-                LoggerRTM.LogTrace("Negative TotalPower ({TotalPower}) exceeds ApiSettingMaxPower ({MaxPower}). Setting all device power values to 0 W.",
-                    value.TotalPower, ApiSettingMaxPower);
+                if (value.TotalPower < 0)
+                {
+                    // Requirement #3: For negative TotalPower exceeding limit, set all to 0
+                    LoggerRTM.LogTrace("Negative TotalPower ({TotalPower}) exceeds ApiSettingMaxPower ({MaxPower}). Setting all device power values to 0 W.",
+                        value.TotalPower, ApiSettingMaxPower);
 
-                await SetAllDevicesToPower(onlineDevices, 0, value.TS);
-                return;
-            }
-            else if (value.TotalPower > ApiSettingMaxPower)
-            {
-                // Requirement #3: For positive TotalPower exceeding limit, set all to even distribution
-                LoggerRTM.LogTrace("Positive TotalPower ({TotalPower}) exceeds ApiSettingMaxPower ({MaxPower}). Setting all device power values to {PowerPerDevice} W.",
+                    await SetAllDevicesToPower(onlineDevices, 0, value.TS);
+                    return;
+                }
+                if (value.TotalPower > 0)
+                {
+                    // Requirement #3: For positive TotalPower exceeding limit, set all to even distribution
+                    LoggerRTM.LogTrace("Positive TotalPower ({TotalPower}) exceeds ApiSettingMaxPower ({MaxPower}). Setting all device power values to {PowerPerDevice} W.",
                     value.TotalPower, ApiSettingMaxPower, maxPowerPerDevice);
 
-                await SetAllDevicesToPower(onlineDevices, maxPowerPerDevice, value.TS);
-                return;
+                    await SetAllDevicesToPower(onlineDevices, maxPowerPerDevice, value.TS);
+                    return;
+                }
             }
 
             // Handle hysteresis range (Requirement #4)
@@ -88,35 +91,24 @@ namespace EnergyAutomate.Services
 
             if (deltaTotalPower > 0)
             {
-                // Positive delta: Increase power based on current committed total
-                int adjustedNeededPower = Math.Min(adjustedDelta, ApiSettingMaxPower);
-                adjustedNeededPower = Math.Max(0, adjustedNeededPower);
-
                 // Berechne die gewünschte Gesamtleistung basierend auf dem aktuellen Zustand
-                int desiredTotalPower = Math.Min(powerValueTotalCommited + adjustedNeededPower, ApiSettingMaxPower);
+                int desiredTotalPower = Math.Min(ApiSettingMaxPower, powerValueTotalCommited + adjustedDelta);
 
-                LoggerRTM.LogTrace("Positive delta detected. Current power: {CurrentPower}, Adjustment: {AdjustedDelta}, Target power: {DesiredPower}",
-                    powerValueTotalCommited, adjustedNeededPower, desiredTotalPower);
+                LoggerRTM.LogTrace("Positive delta detected. Change total power from {CurrentPower} to {DesiredPower} based on adjusted delta {AdjustedDelta}\"",
+                    powerValueTotalCommited, desiredTotalPower, adjustedDelta);
 
-                if (desiredTotalPower > powerValueTotalCommited)
-                {
-                    LoggerRTM.LogTrace("Distributing total power of {TotalPower}W with high SoC prioritization", desiredTotalPower);
-                    await DistributePower(onlineDevices, desiredTotalPower, prioritizeHighSoc: true, value.TS);
-                }
-                else
-                {
-                    LoggerRTM.LogTrace("No power adjustment needed (desired <= current).");
-                }
+                LoggerRTM.LogTrace("Distributing total power of {TotalPower}W with high SoC prioritization", desiredTotalPower);
+                await DistributePower(onlineDevices, desiredTotalPower, prioritizeHighSoc: true, value.TS);
             }
             else if (deltaTotalPower < 0)
             {
                 // Calculate desired total power based on current committed power and adjusted delta
                 int desiredTotalPower = Math.Max(0, powerValueTotalCommited + adjustedDelta);
 
-                LoggerRTM.LogTrace("Negative delta detected. Reducing total power from {CurrentPower} to {DesiredPower}W based on adjusted delta {AdjustedDelta}",
+                LoggerRTM.LogTrace("Negative delta detected. Change total power from {CurrentPower} to {DesiredPower} based on adjusted delta {AdjustedDelta}",
                     powerValueTotalCommited, desiredTotalPower, adjustedDelta);
 
-                // Distribute reduced power with low SoC priority
+                LoggerRTM.LogTrace("Distributing total power of {TotalPower}W with low SoC prioritization", desiredTotalPower);
                 await DistributePower(onlineDevices, desiredTotalPower, prioritizeHighSoc: false, value.TS);
             }
             else
