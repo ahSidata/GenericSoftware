@@ -7,11 +7,16 @@ namespace EnergyAutomate.Services
 {
     public partial class ApiService
     {
+        /// <summary>
+        /// Adjusts power distribution based on real-time measurements from Tibber.
+        /// </summary>
+        /// <param name="value">The current real-time measurement data</param>
         private async Task TibberRTMAdjustment3SetPower(TibberRealTimeMeasurement value)
         {
-            LoggerRTM.LogTrace("Starting TibberRTMAdjustment3SetPower. TotalPower: {TotalPower}, ApiSettingAvgPower: {TargetPower}",
-                value.TotalPower, ApiSettingAvgPower);
+            LoggerRTM.LogTrace("Starting TibberRTMAdjustment3SetPower. TotalPower: {TotalPower}, ApiSettingAvgPower: {TargetPower}, ApiSettingAvgPowerOffset: {TargetOffset}, ApiSettingMaxPower: {MaxPower}",
+                value.TotalPower, ApiSettingAvgPower, ApiSettingAvgPowerOffset, ApiSettingMaxPower);
 
+            // Handle wait cycles for power adjustment
             if (_adjustmentWaitCycles < ApiSettingPowerAdjustmentWaitCycles)
             {
                 _adjustmentWaitCycles++;
@@ -23,14 +28,18 @@ namespace EnergyAutomate.Services
             _adjustmentWaitCycles = 0;
             LoggerRTM.LogTrace("Reset adjustment wait cycles to 0.");
 
-            var powerValueTotalCommited = CurrentState.PowerValueTotalCommited;
-            int deltaTotalPower = value.TotalPower - ApiSettingAvgPower;
-            var upperlimit = ApiSettingAvgPower + (ApiSettingAvgPowerHysteresis / 2);
-            var lowerlimit = ApiSettingAvgPower - (ApiSettingAvgPowerHysteresis / 2);
+            // Get committed power value, ensuring it's non-negative
+            var powerValueTotalCommited = Math.Max(0, CurrentState?.PowerValueTotalCommited ?? 0);
+
+            // Calculate delta and limits
+            int deltaTotalPower = value.TotalPower - ApiSettingAvgPowerOffset;
+            var upperLimit = ApiSettingAvgPowerOffset + (ApiSettingAvgPowerHysteresis / 2);
+            var lowerLimit = ApiSettingAvgPowerOffset - (ApiSettingAvgPowerHysteresis / 2);
 
             LoggerRTM.LogTrace("Calculated limits. DeltaTotalPower: {DeltaTotalPower}, UpperLimit: {UpperLimit}, LowerLimit: {LowerLimit}, CommitedTotalPower: {CommitedTotalPower}",
-                deltaTotalPower, upperlimit, lowerlimit, powerValueTotalCommited);
+                deltaTotalPower, upperLimit, lowerLimit, powerValueTotalCommited);
 
+            // Get online devices
             var onlineDevices = GrowattGetDevicesNoahOnline();
             if (onlineDevices == null || !onlineDevices.Any())
             {
@@ -38,192 +47,284 @@ namespace EnergyAutomate.Services
                 return;
             }
 
-            // Bezug: Über oberem Limit → Hochregeln
-            if (value.TotalPower > upperlimit)
+            LoggerRTM.LogTrace("Found {DeviceCount} online devices", onlineDevices.Count);
+            int maxPowerPerDevice = onlineDevices.Count > 0 ? ApiSettingMaxPower / onlineDevices.Count : 0;
+
+            // Handle grid feed-in (negative TotalPower) or excessive positive power
+            if (value.TotalPower < 0 && Math.Abs(value.TotalPower) > ApiSettingMaxPower)
             {
-                var requestedTotalPower = ApiSettingMaxPower;
-                LoggerRTM.LogTrace("Increasing power to maximum. RequestedTotalPower: {RequestedTotalPower}", requestedTotalPower);
+                // Requirement #3: For negative TotalPower exceeding limit, set all to 0
+                LoggerRTM.LogTrace("Negative TotalPower ({TotalPower}) exceeds ApiSettingMaxPower ({MaxPower}). Setting all device power values to 0 W.",
+                    value.TotalPower, ApiSettingMaxPower);
 
-                int maxPowerPerDevice = requestedTotalPower / onlineDevices.Count;
+                await SetAllDevicesToPower(onlineDevices, 0, value.TS);
+                return;
+            }
+            else if (value.TotalPower > ApiSettingMaxPower)
+            {
+                // Requirement #3: For positive TotalPower exceeding limit, set all to even distribution
+                LoggerRTM.LogTrace("Positive TotalPower ({TotalPower}) exceeds ApiSettingMaxPower ({MaxPower}). Setting all device power values to {PowerPerDevice} W.",
+                    value.TotalPower, ApiSettingMaxPower, maxPowerPerDevice);
 
-                var devices = onlineDevices.OrderByDescending(o => o.Soc).ToList();
-                foreach (var device in devices)
+                await SetAllDevicesToPower(onlineDevices, maxPowerPerDevice, value.TS);
+                return;
+            }
+
+            // Handle hysteresis range (Requirement #4)
+            if (value.TotalPower >= lowerLimit && value.TotalPower <= upperLimit)
+            {
+                LoggerRTM.LogTrace("TotalPower within hysteresis range ({Lower} to {Upper}). Performing load balancing.",
+                    lowerLimit, upperLimit);
+                await PerformLoadBalancing(onlineDevices, value.TS);
+                return;
+            }
+
+            // Adjust power based on delta
+            // Use ApiSettingPowerAdjustmentFactor to scale the delta (100 represents 100%)
+            double adjustmentFactor = ApiSettingPowerAdjustmentFactor / 100.0;
+            int adjustedDelta = (int)(deltaTotalPower * adjustmentFactor);
+            LoggerRTM.LogTrace("Adjusted delta (after adjustment factor {Factor}%): {AdjustedDelta}",
+                ApiSettingPowerAdjustmentFactor, adjustedDelta);
+
+            if (deltaTotalPower > 0)
+            {
+                // Positive delta: Increase power based on current committed total
+                int adjustedNeededPower = Math.Min(adjustedDelta, ApiSettingMaxPower);
+                adjustedNeededPower = Math.Max(0, adjustedNeededPower);
+
+                // Berechne die gewünschte Gesamtleistung basierend auf dem aktuellen Zustand
+                int desiredTotalPower = Math.Min(powerValueTotalCommited + adjustedNeededPower, ApiSettingMaxPower);
+
+                LoggerRTM.LogTrace("Positive delta detected. Current power: {CurrentPower}, Adjustment: {AdjustedDelta}, Target power: {DesiredPower}",
+                    powerValueTotalCommited, adjustedNeededPower, desiredTotalPower);
+
+                if (desiredTotalPower > powerValueTotalCommited)
                 {
-                    LoggerRTM.LogTrace("Device {DeviceSn} - SoC: {Soc}%, PowerValueCommited: {PowerValue}, IsBatteryEmpty: {IsBatteryEmpty}, IsBatteryFull: {IsBatteryFull}",
-                        device.DeviceSn, device.Soc, device.PowerValueCommited, device.IsBatteryEmpty, device.IsBatteryFull);
+                    LoggerRTM.LogTrace("Distributing total power of {TotalPower}W with high SoC prioritization", desiredTotalPower);
+                    await DistributePower(onlineDevices, desiredTotalPower, prioritizeHighSoc: true, value.TS);
+                }
+                else
+                {
+                    LoggerRTM.LogTrace("No power adjustment needed (desired <= current).");
+                }
+            }
+            else if (deltaTotalPower < 0)
+            {
+                // Calculate desired total power based on current committed power and adjusted delta
+                int desiredTotalPower = Math.Max(0, powerValueTotalCommited + adjustedDelta);
 
-                    if (device.IsBatteryEmpty)
-                    {
-                        LoggerRTM.LogTrace("Skipping device {DeviceSn} - battery too low (SoC: {Soc}%).",
-                            device.DeviceSn, device.Soc);
-                        continue;
-                    }
+                LoggerRTM.LogTrace("Negative delta detected. Reducing total power from {CurrentPower} to {DesiredPower}W based on adjusted delta {AdjustedDelta}",
+                    powerValueTotalCommited, desiredTotalPower, adjustedDelta);
 
-                    int newPower;
-                    if (device.PowerValueCommited <= 0)
-                    {
-                        newPower = Math.Min(Math.Max(100, device.Soc * 4), maxPowerPerDevice);
-                        LoggerRTM.LogTrace("REAKTIVIERE Gerät {DeviceSn} mit SoC {Soc}% auf: {NewPower}W",
-                            device.DeviceSn, device.Soc, newPower);
-                    }
-                    else
-                    {
-                        newPower = Math.Min(Math.Max(device.PowerValueCommited + 100, (int)(device.PowerValueCommited * 1.5)), maxPowerPerDevice);
-                        LoggerRTM.LogTrace("Device {DeviceSn} - Setting to maximum available power: {NewPower}W",
-                            device.DeviceSn, newPower);
-                    }
+                // Distribute reduced power with low SoC priority
+                await DistributePower(onlineDevices, desiredTotalPower, prioritizeHighSoc: false, value.TS);
+            }
+            else
+            {
+                // Delta is exactly 0, maintain current power or perform load balancing
+                LoggerRTM.LogTrace("Delta is exactly 0. Performing load balancing.");
+                await PerformLoadBalancing(onlineDevices, value.TS);
+            }
 
-                    device.PowerValueRequested = newPower;
+            LoggerRTM.LogTrace("Power adjustment procedure completed.");
+        }
+
+        /// <summary>
+        /// Sets all devices to a specified power value.
+        /// </summary>
+        /// <param name="devices">List of devices to configure</param>
+        /// <param name="powerValue">Power value to set for each device</param>
+        /// <param name="timestamp">Current timestamp</param>
+        private async Task SetAllDevicesToPower(List<DeviceList> devices, int powerValue, DateTimeOffset timestamp)
+        {
+            foreach (var device in devices)
+            {
+                LoggerRTM.LogTrace("Setting device {DeviceSn} (SoC {Soc}%) to {Power}W",
+                    device.DeviceSn, device.Soc, powerValue);
+
+                await GrowattDeviceQueryQueueWatchdog.EnqueueAsync(new DeviceNoahSetPowerQuery
+                {
+                    DeviceType = "noah",
+                    DeviceSn = device.DeviceSn,
+                    Value = powerValue,
+                    Force = true,
+                    TS = timestamp
+                });
+            }
+
+            LoggerRTM.LogTrace("All {DeviceCount} devices set to {Power}W", devices.Count, powerValue);
+        }
+
+        /// <summary>
+        /// Performs load balancing between devices based on their SoC values.
+        /// Shifts power from devices with lower SoC to those with higher SoC.
+        /// </summary>
+        /// <param name="devices">List of devices to balance</param>
+        /// <param name="timestamp">Current timestamp</param>
+        private async Task PerformLoadBalancing(List<DeviceList> devices, DateTimeOffset timestamp)
+        {
+            LoggerRTM.LogTrace("Starting load balancing for {DeviceCount} devices", devices.Count);
+
+            if (devices.Count <= 1)
+            {
+                LoggerRTM.LogTrace("Load balancing not possible with 1 or 0 devices.");
+                return;
+            }
+
+            var maxSocDev = devices.OrderByDescending(d => d.Soc).First();
+            var minSocDev = devices.OrderBy(d => d.Soc).First();
+            LoggerRTM.LogTrace("Load balancing check: MaxSoC Device {MaxDevSn} ({MaxSoC}%), MinSoC Device {MinDevSn} ({MinSoC}%)",
+                maxSocDev.DeviceSn, maxSocDev.Soc, minSocDev.DeviceSn, minSocDev.Soc);
+
+            // Only balance if SoC difference is significant (≥ 5%)
+            if (maxSocDev.Soc - minSocDev.Soc >= 5)
+            {
+                int shift = 10; // Shift 10 W per adjustment cycle
+                int maxPowerPerDevice = ApiSettingMaxPower / devices.Count;
+                int maxShiftUp = maxPowerPerDevice - maxSocDev.PowerValueCommited;
+                int maxShiftDown = minSocDev.PowerValueCommited;
+
+                LoggerRTM.LogTrace("Load balancing possible. MaxShiftUp: {MaxShiftUp}W, MaxShiftDown: {MaxShiftDown}W",
+                    maxShiftUp, maxShiftDown);
+
+                int actualShift = Math.Min(shift, Math.Min(maxShiftUp, maxShiftDown));
+
+                if (actualShift > 0)
+                {
+                    LoggerRTM.LogTrace("Load balancing: Shifting {Shift}W from Device {MinDev} (SoC {MinSoc}%) to Device {MaxDev} (SoC {MaxSoc}%)",
+                        actualShift, minSocDev.DeviceSn, minSocDev.Soc, maxSocDev.DeviceSn, maxSocDev.Soc);
+
+                    var minSocDevPowerValueRequested = minSocDev.PowerValueCommited - actualShift;
+                    var maxSocDevPowerValueRequested = maxSocDev.PowerValueCommited + actualShift;
+
+                    await GrowattDeviceQueryQueueWatchdog.EnqueueAsync(new DeviceNoahSetPowerQuery
+                    {
+                        DeviceType = "noah",
+                        DeviceSn = minSocDev.DeviceSn,
+                        Value = minSocDevPowerValueRequested,
+                        Force = true,
+                        TS = timestamp
+                    });
+
+                    await GrowattDeviceQueryQueueWatchdog.EnqueueAsync(new DeviceNoahSetPowerQuery
+                    {
+                        DeviceType = "noah",
+                        DeviceSn = maxSocDev.DeviceSn,
+                        Value = maxSocDevPowerValueRequested,
+                        Force = true,
+                        TS = timestamp
+                    });
+
+                    LoggerRTM.LogTrace("Load balancing completed. Device {MinDev} set to {MinPower}W, Device {MaxDev} set to {MaxPower}W",
+                        minSocDev.DeviceSn, minSocDevPowerValueRequested, maxSocDev.DeviceSn, maxSocDevPowerValueRequested);
+                }
+                else
+                {
+                    LoggerRTM.LogTrace("Load balancing: No room for shifting (actualShift={ActualShift}).", actualShift);
+                }
+            }
+            else
+            {
+                LoggerRTM.LogTrace("Load balancing: SoC difference {SocDiff}% is <5%, no action.",
+                    maxSocDev.Soc - minSocDev.Soc);
+            }
+        }
+
+        /// <summary>
+        /// Distributes the specified total power among the available devices based on SoC prioritization.
+        /// </summary>
+        /// <param name="devices">List of devices</param>
+        /// <param name="totalPower">Total power to distribute</param>
+        /// <param name="prioritizeHighSoc">If true, prioritize devices with higher SoC; otherwise prioritize lower SoC</param>
+        /// <param name="timestamp">Current timestamp</param>
+        private async Task DistributePower(List<DeviceList> devices, int totalPower, bool prioritizeHighSoc, DateTimeOffset timestamp)
+        {
+            int maxPowerPerDevice = devices.Count > 0 ? ApiSettingMaxPower / devices.Count : 0;
+
+            LoggerRTM.LogTrace("DistributePower started. Total power: {TotalPower}W, prioritize high SoC: {PrioritizeHighSoc}",
+                totalPower, prioritizeHighSoc);
+
+            // Filter out empty batteries
+            var eligibleDevices = devices
+                .Where(d => !d.IsBatteryEmpty)
+                .ToList();
+
+            LoggerRTM.LogTrace("Found {EligibleCount} eligible devices (non-empty) from {TotalCount} total devices",
+                eligibleDevices.Count, devices.Count);
+
+            // Log devices skipped due to empty batteries
+            if (devices.Any(d => d.IsBatteryEmpty))
+            {
+                var emptyDevices = devices.Where(d => d.IsBatteryEmpty).ToList();
+                foreach (var device in emptyDevices)
+                {
+                    LoggerRTM.LogTrace("Device {DeviceSn} excluded from power distribution: Battery empty (SoC {Soc}%)",
+                        device.DeviceSn, device.Soc);
+
+                    // Set empty devices to 0W as per requirements
                     await GrowattDeviceQueryQueueWatchdog.EnqueueAsync(new DeviceNoahSetPowerQuery
                     {
                         DeviceType = "noah",
                         DeviceSn = device.DeviceSn,
-                        Value = newPower,
+                        Value = 0,
                         Force = true,
-                        TS = value.TS
+                        TS = timestamp
                     });
                 }
             }
-            // Einspeisung: Unter unterem Limit → Schnell reduzieren
-            else if (value.TotalPower < lowerlimit)
+
+            if (!eligibleDevices.Any())
             {
-                int baseReductionPercent = 60;
-                if (value.TotalPower < -100)
-                {
-                    baseReductionPercent = 80;
-                }
-
-                int maxReduction = powerValueTotalCommited * baseReductionPercent / 100;
-
-                if (value.TotalPower < -150 && powerValueTotalCommited > 300)
-                {
-                    maxReduction = powerValueTotalCommited - ApiSettingAvgPower;
-                }
-
-                int reactionFactor = (value.TotalPower < -100) ? 3 : 2;
-                int desiredReduction = Math.Min(Math.Abs(value.TotalPower) * reactionFactor, maxReduction);
-
-                int minimumTotalPower = ApiSettingAvgPower;
-                var requestedTotalPower = Math.Max(powerValueTotalCommited - desiredReduction, minimumTotalPower);
-
-                if (value.TotalPower < -200)
-                {
-                    minimumTotalPower = ApiSettingAvgPower / 2;
-                    requestedTotalPower = Math.Max(minimumTotalPower, powerValueTotalCommited - desiredReduction);
-                }
-
-                LoggerRTM.LogTrace("SCHNELLERE Reduktion wegen Einspeisung. RequestedTotalPower: {RequestedTotalPower} (max reduction: {MaxReduction}W, {BaseReductionPercent}%)",
-                    requestedTotalPower, maxReduction, baseReductionPercent);
-
-                if (requestedTotalPower < powerValueTotalCommited)
-                {
-                    int remainingReduction = powerValueTotalCommited - requestedTotalPower;
-                    var activeDevices = onlineDevices.Where(d => d.PowerValueCommited > 0).ToList();
-                    if (!activeDevices.Any())
-                    {
-                        LoggerRTM.LogTrace("No active devices to reduce power.");
-                        return;
-                    }
-
-                    var devices = activeDevices.OrderBy(o => o.Soc).ToList();
-                    double totalCommitedActivePower = activeDevices.Sum(d => d.PowerValueCommited);
-                    double remainingReductionDouble = remainingReduction;
-
-                    foreach (var device in devices)
-                    {
-                        if (remainingReduction <= 0 || device.PowerValueCommited <= 0)
-                            continue;
-
-                        double powerShare = device.PowerValueCommited / totalCommitedActivePower;
-                        int deviceReduction = (int)(remainingReductionDouble * powerShare);
-
-                        int maxDeviceReduction = Math.Min(device.PowerValueCommited,
-                                                       Math.Max(device.PowerValueCommited * baseReductionPercent / 100, 50));
-                        int actualReduction = Math.Min(deviceReduction, maxDeviceReduction);
-
-                        if (device.Soc < 20)
-                        {
-                            actualReduction = Math.Min(device.PowerValueCommited, remainingReduction);
-                        }
-
-                        int newPower = Math.Max(0, device.PowerValueCommited - actualReduction);
-
-                        LoggerRTM.LogTrace("Device {DeviceSn} reducing power by {Reduction}W. Setting to: {NewPower}W",
-                            device.DeviceSn, actualReduction, newPower);
-
-                        device.PowerValueRequested = newPower;
-                        await GrowattDeviceQueryQueueWatchdog.EnqueueAsync(new DeviceNoahSetPowerQuery
-                        {
-                            DeviceType = "noah",
-                            DeviceSn = device.DeviceSn,
-                            Value = newPower,
-                            Force = true,
-                            TS = value.TS
-                        });
-
-                        remainingReduction -= actualReduction;
-                    }
-                }
+                LoggerRTM.LogTrace("No eligible devices for power distribution. Aborting.");
+                return;
             }
-            // Im Zielbereich: keine Leistungsregelung, optionales Loadbalancing
-            else
+
+            // Sort devices based on SoC priority
+            var sortedDevices = prioritizeHighSoc
+                ? eligibleDevices.OrderByDescending(d => d.Soc).ToList()
+                : eligibleDevices.OrderBy(d => d.Soc).ToList();
+
+            LoggerRTM.LogTrace("Devices sorted by SoC ({Order})", prioritizeHighSoc ? "descending" : "ascending");
+
+            // Calculate power per device with maximum limits
+            int powerPerDevice = eligibleDevices.Count > 0 ? totalPower / eligibleDevices.Count : 0;
+
+
+            LoggerRTM.LogTrace("Base power per device: {PowerPerDevice}W, Max power per device: {MaxPowerPerDevice}W",
+                powerPerDevice, maxPowerPerDevice);
+
+            int remainingPower = totalPower;
+            foreach (var device in sortedDevices)
             {
-                LoggerRTM.LogTrace("No adjustment needed. TotalPower within target range.");
-
-                // --- Optionales SoC-basiertes Loadbalancing bei größerer Differenz (z.B. >5%) ---
-                var devices = onlineDevices.ToList();
-                var maxSocDev = devices.OrderByDescending(d => d.Soc).First();
-                var minSocDev = devices.OrderBy(d => d.Soc).First();
-
-                if (maxSocDev.Soc - minSocDev.Soc >= 5)
+                // Für jedes Gerät die bestmögliche Leistung berechnen
+                int allocatedPower;
+                if (remainingPower >= maxPowerPerDevice)
                 {
-                    int shift = 10; // z.B. 10 W umschichten
-
-                    int maxShiftUp = (ApiSettingMaxPower / devices.Count) - maxSocDev.PowerValueCommited;
-                    int maxShiftDown = minSocDev.PowerValueCommited; // nur bis 0W
-
-                    int actualShift = Math.Min(shift, Math.Min(maxShiftUp, maxShiftDown));
-
-                    if (actualShift > 0)
-                    {
-                        LoggerRTM.LogTrace("Loadbalancing: Umschichten von {Shift}W von Device {MinDev} (SoC {MinSoc}%) zu Device {MaxDev} (SoC {MaxSoc}%)",
-                            actualShift, minSocDev.DeviceSn, minSocDev.Soc, maxSocDev.DeviceSn, maxSocDev.Soc);
-
-                        minSocDev.PowerValueRequested = minSocDev.PowerValueCommited - actualShift;
-                        maxSocDev.PowerValueRequested = maxSocDev.PowerValueCommited + actualShift;
-
-                        await GrowattDeviceQueryQueueWatchdog.EnqueueAsync(new DeviceNoahSetPowerQuery
-                        {
-                            DeviceType = "noah",
-                            DeviceSn = minSocDev.DeviceSn,
-                            Value = minSocDev.PowerValueRequested,
-                            Force = true,
-                            TS = value.TS
-                        });
-
-                        await GrowattDeviceQueryQueueWatchdog.EnqueueAsync(new DeviceNoahSetPowerQuery
-                        {
-                            DeviceType = "noah",
-                            DeviceSn = maxSocDev.DeviceSn,
-                            Value = maxSocDev.PowerValueRequested,
-                            Force = true,
-                            TS = value.TS
-                        });
-                    }
-                    else
-                    {
-                        LoggerRTM.LogTrace("Loadbalancing: Kein Spielraum zum Umschichten.");
-                    }
+                    // Wenn noch genug Leistung übrig ist, maximale Leistung zuweisen
+                    allocatedPower = maxPowerPerDevice;
+                    remainingPower -= maxPowerPerDevice;
                 }
                 else
                 {
-                    LoggerRTM.LogTrace("Loadbalancing: SoC-Differenz <5%, keine Aktion.");
+                    // Sonst die restliche Leistung zuweisen
+                    allocatedPower = remainingPower;
+                    remainingPower = 0;
                 }
+
+                LoggerRTM.LogTrace("Allocating {AllocatedPower}W to Device {DeviceSn} (SoC {Soc}%)",
+                    allocatedPower, device.DeviceSn, device.Soc);
+
+                await GrowattDeviceQueryQueueWatchdog.EnqueueAsync(new DeviceNoahSetPowerQuery
+                {
+                    DeviceType = "noah",
+                    DeviceSn = device.DeviceSn,
+                    Value = allocatedPower,
+                    Force = true,
+                    TS = timestamp
+                });
             }
 
-            LoggerRTM.LogTrace("Final adjustments completed.");
-
-            await Task.CompletedTask;
+            LoggerRTM.LogTrace("Power distribution completed for {DeviceCount} devices", sortedDevices.Count);
         }
     }
 }

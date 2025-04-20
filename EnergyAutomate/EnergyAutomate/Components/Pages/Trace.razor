@@ -15,16 +15,14 @@
                         <thead>
                             <tr>
                                 <th>Timestamp</th>
-                                <th>Category</th>
                                 <th>Message</th>
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach (var log in ((CustomLoggerProvider)CustomLoggerProvider).GetLogMessages().Where(x => x.Category == category || x.Category!.Split(".").Last() == category).OrderByDescending(x => x.TS).Take(50))
+                            @foreach (var log in ((CustomLoggerProvider)CustomLoggerProvider).GetLogMessages().Where(x => x.Category == category || x.Category!.Split(".").Last() == category).OrderByDescending(x => x.TS).Take(500))
                             {
                                 <tr>
                                     <td>@log.TS</td>
-                                    <td>@log.Category?.Split(".").Last()</td>
                                     <td>@log.Message</td>
                                 </tr>
                             }
