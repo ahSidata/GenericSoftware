@@ -244,6 +244,13 @@ namespace EnergyAutomate.Services
             LoggerRTM.LogTrace("DistributePower started. Total power: {TotalPower}W, prioritize high SoC: {PrioritizeHighSoc}",
                 totalPower, prioritizeHighSoc);
 
+            // Aktuell zugewiesene Gesamtleistung berechnen
+            int currentTotalPower = devices.Sum(d => d.PowerValueCommited);
+            int powerDifference = totalPower - currentTotalPower;
+
+            LoggerRTM.LogTrace("Current total power: {CurrentPower}W, target power: {TargetPower}W, difference: {Difference}W",
+                currentTotalPower, totalPower, powerDifference);
+
             // Filter out empty batteries
             var eligibleDevices = devices
                 .Where(d => !d.IsBatteryEmpty)
@@ -252,7 +259,7 @@ namespace EnergyAutomate.Services
             LoggerRTM.LogTrace("Found {EligibleCount} eligible devices (non-empty) from {TotalCount} total devices",
                 eligibleDevices.Count, devices.Count);
 
-            // Log devices skipped due to empty batteries
+            // Handle empty devices
             if (devices.Any(d => d.IsBatteryEmpty))
             {
                 var emptyDevices = devices.Where(d => d.IsBatteryEmpty).ToList();
@@ -261,7 +268,6 @@ namespace EnergyAutomate.Services
                     LoggerRTM.LogTrace("Device {DeviceSn} excluded from power distribution: Battery empty (SoC {Soc}%)",
                         device.DeviceSn, device.Soc);
 
-                    // Set empty devices to 0W as per requirements
                     await GrowattDeviceQueryQueueWatchdog.EnqueueAsync(new DeviceNoahSetPowerQuery
                     {
                         DeviceType = "noah",
@@ -279,16 +285,72 @@ namespace EnergyAutomate.Services
                 return;
             }
 
+            // Prüfe, ob die Änderung mit einem einzelnen Gerät bewältigt werden kann
+            if (Math.Abs(powerDifference) > 0 && Math.Abs(powerDifference) <= maxPowerPerDevice && eligibleDevices.Count > 1)
+            {
+                // Gerät mit bestem SoC für die Anpassung auswählen (höchsten SoC für Erhöhungen, niedrigsten für Verringerungen)
+                var targetDevice = prioritizeHighSoc
+                    ? eligibleDevices.OrderByDescending(d => d.Soc).First()
+                    : eligibleDevices.OrderBy(d => d.Soc).First();
+
+                // Berechne den neuen Leistungswert für das ausgewählte Gerät
+                int newPower = targetDevice.PowerValueCommited;
+                if (powerDifference > 0)
+                {
+                    // Maximum zulässige Erhöhung berechnen
+                    int maxIncrease = maxPowerPerDevice - targetDevice.PowerValueCommited;
+                    int actualIncrease = Math.Min(powerDifference, maxIncrease);
+                    newPower += actualIncrease;
+
+                    LoggerRTM.LogTrace("Device {DeviceSn} can handle increase: Current {Current}W, Max increase {MaxIncrease}W, Actual increase {ActualIncrease}W",
+                        targetDevice.DeviceSn, targetDevice.PowerValueCommited, maxIncrease, actualIncrease);
+                }
+                else // powerDifference < 0
+                {
+                    // Maximum zulässige Verringerung berechnen
+                    int maxDecrease = targetDevice.PowerValueCommited; // Nicht unter 0 gehen
+                    int actualDecrease = Math.Min(Math.Abs(powerDifference), maxDecrease);
+                    newPower -= actualDecrease;
+
+                    LoggerRTM.LogTrace("Device {DeviceSn} can handle decrease: Current {Current}W, Max decrease {MaxDecrease}W, Actual decrease {ActualDecrease}W",
+                        targetDevice.DeviceSn, targetDevice.PowerValueCommited, maxDecrease, actualDecrease);
+                }
+
+                if (newPower != targetDevice.PowerValueCommited)
+                {
+                    LoggerRTM.LogTrace("Single device adjustment: Updating device {DeviceSn} (SoC {Soc}%) from {OldPower}W to {NewPower}W",
+                        targetDevice.DeviceSn, targetDevice.Soc, targetDevice.PowerValueCommited, newPower);
+
+                    await GrowattDeviceQueryQueueWatchdog.EnqueueAsync(new DeviceNoahSetPowerQuery
+                    {
+                        DeviceType = "noah",
+                        DeviceSn = targetDevice.DeviceSn,
+                        Value = newPower,
+                        Force = true,
+                        TS = timestamp
+                    });
+
+                    // Aktualisiere die anderen Geräte nicht
+                    LoggerRTM.LogTrace("Power adjustment completed using single device");
+                    return;
+                }
+                else
+                {
+                    LoggerRTM.LogTrace("Single device adjustment not possible due to limits. Using balanced distribution.");
+                }
+            }
+
+            // Wenn Single-Device-Anpassung nicht möglich ist, verteile die Leistung auf alle Geräte
             // Sort devices based on SoC priority
             var sortedDevices = prioritizeHighSoc
                 ? eligibleDevices.OrderByDescending(d => d.Soc).ToList()
                 : eligibleDevices.OrderBy(d => d.Soc).ToList();
 
-            LoggerRTM.LogTrace("Devices sorted by SoC ({Order})", prioritizeHighSoc ? "descending" : "ascending");
+            LoggerRTM.LogTrace("Devices sorted by SoC ({Order}) for balanced distribution",
+                prioritizeHighSoc ? "descending" : "ascending");
 
-            // Calculate power per device with maximum limits
+            // Berechne die zu verteilende Leistung für jedes Gerät
             int powerPerDevice = eligibleDevices.Count > 0 ? totalPower / eligibleDevices.Count : 0;
-
 
             LoggerRTM.LogTrace("Base power per device: {PowerPerDevice}W, Max power per device: {MaxPowerPerDevice}W",
                 powerPerDevice, maxPowerPerDevice);
@@ -296,23 +358,22 @@ namespace EnergyAutomate.Services
             int remainingPower = totalPower;
             foreach (var device in sortedDevices)
             {
-                // Für jedes Gerät die bestmögliche Leistung berechnen
                 int allocatedPower;
                 if (remainingPower >= maxPowerPerDevice)
                 {
-                    // Wenn noch genug Leistung übrig ist, maximale Leistung zuweisen
                     allocatedPower = maxPowerPerDevice;
                     remainingPower -= maxPowerPerDevice;
                 }
                 else
                 {
-                    // Sonst die restliche Leistung zuweisen
                     allocatedPower = remainingPower;
                     remainingPower = 0;
                 }
 
-                LoggerRTM.LogTrace("Allocating {AllocatedPower}W to Device {DeviceSn} (SoC {Soc}%)",
-                    allocatedPower, device.DeviceSn, device.Soc);
+                // Prüfe die Differenz zum aktuellen Wert
+                int powerChange = allocatedPower - device.PowerValueCommited;
+                LoggerRTM.LogTrace("Device {DeviceSn}: Current {Current}W, Allocated {Allocated}W, Change {Change}W",
+                    device.DeviceSn, device.PowerValueCommited, allocatedPower, powerChange);
 
                 await GrowattDeviceQueryQueueWatchdog.EnqueueAsync(new DeviceNoahSetPowerQuery
                 {
@@ -324,7 +385,8 @@ namespace EnergyAutomate.Services
                 });
             }
 
-            LoggerRTM.LogTrace("Power distribution completed for {DeviceCount} devices", sortedDevices.Count);
+            LoggerRTM.LogTrace("Balanced power distribution completed for {DeviceCount} devices", sortedDevices.Count);
         }
+
     }
 }

@@ -28,16 +28,24 @@
      - For negative delta: devices with lower SoC are prioritized
      - When SoC values are equal, power is distributed equally.
    - Only non-empty devices are eligible for power allocation. Devices that are empty (i.e., `IsBatteryEmpty == true`) are excluded and set to **0 W**.
+   - **When calculating required power changes, the algorithm must always consider the current committed power values per device (PowerValueCommited).**
 
-6. **Adjustment Factor**
+6. **Adjustment Factor and Power Calculation**
    - The setting **ApiSettingPowerAdjustmentFactor** must be used to scale the delta for power regulation.
    - A value of 100 represents 100% of delta, and must be divided by 100 in the formula: `adjustedDelta = delta * (ApiSettingPowerAdjustmentFactor / 100.0)`
    - `CurrentState.PowerValueTotalCommited` contains the current total power value assigned to devices.
    This is the basis for calculating power distribution using the adjustment factor.
    - If `CurrentState.PowerValueTotalCommited` is negative or NULL, it should be set to 0.
+   - For positive deltas: `int desiredTotalPower = Math.Min(powerValueTotalCommited + adjustedDelta, ApiSettingMaxPower);`
    - For negative deltas: `int desiredTotalPower = Math.Max(0, powerValueTotalCommited + adjustedDelta);`
-   - If the delta is higher then one device is possible to handle the delta should be balanced,
-   but if it is possible handle with one power set on one device without change other devices it should be prefered
+   - **Power Distribution Strategy:**
+     - If the delta can be handled by adjusting a single device without exceeding its limits (0 to ApiSettingMaxPower/device count), prioritize that approach.
+     - When selecting a single device for adjustment, respect the SoC prioritization rules in point 5.
+     - A device's adjustment capacity is defined by:
+       - For increases: Maximum is ApiSettingMaxPower/device count - PowerValueCommited
+       - For decreases: Maximum is PowerValueCommited (cannot go below 0)
+     - Only when the delta cannot be handled by a single device should power be rebalanced across multiple devices.
+     - When rebalancing across multiple devices, the new distribution should attempt to minimize changes from current PowerValueCommited values where possible.
 
 7. **SoC-based Load Balancing**
    - Power is distributed among eligible devices **proportional to their SoC priority**.
