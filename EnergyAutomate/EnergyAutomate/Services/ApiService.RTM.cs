@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -165,6 +166,12 @@ namespace EnergyAutomate.Services
 
             var maxSocDev = devices.OrderByDescending(d => d.Soc).First();
             var minSocDev = devices.OrderBy(d => d.Soc).First();
+
+            if (minSocDev.Soc == 0 || maxSocDev.Soc == 0)
+            {
+                Debugger.Break();
+            }
+
             LoggerRTM.LogTrace("Load balancing check: MaxSoC Device {MaxDevSn} ({MaxSoC}%), MinSoC Device {MinDevSn} ({MinSoC}%)",
                 maxSocDev.DeviceSn, maxSocDev.Soc, minSocDev.DeviceSn, minSocDev.Soc);
 

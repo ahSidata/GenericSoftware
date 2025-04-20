@@ -885,8 +885,8 @@ namespace EnergyAutomate.Services
                 lock (GrowattDevices._syncRoot)
                 {
                     var apiServiceDeviceNoah = GrowattDevices.FirstOrDefault(x => x.DeviceSn == deviceList.DeviceSn);
-                    if (apiServiceDeviceNoah != null) GrowattDevices.Remove(apiServiceDeviceNoah);
-                    GrowattDevices.Add(deviceList);
+                    if (apiServiceDeviceNoah == null) 
+                        GrowattDevices.Add(deviceList);
                 }
 
                 var existingDevice = await dbContext.GrowattDevices.FindAsync(deviceList.DeviceSn);
