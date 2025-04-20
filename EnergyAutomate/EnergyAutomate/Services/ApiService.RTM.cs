@@ -91,7 +91,7 @@ namespace EnergyAutomate.Services
 
             if (deltaTotalPower > 0)
             {
-                // Berechne die gewünschte Gesamtleistung basierend auf dem aktuellen Zustand
+                // Calculate the desired total power based on current state
                 int desiredTotalPower = Math.Min(ApiSettingMaxPower, powerValueTotalCommited + adjustedDelta);
 
                 LoggerRTM.LogTrace("Positive delta detected. Change total power from {CurrentPower} to {DesiredPower} based on adjusted delta {AdjustedDelta}\"",
@@ -236,7 +236,7 @@ namespace EnergyAutomate.Services
             LoggerRTM.LogTrace("DistributePower started. Total power: {TotalPower}W, prioritize high SoC: {PrioritizeHighSoc}",
                 totalPower, prioritizeHighSoc);
 
-            // Aktuell zugewiesene Gesamtleistung berechnen
+            // Calculate currently allocated total power
             int currentTotalPower = devices.Sum(d => d.PowerValueCommited);
             int powerDifference = totalPower - currentTotalPower;
 
@@ -277,19 +277,19 @@ namespace EnergyAutomate.Services
                 return;
             }
 
-            // Prüfe, ob die Änderung mit einem einzelnen Gerät bewältigt werden kann
+            // Check if the change can be handled by a single device
             if (Math.Abs(powerDifference) > 0 && Math.Abs(powerDifference) <= maxPowerPerDevice && eligibleDevices.Count > 1)
             {
-                // Gerät mit bestem SoC für die Anpassung auswählen (höchsten SoC für Erhöhungen, niedrigsten für Verringerungen)
+                // Select device with best SoC for adjustment (highest SoC for increases, lowest for decreases)
                 var targetDevice = prioritizeHighSoc
                     ? eligibleDevices.OrderByDescending(d => d.Soc).First()
                     : eligibleDevices.OrderBy(d => d.Soc).First();
 
-                // Berechne den neuen Leistungswert für das ausgewählte Gerät
+                // Calculate the new power value for the selected device
                 int newPower = targetDevice.PowerValueCommited;
                 if (powerDifference > 0)
                 {
-                    // Maximum zulässige Erhöhung berechnen
+                    // Calculate maximum allowed increase
                     int maxIncrease = maxPowerPerDevice - targetDevice.PowerValueCommited;
                     int actualIncrease = Math.Min(powerDifference, maxIncrease);
                     newPower += actualIncrease;
@@ -299,8 +299,8 @@ namespace EnergyAutomate.Services
                 }
                 else // powerDifference < 0
                 {
-                    // Maximum zulässige Verringerung berechnen
-                    int maxDecrease = targetDevice.PowerValueCommited; // Nicht unter 0 gehen
+                    // Calculate maximum allowed decrease
+                    int maxDecrease = targetDevice.PowerValueCommited; // Don't go below 0
                     int actualDecrease = Math.Min(Math.Abs(powerDifference), maxDecrease);
                     newPower -= actualDecrease;
 
@@ -322,7 +322,7 @@ namespace EnergyAutomate.Services
                         TS = timestamp
                     });
 
-                    // Aktualisiere die anderen Geräte nicht
+                    // Don't update the other devices
                     LoggerRTM.LogTrace("Power adjustment completed using single device");
                     return;
                 }
@@ -332,7 +332,7 @@ namespace EnergyAutomate.Services
                 }
             }
 
-            // Wenn Single-Device-Anpassung nicht möglich ist, verteile die Leistung auf alle Geräte
+            // If single-device adjustment is not possible, distribute power across all devices
             // Sort devices based on SoC priority
             var sortedDevices = prioritizeHighSoc
                 ? eligibleDevices.OrderByDescending(d => d.Soc).ToList()
@@ -341,7 +341,7 @@ namespace EnergyAutomate.Services
             LoggerRTM.LogTrace("Devices sorted by SoC ({Order}) for balanced distribution",
                 prioritizeHighSoc ? "descending" : "ascending");
 
-            // Berechne die zu verteilende Leistung für jedes Gerät
+            // Calculate power to distribute for each device
             int powerPerDevice = eligibleDevices.Count > 0 ? totalPower / eligibleDevices.Count : 0;
 
             LoggerRTM.LogTrace("Base power per device: {PowerPerDevice}W, Max power per device: {MaxPowerPerDevice}W",
@@ -362,7 +362,7 @@ namespace EnergyAutomate.Services
                     remainingPower = 0;
                 }
 
-                // Prüfe die Differenz zum aktuellen Wert
+                // Check difference to current value
                 int powerChange = allocatedPower - device.PowerValueCommited;
                 LoggerRTM.LogTrace("Device {DeviceSn}: Current {Current}W, Allocated {Allocated}W, Change {Change}W",
                     device.DeviceSn, device.PowerValueCommited, allocatedPower, powerChange);
