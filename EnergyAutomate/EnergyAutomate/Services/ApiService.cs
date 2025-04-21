@@ -40,8 +40,6 @@ namespace EnergyAutomate.Services
 
         #region Properties
 
-        public DistributionManager DistributionManager { get; init; }
-
         public bool ApiSettingAutoMode { get; set; }
         public int ApiSettingAvgPower { get; set; } = 200;
         public List<APiTraceValue> ApiSettingAvgPowerAdjustmentTraceValues { get; set; } = [];
@@ -57,6 +55,7 @@ namespace EnergyAutomate.Services
         public int ApiSettingSocMin { get; set; } = 10;
         public int ApiSettingTimeOffset { get; set; } = DateTimeOffset.Now.Offset.Hours;
         public ApiState CurrentState { get; set; }
+        public DistributionManager DistributionManager { get; init; }
         public int GrowattDeviceQueryQueueWatchdogCount => GrowattDeviceQueryQueueWatchdog.Count;
         private ApiRealTimeMeasurementWatchdog ApiRealTimeMeasurementWatchdog => ServiceProvider.GetRequiredService<ApiRealTimeMeasurementWatchdog>();
         private GrowattApiClient GrowattApiClient => ServiceProvider.GetRequiredService<GrowattApiClient>();
@@ -889,7 +888,7 @@ namespace EnergyAutomate.Services
                 lock (GrowattDevices._syncRoot)
                 {
                     var apiServiceDeviceNoah = GrowattDevices.FirstOrDefault(x => x.DeviceSn == deviceList.DeviceSn);
-                    if (apiServiceDeviceNoah == null) 
+                    if (apiServiceDeviceNoah == null)
                         GrowattDevices.Add(deviceList);
                 }
 
@@ -1095,568 +1094,6 @@ namespace EnergyAutomate.Services
             }
         }
 
-        private async Task TibberRTMAdjustment1(TibberRealTimeMeasurement value)
-        {
-            if (ApiSettingAutoMode && CurrentState.IsGrowattOnline)
-            {
-                // If the automatic mode is enabled, the power value is adjusted
-                if (!CurrentState.IsRTMAutoModeRunning)
-                {
-                    //Clear all time segments
-                    await GrowattClearAllDeviceNoahTimeSegments();
-
-                    Logger.LogTrace("Not in grace periode: Running LoadBalanceRule one time");
-                    //If loadbalance is active the battety priority is set
-                    await ApiAutoModeEnabledLoadBalanceRule(value);
-                }
-
-                // If the automatic mode is enabled
-                if (ApiSettingRestrictionMode)
-                {
-                    value.SettingRestrictionState = CurrentState.IsExpensiveRestrictionMode;
-                    value.SettingAutoMode = ApiSettingAutoMode;
-                    value.SettingRestrictionState = ApiSettingRestrictionMode;
-                    value.SettingBatteryPriorityMode = ApiSettingBatteryPriorityMode;
-
-                    // If the automatic mode is enabled and the restriction is active, the power
-                    // value is adjusted
-                    if (CurrentState.IsExpensiveRestrictionMode)
-                    {
-                        if (!CurrentState.IsRTMRestrictionModeRunning)
-                        {
-                            Logger.LogTrace("Are in grace periode: Running SetNoDeviceNoahTimeSegments one time");
-
-                            //Clear all time segments
-                            await GrowattClearAllDeviceNoahTimeSegments();
-                        }
-
-                        if (ApiSettingBatteryPriorityMode)
-                        {
-                            await TibberRTMAdjustment1PowerSet(value);
-                        }
-                        else
-                        {
-                            await TibberRTMDefaultBatteryPriorityAsync(value);
-                        }
-
-                        CurrentState.IsRTMRestrictionModeRunning = true;
-                    }
-                    // If the automatic mode is enabled and the restriction is not active, the power
-                    // value is set to 0
-                    else
-                    {
-                        if (CurrentState.IsRTMRestrictionModeRunning)
-                        {
-                            //Clear all querys
-                            await GrowattDeviceQueryQueueWatchdog.ClearAsync();
-
-                            Logger.LogTrace("AutoMode enabled, not in grace periode: Running LoadBalanceRule one time");
-
-                            //If loadbalance is active the battety priority is set
-                            //await ApiAutoModeDisabledLoadBalanceRule();
-
-                            CurrentState.IsRTMRestrictionModeRunning = false;
-                        }
-
-                        Logger.LogTrace("Not in grace periode: Nothing to do");
-
-                        CurrentState.IsRTMRestrictionModeRunning = false;
-                    }
-                }
-                else
-                {
-                    // If the automatic mode is enabled and the restriction is not active, the power
-                    // value is set to 0
-
-                    if (ApiSettingBatteryPriorityMode)
-                    {
-                        await TibberRTMDefaultBatteryPriorityAsync(value);
-                    }
-                    else
-                    {
-                        await TibberRTMAdjustment1PowerSet(value);
-                    }
-                }
-                CurrentState.IsRTMAutoModeRunning = true;
-            }
-            else
-            {
-                if (CurrentState.IsGrowattOnline)
-                {
-                    // If the automatic mode is disabled, the power value is set to 0
-                    if (CurrentState.IsRTMAutoModeRunning)
-                    {
-                        await GrowattDeviceQueryQueueWatchdog.ClearAsync();
-
-                        Logger.LogTrace("AutoMode disabled: Running LoadBalanceRule one time");
-
-                        //If loadbalance is active the battety priority is set
-                        await ApiAutoModeDisabledLoadBalanceRule(value);
-
-                        CurrentState.IsRTMAutoModeRunning = false;
-                    }
-                }
-            }
-        }
-
-        private async Task TibberRTMAdjustment1PowerSet(TibberRealTimeMeasurement value)
-        {
-            int calcPowerValue = Math.Abs(value.TotalPower - ApiSettingAvgPowerOffset);
-            int powerValue = Math.Abs(value.TotalPower - ApiSettingAvgPowerOffset);
-
-            var devices = GrowattGetDevicesNoahOnline();
-
-            DeviceList? device = null;
-
-            var upperlimit = ApiSettingAvgPowerOffset + (ApiSettingAvgPowerHysteresis / 2);
-            var lowerlimit = ApiSettingAvgPowerOffset - (ApiSettingAvgPowerHysteresis / 2);
-
-            int consumptionDelta = Math.Abs(value.TotalPower - ApiSettingAvgPowerOffset);
-            int productionDelta = Math.Abs(value.TotalPower - ApiSettingAvgPowerOffset);
-
-            ApiSettingAvgPowerAdjustmentTraceValues.AddOrUpdate(new APiTraceValue() { Index = 201, Key = "TotalPowerDelta", Value = productionDelta.ToString() });
-
-            if (value.TotalPower > 0)
-                device = devices.OrderBy(x => x.PowerValueCommited).FirstOrDefault();
-
-            if (value.TotalPower < 0)
-                device = devices.OrderByDescending(x => x.PowerValueCommited).FirstOrDefault();
-
-            if (device != null)
-            {
-                int lastCommitedPowerValue = device.PowerValueCommited == 0 ? (int)(GrowattGetNoahLastDataPerDevice(device.DeviceSn)?.pac ?? 0) : device.PowerValueCommited;
-                var avgPowerConsumption = value.PowerAvgConsumption ?? 0;
-                var avgPowerProduction = -value.PowerAvgProduction ?? 0;
-
-                // If the total power is greater than 0, it indicates power consumption
-                if (value.TotalPower > 0)
-                {
-                    // If the average power consumption is greater than the upper limit
-                    if (avgPowerConsumption > upperlimit)
-                    {
-                        // Calculate the difference between the average power consumption and the
-                        // upper limit
-                        consumptionDelta = Math.Abs(avgPowerConsumption - upperlimit);
-                        // Add or update the trace value for the delta power value
-                        ApiSettingAvgPowerAdjustmentTraceValues.AddOrUpdate(new APiTraceValue() { Index = 202, Key = "TotalPowerDelta", Value = consumptionDelta.ToString() });
-                        // Calculate the new power value based on the consumption delta additional
-                        // half for slower decreasing
-                        calcPowerValue = lastCommitedPowerValue + (consumptionDelta / devices.Count);
-                    }
-                    // If the average power consumption is less than the lower limit
-                    else if (avgPowerConsumption < lowerlimit)
-                    {
-                        // Calculate the difference between the lower limit and the average power consumption
-                        consumptionDelta = Math.Abs(lowerlimit - avgPowerConsumption);
-                        // Calculate the new power value based on the consumption delta
-                        calcPowerValue = lastCommitedPowerValue - (consumptionDelta / devices.Count);
-                    }
-                }
-                // If the total power is less than 0, it indicates power production
-                else if (value.TotalPower < 0)
-                {
-                    // If the average power production is less than the lower limit
-                    if (avgPowerProduction < lowerlimit)
-                    {
-                        // Calculate the difference between the average power production and the
-                        // lower limit
-                        productionDelta = Math.Abs(avgPowerProduction - lowerlimit);
-                        // Add or update the trace value for the delta power value
-                        ApiSettingAvgPowerAdjustmentTraceValues.AddOrUpdate(new APiTraceValue() { Index = 203, Key = "TotalPowerDelta", Value = productionDelta.ToString() });
-                        // Calculate the new power value based on the production delta
-                        calcPowerValue = lastCommitedPowerValue - (productionDelta / devices.Count);
-                    }
-                    // If the average power production is greater than the upper limit
-                    else if (avgPowerProduction > upperlimit)
-                    {
-                        // Calculate the difference between the average power production and the
-                        // upper limit
-                        productionDelta = Math.Abs(avgPowerProduction - upperlimit);
-                        // Calculate the new power value based on the production delta
-                        calcPowerValue = lastCommitedPowerValue + (productionDelta / devices.Count);
-                    }
-                }
-
-                var maxPower = ApiSettingMaxPower / devices.Count;
-
-                powerValue = calcPowerValue > maxPower ? maxPower : calcPowerValue < 0 ? 0 : calcPowerValue;
-
-                if (powerValue <= maxPower && powerValue > 0)
-                {
-                    if (device.PowerValueRequested != powerValue)
-                    {
-                        var item = new DeviceNoahSetPowerQuery()
-                        {
-                            DeviceType = "noah",
-                            DeviceSn = device.DeviceSn,
-                            Value = powerValue,
-                            Force = true,
-                            TS = value.TS
-                        };
-
-                        await GrowattDeviceQueryQueueWatchdog.EnqueueAsync(item);
-                        LoggerRTM.LogTrace(messageTemplatePowerSet, "Enqueued", CurrentState.UtcNow, device.DeviceSn, device.PowerValueRequested);
-
-                        ApiSettingAvgPowerAdjustmentTraceValues.AddOrUpdate(new APiTraceValue() { Index = 204, Key = "TotalPowerRequested", Value = powerValue.ToString() });
-                    }
-                    else
-                    {
-                        Logger.LogTrace($"PowerValue {device.DeviceSn} already set to {powerValue}");
-                    }
-                }
-                else
-                {
-                    if (value.TotalPower > 0)
-                    {
-                        Logger.LogTrace($"TotalPower: {value.TotalPower}, AvgPowerProduction: {avgPowerConsumption}, upperDelta: {consumptionDelta} = {avgPowerConsumption} - {upperlimit}");
-                        Logger.LogTrace($"lastCommitedPowerValue: {lastCommitedPowerValue}, upperDelta: {consumptionDelta} = {avgPowerConsumption} - {upperlimit}, calcPowerValue: {calcPowerValue}, OffSet: {ApiSettingAvgPowerOffset}");
-                    }
-                    if (value.TotalPower < 0)
-                    {
-                        Logger.LogTrace($"TotalPower: {value.TotalPower}, AvgPowerProduction: {avgPowerProduction}, lowerDelta: {productionDelta} = {avgPowerProduction} - {lowerlimit}");
-                        Logger.LogTrace($"lastCommitedPowerValue: {lastCommitedPowerValue} - lowerDelta: {productionDelta}, calcPowerValue: {calcPowerValue}, OffSet: {ApiSettingAvgPowerOffset}");
-                    }
-                }
-
-                value.PowerValueNewRequested = powerValue;
-                value.PowerValueNewCommited = 0;
-                value.PowerValueNewDeviceSn = device.DeviceSn;
-
-                ApiInvokeStateHasChanged();
-            }
-
-            await Task.CompletedTask;
-        }
-
-        private async Task TibberRTMAdjustment2(TibberRealTimeMeasurement value)
-        {
-            if (CurrentState.GrowattNoahTotalPPV < ApiSettingAvgPower)
-            {
-                if (CurrentState.IsGrowattBatteryEmpty)
-                {
-                    Logger.LogInformation($"Battery is empty, set power to 0");
-                }
-                else
-                {
-                    if (CurrentState.IsExpensiveRestrictionMode || ApiSettingAutoMode)
-                    {
-                        await TibberRTMAdjustment2PowerSet(value);
-                    }
-                    else
-                    {
-                        await TibberRTMDefaultLoadPriorityAvgAsync(value);
-                    }
-                }
-            }
-            else if (CurrentState.GrowattNoahTotalPPV > 840)
-            {
-                if (CurrentState.IsGrowattBatteryFull)
-                {
-                    Logger.LogInformation($"Battery is full, no action needed");
-
-                    await TibberRTMDefaultBatteryPriorityAsync(value);
-                }
-                else
-                {
-                    //If cloudy
-                    if (CurrentState.IsCloudy)
-                    {
-                        await TibberRTMAdjustment2PowerSet(value);
-                        ApiSettingAvgPowerHysteresis = 10;
-                        ApiSettingAvgPowerOffset = -25;
-                    }
-                    else
-                    {
-                        // If the battery is not full and the restriction mode is cheap load with
-                        // full soloar power
-                        await TibberRTMDefaultLoadPriorityMaxAsync(value, GrowattGetDeviceNoahSnList());
-                    }
-                }
-            }
-            else
-            {
-                if (CurrentState.IsGrowattBatteryFull)
-                {
-                    if (CurrentState.IsExpensiveRestrictionMode || ApiSettingAutoMode)
-                    {
-                        await TibberRTMAdjustment2PowerSet(value);
-                    }
-                    else
-                    {
-                        await TibberRTMDefaultBatteryPriorityAsync(value);
-                    }
-                }
-                else
-                {
-                    //If cloudy
-                    if (CurrentState.IsCloudy)
-                    {
-                        if (CurrentState.IsExpensiveRestrictionMode || ApiSettingAutoMode)
-                        {
-                            await TibberRTMAdjustment2PowerSet(value);
-                        }
-                        else
-                        {
-                            await TibberRTMDefaultBatteryPriorityAsync(value);
-                        }
-                    }
-                    else
-                    {
-                        if (CurrentState.IsExpensiveRestrictionMode || !CurrentState.IsBelowAvgPrice || ApiSettingAutoMode)
-                        {
-                            //Battery is not full and it's not not cloudy and expensive restriction mode so we force load
-                            await TibberRTMAdjustment2PowerSet(value);
-                        }
-                        else
-                        {
-                            // If the price is not expensive and below avg price
-                            await TibberRTMDefaultLoadPrioritySolarInputAsync(value);
-                        }
-                    }
-                }
-            }
-        }
-
-        private async Task TibberRTMAdjustment2PowerSet(TibberRealTimeMeasurement value)
-        {
-            var devices = GrowattGetDevicesNoahOnline();
-            var totalCommited = devices.Sum(x => x.PowerValueCommited);
-
-            int calcPowerValue = Math.Abs(value.TotalPower - ApiSettingAvgPowerOffset);
-            int powerValue = Math.Abs(value.TotalPower - ApiSettingAvgPowerOffset);
-
-            DeviceList? device = null;
-
-            var upperlimit = ApiSettingAvgPowerOffset + (ApiSettingAvgPowerHysteresis / 2);
-            var lowerlimit = ApiSettingAvgPowerOffset - (ApiSettingAvgPowerHysteresis / 2);
-
-            int consumptionDelta = Math.Abs(value.TotalPower - ApiSettingAvgPowerOffset);
-            int productionDelta = Math.Abs(value.TotalPower - ApiSettingAvgPowerOffset);
-
-            ApiSettingAvgPowerAdjustmentTraceValues.AddOrUpdate(new APiTraceValue() { Index = 201, Key = "TotalPowerDelta", Value = productionDelta.ToString() });
-
-            if (value.TotalPower > 0)
-                device = devices.OrderBy(x => x.PowerValueCommited).FirstOrDefault();
-
-            if (value.TotalPower < 0)
-                device = devices.OrderByDescending(x => x.PowerValueCommited).FirstOrDefault();
-
-            if (device != null)
-            {
-                int lastCommitedPowerValue = device.PowerValueCommited == 0 ? (int)(GrowattGetNoahLastDataPerDevice(device.DeviceSn)?.pac ?? 0) : device.PowerValueCommited;
-                var avgPowerConsumption = value.PowerAvgConsumption;
-                var avgPowerProduction = -value.PowerAvgProduction;
-
-                // If the total power is greater than 0, it indicates power consumption
-                if (value.TotalPower > 0 && value.TotalPower > upperlimit)
-                {
-                    consumptionDelta = Math.Abs(value.TotalPower - ApiSettingAvgPowerOffset);
-
-                    calcPowerValue = device.PowerValueCommited + consumptionDelta / 2;
-                }
-                // If the total power is less than 0, it indicates power production
-                else if (value.TotalPower < 0 && value.TotalPower < lowerlimit)
-                {
-                    productionDelta = Math.Abs(value.TotalPower - ApiSettingAvgPowerOffset);
-                    calcPowerValue = device.PowerValueCommited - productionDelta / 2;
-                }
-
-                var maxPower = ApiSettingMaxPower / devices.Count;
-
-                powerValue = calcPowerValue > maxPower ? maxPower : calcPowerValue < 0 ? 0 : calcPowerValue;
-
-                if (powerValue <= maxPower && powerValue > 0)
-                {
-                    if (device.PowerValueRequested != powerValue)
-                    {
-                        var item = new DeviceNoahSetPowerQuery()
-                        {
-                            DeviceType = "noah",
-                            DeviceSn = device.DeviceSn,
-                            Value = powerValue,
-                            Force = true,
-                            TS = value.TS
-                        };
-
-                        await GrowattDeviceQueryQueueWatchdog.EnqueueAsync(item);
-                        LoggerRTM.LogTrace(messageTemplatePowerSet, "Enqueued", CurrentState.UtcNow, device.DeviceSn, device.PowerValueRequested);
-
-                        ApiSettingAvgPowerAdjustmentTraceValues.AddOrUpdate(new APiTraceValue() { Index = 204, Key = "TotalPowerRequested", Value = powerValue.ToString() });
-                    }
-                    else
-                    {
-                        Logger.LogTrace($"PowerValue {device.DeviceSn} already set to {powerValue}");
-                    }
-                }
-                else
-                {
-                    if (value.TotalPower > 0)
-                    {
-                        Logger.LogTrace($"TotalPower: {value.TotalPower}, AvgPowerProduction: {avgPowerConsumption}, upperDelta: {consumptionDelta} = {avgPowerConsumption} - {upperlimit}");
-                        Logger.LogTrace($"lastCommitedPowerValue: {lastCommitedPowerValue}, upperDelta: {consumptionDelta} = {avgPowerConsumption} - {upperlimit}, calcPowerValue: {calcPowerValue}, OffSet: {ApiSettingAvgPowerOffset}");
-                    }
-                    if (value.TotalPower < 0)
-                    {
-                        Logger.LogTrace($"TotalPower: {value.TotalPower}, AvgPowerProduction: {avgPowerProduction}, lowerDelta: {productionDelta} = {avgPowerProduction} - {lowerlimit}");
-                        Logger.LogTrace($"lastCommitedPowerValue: {lastCommitedPowerValue} - lowerDelta: {productionDelta}, calcPowerValue: {calcPowerValue}, OffSet: {ApiSettingAvgPowerOffset}");
-                    }
-                }
-
-                ApiInvokeStateHasChanged();
-            }
-
-            await Task.CompletedTask;
-        }
-
-        private async Task TibberRTMAdjustment3(TibberRealTimeMeasurement value)
-        {
-            var b2500Mode = CurrentState.UtcNow.Hour > 16;
-
-            if (ApiSettingAutoMode || CurrentState.IsExpensiveRestrictionMode)
-            {
-                await TibberRTMAdjustment3AutoMode(value);
-                return;
-            }
-
-            if (CurrentState.IsCloudy && !CurrentState.IsGrowattBatteryFull)
-            {
-                // If the battery is not full and it's cloudy load first battery
-                await TibberRTMDefaultBatteryPriorityAsync(value);
-            }
-
-            var last5Minutes = CurrentState.GrowattNoahGetAvgPpvLast5Minutes();
-
-            if (last5Minutes < ApiSettingAvgPower + 100)
-            {
-                if (CurrentState.IsGrowattBatteryEmpty)
-                {
-                    await TibberRTMDefaultLoadPriorityAvgAsync(value);
-
-                    LoggerRTM.LogInformation($"Battery is empty, set power to 0");
-                }
-                else if (CurrentState.IsGrowattBatteryFull)
-                {
-                    // If the battery is not full and the restriction mode is cheap load with full
-                    // soloar power
-                    await TibberRTMDefaultLoadPriorityAvgAsync(value);
-                }
-                else
-                {
-                    if (CurrentState.IsExpensiveRestrictionMode)
-                    {
-                        await TibberRTMAdjustment3AutoMode(value);
-                    }
-                    else if (CurrentState.IsCheapRestrictionMode)
-                    {
-                        await TibberRTMDefaultBatteryPriorityAsync(value);
-                    }
-                    else
-                    {
-                        if (CurrentState.IsCloudy && !CurrentState.IsBelowAvgPrice)
-                        {
-                            await TibberRTMDefaultLoadPriorityAvgAsync(value);
-                        }
-                        else
-                        {
-                            await TibberRTMDefaultLoadPrioritySolarInputAsync(value);
-                        }
-                    }
-                }
-            }
-            else if (last5Minutes > 840)
-            {
-                if (CurrentState.IsGrowattBatteryFull)
-                {
-                    LoggerRTM.LogInformation($"Battery is full, no action needed");
-
-                    await TibberRTMDefaultBatteryPriorityAsync(value);
-                }
-                else
-                {
-                    //If cloudy
-                    if (CurrentState.IsCloudy)
-                    {
-                        // If the battery is not full and it's cloudy load first battery
-                        await TibberRTMDefaultBatteryPriorityAsync(value);
-                    }
-                    else
-                    {
-                        // If the battery is not full and it's not cloudy and cheap restriction mode  
-                        if (CurrentState.IsCheapRestrictionMode)
-                        {
-                            //load with full soloar power
-                            await TibberRTMDefaultBatteryPriorityAsync(value);
-                        }
-                        else
-                        {
-                            //force load for consumption
-                            await TibberRTMDefaultLoadPriorityMaxAsync(value, GrowattGetDeviceNoahSnList());
-                        }
-                    }
-                }
-            }
-            else
-            {
-                if (CurrentState.IsGrowattBatteryFull)
-                {
-                    if (CurrentState.IsExpensiveRestrictionMode)
-                    {
-                        await TibberRTMAdjustment3AutoMode(value);
-                    }
-                    else
-                    {
-                        await TibberRTMDefaultBatteryPriorityAsync(value);
-                    }
-                }
-                else
-                {
-                    //If cloudy
-                    if (CurrentState.IsCloudy)
-                    {
-                        if (CurrentState.IsExpensiveRestrictionMode)
-                        {
-                            await TibberRTMAdjustment3AutoMode(value);
-                        }
-                        else
-                        {
-                            await TibberRTMDefaultBatteryPriorityAsync(value);
-                        }
-                    }
-                    else
-                    {
-                        if (CurrentState.IsExpensiveRestrictionMode || !CurrentState.IsBelowAvgPrice)
-                        {
-                            //Battery is not full and it's not not cloudy and expensive restriction mode so we force load
-                            await TibberRTMAdjustment3AutoMode(value);
-                        }
-                        else
-                        {
-                            // If the tibber price is not expensive and below avg price we not use
-                            // the barttery
-                            await TibberRTMDefaultLoadPrioritySolarInputAsync(value);
-                        }
-                    }
-                }
-            }
-        }
-
-        private async Task TibberRTMAdjustment3AutoMode(TibberRealTimeMeasurement value)
-        {
-            await TibberRTMCheckConditionAsync("LoadPriority_SetPower", [ new( async () =>
-                {
-                    await GrowattClearAllDeviceNoahTimeSegments();
-                }, () =>
-                {
-                    // Check if any time segments are enabled
-                    var anyEnabledTimesegments = GrowattLatestNoahInfoDatas().Any(x => x!.TimeSegments.Any(x => x.Enable == "1"));
-
-                    return Task.FromResult(!anyEnabledTimesegments);
-                })
-            ]);
-
-            await TibberRTMAdjustment3SetPower(value);
-        }
-
         private async Task TibberRTMCalculation1(TibberRealTimeMeasurement value)
         {
             lock (TibberRealTimeMeasurement._syncRoot)
@@ -1761,7 +1198,6 @@ namespace EnergyAutomate.Services
         {
             foreach (var apiCondition in apiConditions)
             {
-
                 if (CurrentState.ActiveRTMCondition != condition)
                 {
                     CurrentState.ActiveRTMCondition = condition;
@@ -1793,11 +1229,11 @@ namespace EnergyAutomate.Services
 
         private async Task TibberRTMDefaultBatteryPriorityAsync(TibberRealTimeMeasurement value)
         {
-            await TibberRTMCheckConditionAsync("BatteryPriority_SetPower_0", [ 
+            await TibberRTMCheckConditionAsync("BatteryPriority_SetPower_0", [
                 new(
                     async () => {
                         await GrowattQueryBattPriorityDeviceNoahTimeSegmentsAsync();
-                    }, 
+                    },
                     async () => {
                         // Check if any time segments are enabled
                         var anyTimesegmentEnabled = GrowattLatestNoahInfoDatas()
@@ -1831,7 +1267,7 @@ namespace EnergyAutomate.Services
         private async Task TibberRTMDefaultLoadPriorityAvgAsync(TibberRealTimeMeasurement value)
         {
             // If the battery is not empty and the restriction mode is not expensive activate avg injection
-            await TibberRTMCheckConditionAsync($"LoadPriority_SetPower_Avg_{ApiSettingAvgPower}", [ 
+            await TibberRTMCheckConditionAsync($"LoadPriority_SetPower_Avg_{ApiSettingAvgPower}", [
                 new (
                     async () =>
                     {
@@ -1850,7 +1286,7 @@ namespace EnergyAutomate.Services
                 ),
                 new (
                     async () =>
-                    {                       
+                    {
                         await GrowattClearSetPowerAsync(value.TS, ApiSettingAvgPower);
                     },
                     async () =>
@@ -1911,7 +1347,7 @@ namespace EnergyAutomate.Services
 
         private async Task TibberRTMDefaultLoadPrioritySolarInputAsync(TibberRealTimeMeasurement value, int reductionPerMinute = 0)
         {
-            await TibberRTMCheckConditionAsync("BatteryPriority_SetPower_SolarInput", [ 
+            await TibberRTMCheckConditionAsync("BatteryPriority_SetPower_SolarInput", [
                 new(
                     async () => {
                         await GrowattClearAllDeviceNoahTimeSegments();

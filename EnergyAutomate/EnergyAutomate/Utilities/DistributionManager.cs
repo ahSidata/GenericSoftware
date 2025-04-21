@@ -131,6 +131,13 @@ namespace EnergyAutomate.Utilities
         /// <param name="totalPower">Total power to distribute</param>
         /// <param name="prioritizeHighSoc">If true, prioritize devices with higher SoC; otherwise prioritize lower SoC</param>
         /// <param name="timestamp">Current timestamp</param>
+        /// <summary>
+        /// Distributes the specified total power among the available devices based on SoC prioritization and real-time device data.
+        /// </summary>
+        /// <param name="devices">List of devices</param>
+        /// <param name="totalPower">Total power to distribute</param>
+        /// <param name="prioritizeHighSoc">If true, prioritize devices with higher SoC; otherwise prioritize lower SoC</param>
+        /// <param name="timestamp">Current timestamp</param>
         public async Task DistributePower(List<DeviceList> devices, int totalPower, bool prioritizeHighSoc, DateTimeOffset timestamp)
         {
             int maxPowerPerDevice = devices.Count > 0 ? ApiService.ApiSettingMaxPower / devices.Count : 0;
@@ -145,10 +152,17 @@ namespace EnergyAutomate.Utilities
             LoggerRTM.LogTrace("Current total power: {CurrentPower}W, target power: {TargetPower}W, difference: {Difference}W",
                 currentTotalPower, totalPower, powerDifference);
 
-            // Filter out empty batteries
+            // Filter out empty batteries and devices with insufficient data
             var eligibleDevices = devices
                 .Where(d => !d.IsBatteryEmpty)
                 .ToList();
+
+            // Collect real-time metrics for eligible devices
+            foreach (var device in eligibleDevices)
+            {
+                LoggerRTM.LogTrace("Device {DeviceSn}: PowerOutput={Output}W, PowerSolar={Solar}W, PowerBattery={Battery}W, SoC={Soc}%",
+                    device.DeviceSn, device.PowerValueOutput, device.PowerValueSolar, device.PowerValueBattery, device.Soc);
+            }
 
             LoggerRTM.LogTrace("Found {EligibleCount} eligible devices (non-empty) from {TotalCount} total devices",
                 eligibleDevices.Count, devices.Count);
@@ -179,46 +193,45 @@ namespace EnergyAutomate.Utilities
                 return;
             }
 
-            // Check if the change can be handled by a single device
+            // Check if the change can be handled by a single device with optimal conditions
             if (Math.Abs(powerDifference) > 0 && Math.Abs(powerDifference) <= maxPowerPerDevice && eligibleDevices.Count > 1)
             {
-                // Select device with best SoC for adjustment (highest SoC for increases, lowest for decreases)
-                var targetDevice = prioritizeHighSoc
-                    ? eligibleDevices.OrderByDescending(d => d.Soc).First()
-                    : eligibleDevices.OrderBy(d => d.Soc).First();
+                // Select device based on both SoC and real-time metrics
+                var optimalDevice = SelectOptimalDevice(eligibleDevices, powerDifference > 0, prioritizeHighSoc);
 
                 // Calculate the new power value for the selected device
-                int newPower = targetDevice.PowerValueCommited;
+                int newPower = optimalDevice.PowerValueCommited;
                 if (powerDifference > 0)
                 {
-                    // Calculate maximum allowed increase
-                    int maxIncrease = maxPowerPerDevice - targetDevice.PowerValueCommited;
+                    // Calculate maximum allowed increase based on device capabilities
+                    int maxIncrease = Math.Min(maxPowerPerDevice - optimalDevice.PowerValueCommited,
+                        Math.Max(0, GetDeviceAvailableCapacity(optimalDevice)));
                     int actualIncrease = Math.Min(powerDifference, maxIncrease);
                     newPower += actualIncrease;
 
-                    LoggerRTM.LogTrace("Device {DeviceSn} can handle increase: Current {Current}W, Max increase {MaxIncrease}W, Actual increase {ActualIncrease}W",
-                        targetDevice.DeviceSn, targetDevice.PowerValueCommited, maxIncrease, actualIncrease);
+                    LoggerRTM.LogTrace("Device {DeviceSn} can handle increase: Current {Current}W, Max increase {MaxIncrease}W, Actual increase {ActualIncrease}W, Solar {Solar}W, Battery {Battery}W",
+                        optimalDevice.DeviceSn, optimalDevice.PowerValueCommited, maxIncrease, actualIncrease, optimalDevice.PowerValueSolar, optimalDevice.PowerValueBattery);
                 }
                 else // powerDifference < 0
                 {
-                    // Calculate maximum allowed decrease
-                    int maxDecrease = targetDevice.PowerValueCommited; // Don't go below 0
+                    // Calculate maximum allowed decrease based on device current output
+                    int maxDecrease = Math.Min(optimalDevice.PowerValueCommited, optimalDevice.PowerValueOutput); // Don't decrease more than current output
                     int actualDecrease = Math.Min(Math.Abs(powerDifference), maxDecrease);
                     newPower -= actualDecrease;
 
-                    LoggerRTM.LogTrace("Device {DeviceSn} can handle decrease: Current {Current}W, Max decrease {MaxDecrease}W, Actual decrease {ActualDecrease}W",
-                        targetDevice.DeviceSn, targetDevice.PowerValueCommited, maxDecrease, actualDecrease);
+                    LoggerRTM.LogTrace("Device {DeviceSn} can handle decrease: Current {Current}W, Max decrease {MaxDecrease}W, Actual decrease {ActualDecrease}W, Output {Output}W",
+                        optimalDevice.DeviceSn, optimalDevice.PowerValueCommited, maxDecrease, actualDecrease, optimalDevice.PowerValueOutput);
                 }
 
-                if (newPower != targetDevice.PowerValueCommited)
+                if (newPower != optimalDevice.PowerValueCommited)
                 {
                     LoggerRTM.LogTrace("Single device adjustment: Updating device {DeviceSn} (SoC {Soc}%) from {OldPower}W to {NewPower}W",
-                        targetDevice.DeviceSn, targetDevice.Soc, targetDevice.PowerValueCommited, newPower);
+                        optimalDevice.DeviceSn, optimalDevice.Soc, optimalDevice.PowerValueCommited, newPower);
 
                     await GrowattDeviceQueryQueueWatchdog.EnqueueAsync(new DeviceNoahSetPowerQuery
                     {
                         DeviceType = "noah",
-                        DeviceSn = targetDevice.DeviceSn,
+                        DeviceSn = optimalDevice.DeviceSn,
                         Value = newPower,
                         Force = true,
                         TS = timestamp
@@ -235,39 +248,30 @@ namespace EnergyAutomate.Utilities
             }
 
             // If single-device adjustment is not possible, distribute power across all devices
-            // Sort devices based on SoC priority
-            var sortedDevices = prioritizeHighSoc
-                ? eligibleDevices.OrderByDescending(d => d.Soc).ToList()
-                : eligibleDevices.OrderBy(d => d.Soc).ToList();
+            // Sort devices based on SoC priority and efficiency metrics
+            var sortedDevices = SortDevicesByPriority(eligibleDevices, prioritizeHighSoc);
 
-            LoggerRTM.LogTrace("Devices sorted by SoC ({Order}) for balanced distribution",
-                prioritizeHighSoc ? "descending" : "ascending");
+            LoggerRTM.LogTrace("Devices sorted by priority for balanced distribution");
 
-            // Calculate power to distribute for each device
+            // Calculate base power per device
             int powerPerDevice = eligibleDevices.Count > 0 ? totalPower / eligibleDevices.Count : 0;
 
             LoggerRTM.LogTrace("Base power per device: {PowerPerDevice}W, Max power per device: {MaxPowerPerDevice}W",
                 powerPerDevice, maxPowerPerDevice);
 
-            int remainingPower = totalPower;
+            // Calculate weighted distribution based on device capabilities
+            Dictionary<string, int> allocations = CalculateWeightedDistribution(sortedDevices, totalPower, maxPowerPerDevice);
+
+            // Apply the calculated power allocations
             foreach (var device in sortedDevices)
             {
-                int allocatedPower;
-                if (remainingPower >= maxPowerPerDevice)
-                {
-                    allocatedPower = maxPowerPerDevice;
-                    remainingPower -= maxPowerPerDevice;
-                }
-                else
-                {
-                    allocatedPower = remainingPower;
-                    remainingPower = 0;
-                }
+                int allocatedPower = allocations[device.DeviceSn];
 
                 // Check difference to current value
                 int powerChange = allocatedPower - device.PowerValueCommited;
-                LoggerRTM.LogTrace("Device {DeviceSn}: Current {Current}W, Allocated {Allocated}W, Change {Change}W",
-                    device.DeviceSn, device.PowerValueCommited, allocatedPower, powerChange);
+                LoggerRTM.LogTrace("Device {DeviceSn}: Current {Current}W, Allocated {Allocated}W, Change {Change}W, SoC {Soc}%, Output {Output}W, Solar {Solar}W, Battery {Battery}W",
+                    device.DeviceSn, device.PowerValueCommited, allocatedPower, powerChange, device.Soc,
+                    device.PowerValueOutput, device.PowerValueSolar, device.PowerValueBattery);
 
                 await GrowattDeviceQueryQueueWatchdog.EnqueueAsync(new DeviceNoahSetPowerQuery
                 {
@@ -281,5 +285,155 @@ namespace EnergyAutomate.Utilities
 
             LoggerRTM.LogTrace("Balanced power distribution completed for {DeviceCount} devices", sortedDevices.Count);
         }
+
+        /// <summary>
+        /// Selects the optimal device for power adjustment based on real-time metrics
+        /// </summary>
+        private DeviceList SelectOptimalDevice(List<DeviceList> devices, bool isIncrease, bool prioritizeHighSoc)
+        {
+            if (isIncrease)
+            {
+                // For power increase, select device with:
+                // 1. Appropriate SoC (high or low based on prioritization)
+                // 2. High solar input (more efficient)
+                // 3. Good battery status
+                return prioritizeHighSoc
+                    ? devices.OrderByDescending(d => d.Soc)
+                            .ThenByDescending(d => d.PowerValueSolar)
+                            .ThenByDescending(d => d.PowerValueBattery)
+                            .First()
+                    : devices.OrderBy(d => d.Soc)
+                            .ThenByDescending(d => d.PowerValueSolar)
+                            .ThenByDescending(d => d.PowerValueBattery)
+                            .First();
+            }
+            else
+            {
+                // For power decrease, select device with:
+                // 1. Appropriate SoC (high or low based on prioritization)
+                // 2. Highest battery consumption (most negative PowerValueBattery)
+                // - This will prioritize devices that are actively discharging their batteries
+                return prioritizeHighSoc
+                    ? devices.OrderByDescending(d => d.Soc)
+                            .ThenBy(d => d.PowerValueBattery) // Ascending to prioritize negative values
+                            .First()
+                    : devices.OrderBy(d => d.Soc)
+                            .ThenBy(d => d.PowerValueBattery) // Ascending to prioritize negative values
+                            .First();
+            }
+        }
+
+        /// <summary>
+        /// Gets the available capacity for power increase based on solar and battery metrics
+        /// </summary>
+        private int GetDeviceAvailableCapacity(DeviceList device)
+        {
+            // This estimates how much more power the device could potentially provide
+            // based on solar input and battery status
+            return device.PowerValueSolar + (device.PowerValueBattery > 0 ? device.PowerValueBattery : 0);
+        }
+
+        /// <summary>
+        /// Sorts devices by priority for power distribution
+        /// </summary>
+        private List<DeviceList> SortDevicesByPriority(List<DeviceList> devices, bool prioritizeHighSoc)
+        {
+            if (prioritizeHighSoc)
+            {
+                // When prioritizing high SoC (typically for increasing power):
+                // Sort by SoC descending, then by solar input descending
+                return devices.OrderByDescending(d => d.Soc)
+                             .ThenByDescending(d => d.PowerValueSolar)
+                             .ToList();
+            }
+            else
+            {
+                // When prioritizing low SoC (typically for decreasing power):
+                // Sort by SoC ascending, and prioritize those with higher battery consumption (negative values)
+                return devices.OrderBy(d => d.Soc)
+                             .ThenBy(d => d.PowerValueBattery) // Prioritize devices that are discharging more
+                             .ToList();
+            }
+        }
+
+        /// <summary>
+        /// Calculates weighted power distribution based on device capabilities
+        /// </summary>
+        private Dictionary<string, int> CalculateWeightedDistribution(List<DeviceList> devices, int totalPower, int maxPowerPerDevice)
+        {
+            Dictionary<string, int> allocations = new Dictionary<string, int>();
+            int deviceCount = devices.Count;
+
+            if (deviceCount == 0)
+                return allocations;
+
+            // Calculate total weighting factors
+            int totalWeightingFactor = 0;
+            Dictionary<string, int> deviceWeights = new Dictionary<string, int>();
+
+            foreach (var device in devices)
+            {
+                // Weight based on solar input and battery status
+                int weight = 100; // Base weight
+
+                // Add bonus weight for higher solar input
+                weight += (int)(device.PowerValueSolar / 10);
+
+                // Add bonus/penalty for battery status
+                if (device.PowerValueBattery > 0) // Charging
+                    weight += (int)(device.PowerValueBattery / 20);
+                else if (device.PowerValueBattery < 0) // Discharging
+                    weight -= (int)(Math.Abs(device.PowerValueBattery) / 20);
+
+                // Ensure minimum weight
+                weight = Math.Max(10, weight);
+
+                deviceWeights[device.DeviceSn] = weight;
+                totalWeightingFactor += weight;
+            }
+
+            // First pass: calculate weighted allocation
+            int remainingPower = totalPower;
+            foreach (var device in devices)
+            {
+                if (totalWeightingFactor == 0)
+                {
+                    // Fallback to equal distribution
+                    allocations[device.DeviceSn] = Math.Min(maxPowerPerDevice, totalPower / deviceCount);
+                    continue;
+                }
+
+                double weightRatio = (double)deviceWeights[device.DeviceSn] / totalWeightingFactor;
+                int initialAllocation = (int)(totalPower * weightRatio);
+
+                // Cap at maxPowerPerDevice
+                int allocation = Math.Min(initialAllocation, maxPowerPerDevice);
+                // Ensure we don't exceed remaining power
+                allocation = Math.Min(allocation, remainingPower);
+
+                allocations[device.DeviceSn] = allocation;
+                remainingPower -= allocation;
+            }
+
+            // Second pass: distribute any remaining power
+            if (remainingPower > 0)
+            {
+                foreach (var device in devices.OrderByDescending(d => deviceWeights[d.DeviceSn]))
+                {
+                    int additionalPower = Math.Min(remainingPower, maxPowerPerDevice - allocations[device.DeviceSn]);
+                    if (additionalPower > 0)
+                    {
+                        allocations[device.DeviceSn] += additionalPower;
+                        remainingPower -= additionalPower;
+
+                        if (remainingPower <= 0)
+                            break;
+                    }
+                }
+            }
+
+            return allocations;
+        }
+
     }
 }
