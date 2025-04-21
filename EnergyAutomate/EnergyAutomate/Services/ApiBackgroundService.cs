@@ -1,4 +1,6 @@
-﻿namespace EnergyAutomate.Services
+﻿using EnergyAutomate.Utilities;
+
+namespace EnergyAutomate.Services
 {
     public class ApiBackgroundService : IHostedService, IDisposable
     {
@@ -29,6 +31,14 @@
 
         public async Task StartAsync(CancellationToken cancellationToken)
         {
+            //var proxy = new MqttProxy(
+            //    proxyCertPath: "certs/server.crt",
+            //    proxyKeyPath: "certs/server.key",
+            //    brokerHost: "mqtt.growatt.com",
+            //    brokerPort: 7006);
+
+            //await proxy.StartAsync();
+
             await ApiRealTimeMeasurementWatchdog.StartAsync(CancellationTokenSource.CreateLinkedTokenSource(cancellationToken).Token);
             await ApiService.ApiStartAsync(CancellationTokenSource.CreateLinkedTokenSource(cancellationToken).Token);
         }

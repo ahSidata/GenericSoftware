@@ -364,3 +364,6 @@ FodyWeavers.xsd
 
 # Visual Studio 2017 auto-generated files
 /EnergyAutomate/EnergyAutomate/appsettings.Development.json
+
+# Click-Once directory
+certs/
