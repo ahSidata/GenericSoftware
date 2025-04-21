@@ -1,6 +1,7 @@
 ﻿using BlazorBootstrap;
 using EnergyAutomate.Definitions;
 using EnergyAutomate.Extentions;
+using EnergyAutomate.Utilities;
 using Microsoft.EntityFrameworkCore;
 
 namespace EnergyAutomate.Services
@@ -22,6 +23,7 @@ namespace EnergyAutomate.Services
 
         public ApiService(IServiceProvider serviceProvider)
         {
+            DistributionManager = new DistributionManager(serviceProvider);
             CurrentState = new ApiState(serviceProvider, this);
             ServiceProvider = serviceProvider;
             GrowattDeviceQueryQueueWatchdog.OnItemDequeued += GrowattDeviceQueryQueueWatchdog_OnItemDequeued;
@@ -37,6 +39,8 @@ namespace EnergyAutomate.Services
         #endregion Events
 
         #region Properties
+
+        public DistributionManager DistributionManager { get; init; }
 
         public bool ApiSettingAutoMode { get; set; }
         public int ApiSettingAvgPower { get; set; } = 200;
@@ -1506,10 +1510,18 @@ namespace EnergyAutomate.Services
 
         private async Task TibberRTMAdjustment3(TibberRealTimeMeasurement value)
         {
-            if (ApiSettingAutoMode)
+            var b2500Mode = CurrentState.UtcNow.Hour > 16;
+
+            if (ApiSettingAutoMode || CurrentState.IsExpensiveRestrictionMode)
             {
                 await TibberRTMAdjustment3AutoMode(value);
                 return;
+            }
+
+            if (CurrentState.IsCloudy && !CurrentState.IsGrowattBatteryFull)
+            {
+                // If the battery is not full and it's cloudy load first battery
+                await TibberRTMDefaultBatteryPriorityAsync(value);
             }
 
             var last5Minutes = CurrentState.GrowattNoahGetAvgPpvLast5Minutes();
@@ -1564,20 +1576,20 @@ namespace EnergyAutomate.Services
                     //If cloudy
                     if (CurrentState.IsCloudy)
                     {
-                        await TibberRTMAdjustment3AutoMode(value);
-                        ApiSettingAvgPowerHysteresis = 10;
-                        ApiSettingAvgPowerOffset = -25;
+                        // If the battery is not full and it's cloudy load first battery
+                        await TibberRTMDefaultBatteryPriorityAsync(value);
                     }
                     else
                     {
+                        // If the battery is not full and it's not cloudy and cheap restriction mode  
                         if (CurrentState.IsCheapRestrictionMode)
                         {
-                            // If the battery is not full and the restriction mode is cheap load
-                            // with full soloar power
+                            //load with full soloar power
                             await TibberRTMDefaultBatteryPriorityAsync(value);
                         }
                         else
                         {
+                            //force load for consumption
                             await TibberRTMDefaultLoadPriorityMaxAsync(value, GrowattGetDeviceNoahSnList());
                         }
                     }

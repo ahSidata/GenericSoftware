@@ -44,13 +44,29 @@
             IsActive = false
         };
 
+        public static readonly GrowattElement Distribution1 = new GrowattElement
+        {
+            Id = new Guid("{FB27517E-BE1A-48A6-8037-1534049743EB}"),
+            ElementType = GrowattElement.ElementTypes.Distribution,
+            Name = "Distribution1",
+            IsActive = false
+        };
+
+        public static readonly GrowattElement Distribution2 = new GrowattElement
+        {
+            Id = new Guid("{046BF701-320D-4B05-BD92-D27B7B386BDB}"),
+            ElementType = GrowattElement.ElementTypes.Distribution,
+            Name = "Distribution2",
+            IsActive = true
+        };
+
         #endregion Fields
 
         #region Public Methods
 
         public static IEnumerable<GrowattElement> GrowattDefaultElements()
         {
-            return new List<GrowattElement> { Adjustment1, Adjustment2, Adjustment3,  Calculation1, Calculation2 };
+            return new List<GrowattElement> { Adjustment1, Adjustment2, Adjustment3,  Calculation1, Calculation2, Distribution1, Distribution2 };
         }
 
         #endregion Public Methods

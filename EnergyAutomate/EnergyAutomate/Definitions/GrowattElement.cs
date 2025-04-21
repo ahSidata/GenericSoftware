@@ -7,7 +7,8 @@
         public enum ElementTypes
         {
             Adjustment,
-            Calculation
+            Calculation,
+            Distribution
         }
 
         #endregion Enums

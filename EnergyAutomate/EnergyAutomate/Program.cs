@@ -25,9 +25,9 @@ public class Program
         var builder = WebApplication.CreateBuilder(args);
 
 #if DEBUG
-        builder.Logging.AddDebug();
+        //builder.Logging.AddDebug();
 #endif
-        builder.Logging.AddConsole();
+        //builder.Logging.AddConsole();
 
 
         // Konfiguration laden
