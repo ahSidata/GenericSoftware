@@ -14,141 +14,182 @@
         /// <param name="value">The real-time measurement data from Tibber.</param>
         private async Task TibberRTMAdjustment3(TibberRealTimeMeasurement value)
         {
-            // Determine if the current time is after 4 PM (used for specific logic).
-            var b2500Mode = CurrentState.UtcNow.Hour > 16;
-
-            // If auto mode or expensive restriction mode is active, delegate to auto mode adjustment.
-            if (ApiSettingAutoMode || CurrentState.IsExpensiveRestrictionMode)
+            // 1. Überprüfung spezieller Bedingungen, die immer Vorrang haben
+            if (ApiSettingAutoMode)
             {
                 await TibberRTMAdjustment3AutoMode(value);
                 return;
             }
 
-            // If it's cloudy and the battery is not full, prioritize charging the battery.
-            if (CurrentState.IsCloudy && !CurrentState.IsGrowattBatteryFull)
+            // Effektive Solarleistung prüfen - diese berücksichtigt bereits die tatsächlich
+            // gemessene Leistung der Panels, unabhängig von Tageszeit
+            var effectiveSolarPower = CurrentState.GrowattNoahGetAvgPpvLast5Minutes();
+
+            // Nach 16 Uhr kommt die Energie vom B2500 Akku
+            bool isAfter16h = DateTime.Now.Hour >= 16;
+
+            LoggerRTM.LogInformation($"Effektive Solarleistung: {effectiveSolarPower}W, Nach 16 Uhr: {isAfter16h}");
+
+            // Nach 16 Uhr: Keine Batterie-Priorisierung, da Strom vom B2500-Akku
+            if (isAfter16h)
             {
-                await TibberRTMDefaultBatteryPriorityAsync(value);
+                LoggerRTM.LogInformation("Nach 16 Uhr: Energie kommt vom B2500-Akku, Last wird priorisiert");
+
+                // Wenn überhaupt noch Solar-Energie verfügbar ist, Verbrauch optimieren
+                if (effectiveSolarPower > 100) // Minimalschwelle für relevante Solarenergie
+                {
+                    LoggerRTM.LogInformation($"B2500 liefert noch {effectiveSolarPower}W: Last wird entsprechend angepasst");
+                    await TibberRTMDefaultLoadPrioritySolarInputAsync(value);
+                }
+                else if (CurrentState.IsExpensiveRestrictionMode)
+                {
+                    LoggerRTM.LogInformation("Teure Strompreise, energiesparende Verteilung aktivieren");
+                    await TibberRTMAdjustment3AutoMode(value);
+                }
+                else
+                {
+                    LoggerRTM.LogInformation("Standard-Last aktivieren");
+                    await TibberRTMDefaultLoadPriorityAvgAsync(value);
+                }
+                return;
             }
 
-            // Get the average solar power production over the last 5 minutes.
-            var last5Minutes = CurrentState.GrowattNoahGetAvgPpvLast5Minutes();
+            // Vor 16 Uhr: Normale Entscheidungslogik basierend auf tatsächlicher Solarleistung und Batteriestand
 
-            // If the average power is below the threshold (ApiSettingAvgPower + 100).
-            if (last5Minutes < ApiSettingAvgPower + 100)
+            // Wenn der Akku nicht voll ist, höchste Priorität auf Ladung legen
+            if (!CurrentState.IsGrowattBatteryFull)
             {
-                // If the battery is empty, prioritize load reduction.
-                if (CurrentState.IsGrowattBatteryEmpty)
+                // Akkuladestrategie - Vorrangige Bedingungen prüfen
+
+                // a. Bei günstigen Strompreisen oder Überschuss-Solarenergie: Akku laden
+                if (CurrentState.IsCheapRestrictionMode || CurrentState.IsBelowAvgPrice)
                 {
-                    await TibberRTMDefaultLoadPriorityAvgAsync(value);
-                    LoggerRTM.LogInformation($"Battery is empty, set power to 0");
+                    LoggerRTM.LogInformation("Günstige Strompreise: Batterie wird geladen");
+                    await TibberRTMDefaultBatteryPriorityAsync(value);
+                    return;
                 }
-                // If the battery is full, prioritize load with full solar power.
-                else if (CurrentState.IsGrowattBatteryFull)
+
+                // b. Bei hoher Solarleistung: Akku laden
+                if (effectiveSolarPower > ApiSettingAvgPower)
                 {
+                    LoggerRTM.LogInformation($"Hohe Solarleistung ({effectiveSolarPower}W): Batterie wird geladen");
+                    await TibberRTMDefaultBatteryPriorityAsync(value);
+                    return;
+                }
+            }
+
+            // 2. Wenn der Akku voll ist oder wir teure Strompreise haben 
+            // und nicht genug Solarleistung verfügbar ist - Verbraucher-Modus
+
+            // Bei teuren Strompreisen: Automodus für optimale Verteilung
+            if (CurrentState.IsExpensiveRestrictionMode)
+            {
+                await TibberRTMAdjustment3AutoMode(value);
+                return;
+            }
+
+            // Wenn der Akku voll ist: Verbrauch optimieren
+            if (CurrentState.IsGrowattBatteryFull)
+            {
+                // Bei hohen Solarleistungen: Maximaler Verbrauch
+                if (effectiveSolarPower > ApiSettingMaxPower * 0.75) // Über 75% der maximalen Leistung
+                {
+                    LoggerRTM.LogInformation($"Akku voll und hohe Solarleistung ({effectiveSolarPower}W): Hohe Last");
+                    await TibberRTMDefaultLoadPriorityMaxAsync(value, GrowattGetDeviceNoahSnList());
+                }
+                else
+                {
+                    LoggerRTM.LogInformation($"Akku voll: Standard-Last");
+                    await TibberRTMDefaultLoadPriorityAvgAsync(value);
+                }
+                return;
+            }
+
+            // 3. Standard-Situationen basierend auf Solarleistung
+
+            // a. Niedrige Solarleistung
+            if (effectiveSolarPower < ApiSettingAvgPower * 0.5) // Weniger als 50% der Zielleistung
+            {
+                // Wenn der Akku fast leer ist und die Preise günstig sind: Akku laden
+                if (GetBatteryLevel() < 30 && CurrentState.IsBelowAvgPrice)
+                {
+                    LoggerRTM.LogInformation($"Niedrige Solarleistung, niedriger Akkustand, günstige Preise: Akku laden");
+                    await TibberRTMDefaultBatteryPriorityAsync(value);
+                }
+                else if (CurrentState.IsGrowattBatteryEmpty)
+                {
+                    // Bei leerem Akku: Last reduzieren
+                    LoggerRTM.LogInformation($"Batterie ist leer, Last reduzieren");
                     await TibberRTMDefaultLoadPriorityAvgAsync(value);
                 }
                 else
                 {
-                    // Handle different restriction modes.
-                    if (CurrentState.IsExpensiveRestrictionMode)
-                    {
-                        await TibberRTMAdjustment3AutoMode(value);
-                    }
-                    else if (CurrentState.IsCheapRestrictionMode)
-                    {
-                        await TibberRTMDefaultBatteryPriorityAsync(value);
-                    }
-                    else
-                    {
-                        // If it's cloudy and the price is not below average, prioritize load reduction.
-                        if (CurrentState.IsCloudy && !CurrentState.IsBelowAvgPrice)
-                        {
-                            await TibberRTMDefaultLoadPriorityAvgAsync(value);
-                        }
-                        else
-                        {
-                            // Otherwise, prioritize solar input for load.
-                            await TibberRTMDefaultLoadPrioritySolarInputAsync(value);
-                        }
-                    }
+                    // Im Normalfall bei wenig Solarenergie: Automodus für optimale Verteilung
+                    await TibberRTMAdjustment3AutoMode(value);
                 }
             }
-            // If the average power is above 840.
-            else if (last5Minutes > 840)
+            // b. Hohe Solarleistung
+            else if (effectiveSolarPower > ApiSettingMaxPower * 0.8) // Über 80% der maximalen Leistung
             {
-                // If the battery is full, no action is needed.
-                if (CurrentState.IsGrowattBatteryFull)
+                // Bei hoher Solarleistung priorisieren wir die Batterieladung
+                LoggerRTM.LogInformation($"Hohe Solarleistung: Akku laden");
+                await TibberRTMDefaultBatteryPriorityAsync(value);
+            }
+            // c. Mittlere Solarleistung
+            else
+            {
+                // Bei mittlerer Solarleistung: Batterie laden solange der Akkustand nicht sehr hoch ist
+                if (GetBatteryLevel() < 80)
                 {
-                    LoggerRTM.LogInformation($"Battery is full, no action needed");
+                    LoggerRTM.LogInformation($"Mittlere Solarleistung, Akkustand unter 80%: Akku laden");
                     await TibberRTMDefaultBatteryPriorityAsync(value);
                 }
                 else
                 {
-                    // If it's cloudy, prioritize charging the battery.
-                    if (CurrentState.IsCloudy)
-                    {
-                        await TibberRTMDefaultBatteryPriorityAsync(value);
-                    }
-                    else
-                    {
-                        // If in cheap restriction mode, prioritize charging the battery with full
-                        // solar power.
-                        if (CurrentState.IsCheapRestrictionMode)
-                        {
-                            await TibberRTMDefaultBatteryPriorityAsync(value);
-                        }
-                        else
-                        {
-                            // Otherwise, force load for consumption.
-                            await TibberRTMDefaultLoadPriorityMaxAsync(value, GrowattGetDeviceNoahSnList());
-                        }
-                    }
-                }
-            }
-            else
-            {
-                // Handle cases where the average power is within a specific range.
-                if (CurrentState.IsGrowattBatteryFull)
-                {
-                    if (CurrentState.IsExpensiveRestrictionMode)
-                    {
-                        await TibberRTMAdjustment3AutoMode(value);
-                    }
-                    else
-                    {
-                        await TibberRTMDefaultBatteryPriorityAsync(value);
-                    }
-                }
-                else
-                {
-                    // If it's cloudy, handle based on restriction mode.
-                    if (CurrentState.IsCloudy)
-                    {
-                        if (CurrentState.IsExpensiveRestrictionMode)
-                        {
-                            await TibberRTMAdjustment3AutoMode(value);
-                        }
-                        else
-                        {
-                            await TibberRTMDefaultBatteryPriorityAsync(value);
-                        }
-                    }
-                    else
-                    {
-                        // If the price is not below average or in expensive restriction mode, force load.
-                        if (CurrentState.IsExpensiveRestrictionMode || !CurrentState.IsBelowAvgPrice)
-                        {
-                            await TibberRTMAdjustment3AutoMode(value);
-                        }
-                        else
-                        {
-                            // Otherwise, prioritize solar input for load.
-                            await TibberRTMDefaultLoadPrioritySolarInputAsync(value);
-                        }
-                    }
+                    // Bei fast vollem Akku: Last priorisieren
+                    LoggerRTM.LogInformation($"Mittlere Solarleistung, hoher Akkustand: Last priorisieren");
+                    await TibberRTMDefaultLoadPrioritySolarInputAsync(value);
                 }
             }
         }
+
+        // Diese Methode fügen Sie zur CurrentState-Klasse hinzu
+        public int GetBatteryLevel()
+        {
+            // Aktuellen Batteriestand aus Daten ermitteln
+            var lastData = GrowattLatestNoahLastDatas().FirstOrDefault();
+            return lastData?.totalBatteryPackSoc ?? 0;
+        }
+
+        // Diese Methode ermittelt die erwartete Solarleistung für die nächsten Stunden
+        public double GetExpectedSolarProductionForNextHours(int hours)
+        {
+            // Hier könnte eine Integration mit Wetterdaten erfolgen
+            // Vereinfachte Version:
+            if (CurrentState.IsCloudy)
+                return 0.3 * ApiSettingMaxPower * hours; // 30% bei bewölktem Wetter
+            else
+                return 0.7 * ApiSettingMaxPower * hours; // 70% bei sonnigem Wetter
+        }
+
+        // Diese Methode bestimmt, ob der Akku basierend auf Wetter und Preisprognose jetzt geladen werden sollte
+        public bool ShouldChargeBatteryNow()
+        {
+            // 1. Bei günstigen Strompreisen immer laden
+            if (CurrentState.IsCheapRestrictionMode || CurrentState.IsBelowAvgPrice)
+                return true;
+
+            // 2. Wenn der Akku unter 50% und gutes Wetter, laden
+            if (GetBatteryLevel() < 50 && !CurrentState.IsCloudy)
+                return true;
+
+            // 3. Wenn der erwartete Solarertrag niedrig ist und der Akku nicht voll, laden
+            if (GetBatteryLevel() < 95 && GetExpectedSolarProductionForNextHours(6) < ApiSettingAvgPower * 3)
+                return true;
+
+            return false;
+        }
+
 
         /// <summary>
         /// Handles automatic power adjustment when in auto mode or under expensive restriction mode.

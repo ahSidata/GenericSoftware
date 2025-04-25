@@ -106,8 +106,8 @@ namespace EnergyAutomate.Definitions
         public bool IsGrowattNoahSufficientSurplusAvailable => GrowattNoahTotalPPV >= _apiService.ApiSettingMaxPower;
         /// <summary>Returns true if all Growatt devices are offline.</summary>
         public bool IsGrowattOnline => _apiService.GrowattGetDevicesNoahOnline().Any();
-        public TimeSpan? SunRise => Coordinate.CelestialInfo.SunRise != null ? new DateTimeOffset(Coordinate.CelestialInfo.SunRise.Value, new TimeSpan(0)).LocalDateTime.TimeOfDay : null;
-        public TimeSpan? SunSet => Coordinate.CelestialInfo.SunSet != null ? new DateTimeOffset(Coordinate.CelestialInfo.SunSet.Value, new TimeSpan(0)).LocalDateTime.TimeOfDay : null;
+        public TimeSpan? SunRise => WeatherForecast?.Daily?.Sunrise?.Length > 0 ? DateTime.Parse(WeatherForecast.Daily.Sunrise[0]).TimeOfDay : null;
+        public TimeSpan? SunSet => WeatherForecast?.Daily?.Sunset?.Length > 0 ? DateTime.Parse(WeatherForecast.Daily.Sunset[0]).TimeOfDay : null;
         /// <summary>Current UTC time with the API setting time offset applied.</summary>
         public DateTimeOffset UtcNow => DateTimeOffset.UtcNow;
         public WeatherForecast? WeatherForecast { get; set; }
@@ -132,6 +132,7 @@ namespace EnergyAutomate.Definitions
         {
             // Set custom options
             WeatherForecastOptions options = new WeatherForecastOptions();
+            options.Timezone = "auto";
             options.Temperature_Unit = TemperatureUnitType.celsius;
             options.Past_Days = 0;
 
@@ -144,6 +145,8 @@ namespace EnergyAutomate.Definitions
             options.Hourly.Add(HourlyOptionsParameter.cloudcover_high);
             options.Daily.Add(DailyOptionsParameter.daylight_duration);
             options.Daily.Add(DailyOptionsParameter.sunshine_duration);
+            options.Daily.Add(DailyOptionsParameter.sunrise);
+            options.Daily.Add(DailyOptionsParameter.sunset);
 
             var latitude = Coordinate.Latitude.ToDouble();
             var longitude = Coordinate.Longitude.ToDouble();
