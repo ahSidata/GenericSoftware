@@ -35,9 +35,14 @@
             {
                 LoggerRTM.LogInformation("Nach 16 Uhr: Energie kommt vom B2500-Akku, Last wird priorisiert");
 
-                // Wenn überhaupt noch Solar-Energie verfügbar ist, Verbrauch optimieren
-                if (effectiveSolarPower > 100) // Minimalschwelle für relevante Solarenergie
+                if (CurrentState.IsCheapRestrictionMode)
                 {
+                    LoggerRTM.LogInformation($"B2500 liefert noch {effectiveSolarPower}W: Cheap condition > BatteryPrio");
+                    await TibberRTMDefaultBatteryPriorityAsync(value);
+                }
+                else if (effectiveSolarPower > 100) // Minimalschwelle für relevante Solarenergie
+                {
+                    // Wenn überhaupt noch Solar-Energie verfügbar ist, Verbrauch optimieren
                     LoggerRTM.LogInformation($"B2500 liefert noch {effectiveSolarPower}W: Last wird entsprechend angepasst");
                     await TibberRTMDefaultLoadPrioritySolarInputAsync(value);
                 }
@@ -189,7 +194,6 @@
 
             return false;
         }
-
 
         /// <summary>
         /// Handles automatic power adjustment when in auto mode or under expensive restriction mode.

@@ -154,7 +154,7 @@ namespace EnergyAutomate.Utilities
 
             // Filter out empty batteries and devices with insufficient data
             var eligibleDevices = devices
-                .Where(d => !d.IsBatteryEmpty)
+                .Where(d => d.PowerValueSolar > 0 || !d.IsBatteryEmpty)
                 .ToList();
 
             // Collect real-time metrics for eligible devices
