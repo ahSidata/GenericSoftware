@@ -41,17 +41,22 @@ namespace EnergyAutomate.Services
         #region Properties
 
         public bool ApiSettingAutoMode { get; set; }
+
         public int ApiSettingAvgPower { get; set; } = 200;
         public List<APiTraceValue> ApiSettingAvgPowerAdjustmentTraceValues { get; set; } = [];
         public int ApiSettingAvgPowerHysteresis { get; set; } = 40;
         public int ApiSettingAvgPowerLoadSeconds { get; set; } = 60;
         public int ApiSettingAvgPowerOffset { get; set; } = 25;
         public bool ApiSettingBatteryPriorityMode { get; set; } = false;
+        public int ApiSettingExtentionAvgPower { get; set; } = 300;
+        public TimeSpan ApiSettingExtentionExclusionFrom { get; set; } = new TimeSpan(7, 0, 0);
+        public TimeSpan ApiSettingExtentionExclusionUntil { get; set; } = new TimeSpan(18, 0, 0);
+        public bool ApiSettingExtentionMode { get; set; } = true;
         public int ApiSettingMaxPower { get; set; } = 840;
-        public int ApiSettingPowerAdjustmentFactor { get; set; } = 100;
+        public int ApiSettingPowerAdjustmentFactor { get; set; } = 50;
         public int ApiSettingPowerAdjustmentWaitCycles { get; set; } = 3;
         public bool ApiSettingRestrictionMode { get; set; } = false;
-        public int ApiSettingSocMax { get; set; } = 100;
+        public int ApiSettingSocMax { get; set; } = 90;
         public int ApiSettingSocMin { get; set; } = 10;
         public int ApiSettingTimeOffset { get; set; } = DateTimeOffset.Now.Offset.Hours;
         public ApiState CurrentState { get; set; }
