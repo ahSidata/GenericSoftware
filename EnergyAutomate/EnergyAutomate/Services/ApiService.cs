@@ -1258,12 +1258,12 @@ namespace EnergyAutomate.Services
                     },
                     async () => {
                         // Check if power default and commited values are equal to avg
-                        var allDevicesConform = GrowattGetDevicesNoahOnline().All(x => x.PowerValueCommited == 0);
+                        var allDevicesConformCommited = GrowattGetDevicesNoahOnline().All(x => x.PowerValueCommited == 0);
+                        var allDevicesConformDefault = GrowattGetDevicesNoahOnline().All(x => x.PowerValueDefault == 0);
 
-                        LoggerRTM.LogTrace("allDevicesConform: {allDevicesConform}",
-                            allDevicesConform);
+                        LoggerRTM.LogTrace("allDevicesConformCommited: {allDevicesConformCommited}; allDevicesConformDefault: {allDevicesConformDefault};", allDevicesConformCommited, allDevicesConformDefault );
 
-                        return await Task.FromResult( allDevicesConform);
+                        return await Task.FromResult( allDevicesConformCommited && allDevicesConformDefault);
                     }
                 )
             ]);
@@ -1350,7 +1350,7 @@ namespace EnergyAutomate.Services
             ]);
         }
 
-        private async Task TibberRTMDefaultLoadPrioritySolarInputAsync(TibberRealTimeMeasurement value, int reductionPerMinute = 0)
+        private async Task TibberRTMDefaultLoadPrioritySolarInputAsync(TibberRealTimeMeasurement value, int reduction = 0)
         {
             await TibberRTMCheckConditionAsync("BatteryPriority_SetPower_SolarInput", [
                 new(
@@ -1371,7 +1371,7 @@ namespace EnergyAutomate.Services
             {
                 var infoData = GrowattGetNoahInfoDataPerDevice(device.DeviceSn);
                 var lastData = GrowattGetNoahLastDataPerDevice(device.DeviceSn);
-                var powerValue = (int)(lastData?.ppv - reductionPerMinute ?? 0);
+                var powerValue = (int)(lastData?.ppv - reduction ?? 0);
 
                 totalPPV += powerValue;
                 var item = new DeviceNoahSetPowerQuery()

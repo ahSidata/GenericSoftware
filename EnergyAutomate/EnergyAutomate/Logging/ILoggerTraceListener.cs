@@ -14,18 +14,15 @@ public class ILoggerTraceListener : TraceListener
 
     public override void WriteLine(string? message, string? category)
     {
-        lock (LoggerProvider.LogMessages_Lock)
+        LoggerProvider.LogMessages.Add(new CustomTraceLog
         {
-            LoggerProvider.LogMessages.Add(new CustomTraceLog
-            {
-                Category = category,
-                LogLevel = LogLevel.Trace,
-                EventId = new EventId(0, category),
-                Message = message,
-                Exception = null,
-                TS = DateTime.Now
-            });
-        }
+            Category = category,
+            LogLevel = LogLevel.Trace,
+            EventId = new EventId(0, category),
+            Message = message,
+            Exception = null,
+            TS = DateTime.Now
+        });
     }
 
     public override void Write(string? message)
@@ -37,18 +34,15 @@ public class ILoggerTraceListener : TraceListener
     {
         if (!string.IsNullOrWhiteSpace(message) && !message.StartsWith("EnergyAutomate."))
         {
-            lock (LoggerProvider.LogMessages_Lock)
+            LoggerProvider.LogMessages.Add(new CustomTraceLog
             {
-                LoggerProvider.LogMessages.Add(new CustomTraceLog
-                {
-                    Category = "ApiService",
-                    LogLevel = LogLevel.Trace,
-                    EventId = new EventId(5, "Trace"),
-                    Message = message,
-                    Exception = null,
-                    TS = DateTime.Now
-                });
-            }
+                Category = "ApiService",
+                LogLevel = LogLevel.Trace,
+                EventId = new EventId(5, "Trace"),
+                Message = message,
+                Exception = null,
+                TS = DateTime.Now
+            });
         }
     }
 }

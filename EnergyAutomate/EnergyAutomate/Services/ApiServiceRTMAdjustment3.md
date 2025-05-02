@@ -1,127 +1,133 @@
-﻿### Entscheidungslogik von TibberRTMAdjustment3
+﻿**Prompt Start:**
+Please provide your response in English, formatted as Markdown formated text and file in workbench area.
+**Prompt End:**
 
-#### Prüfreihenfolge (von höchster zu niedrigster Priorität)
 
-1. **Automodus-Prüfung**
-   - Wenn `ApiSettingAutoMode = true`: Rufe `TibberRTMAdjustment3AutoMode(value)` auf und beende.
-   - Sonst: Fahre mit Schritt 2 fort.
+# Decision Logic of TibberRTMAdjustment3
 
-2. **Inaktivitätsprüfung**
-   - Wenn kein PV-Strom verfügbar UND alle Batterien leer: Keine Aktion, beende.
-   - Sonst: Fahre mit Schritt 3 fort.
+## Check Sequence (from highest to lowest priority)
 
-3. **Betriebsmodus-Ermittlung**
-   - Wenn `ApiSettingExtentionMode = true` UND Uhrzeit außerhalb 07:00-18:00 Uhr: 
-     → ExtensionMode aktiv (Schritt 4)
-   - Sonst: Normaler Modus aktiv (Schritt 5)
+1. **Auto Mode Check**
+   - If `ApiSettingAutoMode = true`: Call `TibberRTMAdjustment3AutoMode(value)` and exit.
+   - Otherwise: Continue with step 2.
 
-4. **ExtensionMode-Entscheidungen**
-   - Strompreisabhängige Prüfung (höchste Priorität):
-     - Wenn `IsCheapRestrictionMode`: Batterie laden
-     - Wenn `IsExpensiveRestrictionMode`: Energiesparmodus aktivieren
-   - Wenn keine Preisrestriktion aktiv → Batteriekapazitätsabhängige Prüfung:
-     - Hoher Akkustand (>50%): Maximal-Lastbetrieb
-     - Mittlerer Akkustand (20-50%): Energiesparmodus
-     - Niedriger Akkustand (<20%): Durchschnittslastbetrieb
-   - Nach jeder Aktion: Methode beenden.
+2. **Inactivity Check**
+   - If no PV power available AND all batteries empty: No action, exit.
+   - Otherwise: Continue with step 3.
 
-5. **Normaler Modus-Entscheidungen**
-   - **Preisabhängige Prüfung (höchste Priorität):**
-     - Wenn `IsExpensiveRestrictionMode`: Energiesparmodus aktivieren (AutoMode)
-     - **Aktion:** `TibberRTMAdjustment3AutoMode(value)`
+3. **Operating Mode Determination**
+   - If `ApiSettingExtentionMode = true` AND time not within Exclusion From-To:
+     → Extension Mode active (Step 4)
+   - Otherwise: Normal Mode active (Step 5)
 
-   - **Akkuerhaltung bei vollem Akku (zweithöchste Priorität):**
-     - Wenn `CurrentState.IsGrowattBatteryFull`: Akku-Ladezustand erhalten
-       - Bei hoher Solarleistung: Maximaler Verbrauch für optimale Nutzung
-         - **Bedingung:** `effectiveSolarPower > ApiSettingMaxPower * 0.75`
-         - **Aktion:** `TibberRTMDefaultLoadPriorityMaxAsync(value, GrowattGetDeviceNoahSnList())`
-       - Standardfall: Nur Überschuss einspeisen
-         - **Aktion:** `TibberRTMDefaultBatteryPriorityAsync(value)`
+4. **Extension Mode Decisions**
+   - Power price-dependent check (highest priority):
+     - If `IsExpensiveRestrictionMode`: Activate AutoMode
+   - Check if a high-price phase is expected the next morning,
+     - If yes, then conserve battery and only feed with average.
+       - **Action:** `TibberRTMDefaultLoadPriorityAsync()`
+       - **Description:** Battery is preserved.
+   - After each action: End method.
+
+5. **Normal Mode Decisions**
+   - **Price-dependent check (highest priority):**
+     - If `IsExpensiveRestrictionMode`: Activate energy saving mode (AutoMode)
+     - **Action:** `AutoMode(value)`
+
+   - **Battery maintenance with full battery (second highest priority):**
+     - If `CurrentState.IsGrowattBatteryFull`: Maintain battery charge level
+       - With high solar output: Maximum consumption for optimal usage
+         - **Condition:** `greater than 75 of ApiSettingMaxPower`
+         - **Action:** `TibberRTMDefaultLoadPriorityMaxAsync(value, GrowattGetDeviceNoahSnList())`
+       - Standard case: Only feed excess
+         - **Action:** `TibberRTMDefaultBatteryPriorityAsync(value)`
           
-   - **Standard-Situationen am Tag bei nicht vollem Akku basierend auf Fakten:**
+   - **Standard situations during the day with not full battery based on facts:**
 
-     1. **Wenn Akku leer ist:**
-        - **Bedingung:** `Sonder Konstellationen`
-          - `Akkustand leer + normale Preise: !CurrentState.IsBelowAvgPrice && CurrentState.IsBatteryEmpty`
-        - **Aktion:** `TibberRTMDefaultLoadPriorityAvgAsync(value)`
-        - **Beschreibung:** Es wird nur die Grundlast eingespeist um keinen Akkustrom zu verschwenden.
+     1. **When battery is empty:**
+        - **Condition:** `Special constellations`
+          - `Battery empty + normal prices: !CurrentState.IsBelowAvgPrice && CurrentState.IsBatteryEmpty`
+        - **Action:** `TibberRTMDefaultLoadPriorityAvgAsync(value)`
+        - **Description:** Only the base load is fed to avoid wasting battery power.
 
-     2. **Wenn Akku geladen werden soll (mehrere Bedingungen möglich):**
-        - **Bedingungen:** Einer der folgenden Fälle muss zutreffen:
-          - `Schlechte Wetterprognose (wenig Sonne erwartet): CurrentState.IsCloudy && GetExpectedSolarProductionForNextHours(6) < ApiSettingAvgPower * 2`
-          - `Akkustand niedrig + günstige Preise: GetBatteryLevel() < 30 && CurrentState.IsBelowAvgPrice`
-          - `Akkustand niedrig + schlechte Wetterprognose: GetBatteryLevel() < 80 && (CurrentState.IsCloudy || GetExpectedSolarProductionForNextHours(4) < ApiSettingAvgPower * 2)`
-          - `Akkustand < 80% mit guter Wetterprognose: GetBatteryLevel() < 80 && !CurrentState.IsCloudy`
-        - **Aktion:** `TibberRTMDefaultBatteryPriorityAsync(value)`
-        - **Beschreibung:** Batterie wird priorisiert geladen.
+     2. **When battery should be charged (multiple conditions possible):**
+        - **Conditions:** One of the following cases must apply:
+          - `Poor weather forecast (little sun expected)`
+          - `Low battery level + cheap prices`
+          - `Low battery level + poor weather forecast`
+          - `Battery level < 80% with good weather forecast`
+        - **Action:** `TibberRTMDefaultBatteryPriorityAsync(value)`
+        - **Description:** Battery charging is prioritized.
 
-     3. **Wenn direkte Solarstromnutzung optimal ist:**
-        - **Bedingung:** `Nicht billig !IsCheapMode, nur solarstrom verwenden keine batterie`
-        - **Aktion:** `TibberRTMDefaultLoadPrioritySolarInputAsync(value)`
-        - **Beschreibung:** Last priorisiert, um die Solarenergie direkt zu nutzen.
+     3. **When direct solar power usage is optimal:**
+        - **Condition:** `Not cheap !IsCheapMode, use only solar power, no battery`
+        - **Action:** `TibberRTMDefaultLoadPrioritySolarInputAsync(value)`
+        - **Description:** Load prioritized to use solar energy directly.
 
-     4. **Wenn sonst keine Bedinung greift:**
-        - **Aktion:** `TibberRTMAdjustment3AutoMode(value)`
-        - **Beschreibung:** Optimale Verteilung basierend auf aktuellen Messwerten.
+     4. **When no other condition applies:**
+        - **Action:** `TibberRTMAdjustment3AutoMode(value)`
+        - **Description:** Optimal distribution based on current measurements.
 
 ---
 
-### **Reserveberechnung basierend auf einem Reorg-Lauf**
-- **Beschreibung:** Die Reserve wird dynamisch auf Grundlage eines Reorg-Laufs berechnet, um die Akkukapazität optimal an die zukünftigen Anforderungen anzupassen.
-- **Aktion:** Rufe `CalculateReserveBasedOnReorg()` auf, um die Reserve zu berechnen und anzupassen.
+## **Reserve Calculation Based on a Reorg Run**
+- **Description:** The reserve is dynamically calculated based on a reorg run to optimally adjust battery capacity to future requirements.
+- **Action:** Call `CalculateReserveBasedOnReorg()` to calculate and adjust the reserve.
 - **Details:**
-  - Der Reorg-Lauf analysiert historische Daten und zukünftige Anforderungen.
-  - Die berechnete Reserve überschreibt `ApiSettingExtentionReserveThreshold` und `ApiSettingExtentionMinimalReserve`, falls erforderlich.
+  - The reorg run analyzes historical data and future requirements.
+  - The calculated reserve overwrites `ApiSettingExtentionReserveThreshold` and `ApiSettingExtentionMinimalReserve` if necessary.
 
 ---
 
-### **Zusätzliche Parameter für den ExtensionMode**
+## **Additional Parameters for Extension Mode**
 1. **`ApiSettingExtentionMode`**
-   - **Typ:** `bool`
-   - **Standardwert:** `true`
-   - **Beschreibung:** Aktiviert oder deaktiviert den ExtensionMode. Wenn `true`, wird der ExtensionMode verwendet.
+   - **Type:** `bool`
+   - **Default value:** `true`
+   - **Description:** Enables or disables Extension Mode. If `true`, Extension Mode is used.
 
 2. **`ApiSettingExtentionExclusionFrom`**
-   - **Typ:** `TimeSpan`
-   - **Standardwert:** `new TimeSpan(7, 0, 0)` (07:00 Uhr)
-   - **Beschreibung:** Gibt die Startzeit des Ausschlusszeitraums an, in dem der ExtensionMode nicht aktiv ist.
+   - **Type:** `TimeSpan`
+   - **Default value:** `new TimeSpan(7, 0, 0)` (07:00)
+   - **Description:** Specifies the start time of the exclusion period during which Extension Mode is not active.
 
 3. **`ApiSettingExtentionExclusionUntil`**
-   - **Typ:** `TimeSpan`
-   - **Standardwert:** `new TimeSpan(18, 0, 0)` (18:00 Uhr)
-   - **Beschreibung:** Gibt die Endzeit des Ausschlusszeitraums an, in dem der ExtensionMode nicht aktiv ist.
+   - **Type:** `TimeSpan`
+   - **Default value:** `new TimeSpan(18, 0, 0)` (18:00)
+   - **Description:** Specifies the end time of the exclusion period during which Extension Mode is not active.
 
 4. **`ApiSettingExtentionAvgPower`**
-   - **Typ:** `int`
-   - **Standardwert:** `300`
-   - **Beschreibung:** Gibt die Menge an Strom (in Watt) an, die im ExtensionMode vom Extension-Akku eingespeist wird.
+   - **Type:** `int`
+   - **Default value:** `300`
+   - **Description:** Specifies the amount of power (in watts) fed from the extension battery in Extension Mode.
 
 5. **`ApiSettingExtentionReserveThreshold`**
-   - **Typ:** `int`
-   - **Standardwert:** `50` (%)
-   - **Beschreibung:** Schwellenwert der Akkukapazität in Prozent, ab dem eine Reserve für teure Preiszeiten eingehalten werden soll.
+   - **Type:** `int`
+   - **Default value:** `50` (%)
+   - **Description:** Threshold of battery capacity in percent from which a reserve should be maintained for expensive price periods.
    
 6. **`ApiSettingExtentionMinimalReserve`**
-   - **Typ:** `int`
-   - **Standardwert:** `20` (%)
-   - **Beschreibung:** Minimale Akkukapazität in Prozent, die als absolute Reserve beibehalten werden soll.
+   - **Type:** `int`
+   - **Default value:** `20` (%)
+   - **Description:** Minimum battery capacity in percent that should be maintained as an absolute reserve.
 
 ---
 
-### **Zusammenfassung der Hauptfaktoren**
-1. **Zeit (ExtensionMode oder Normaler Modus):**
-   - **ExtensionMode:** Aktiv, wenn `ApiSettingExtentionMode == true` und die aktuelle Zeit außerhalb des Ausschlusszeitraums liegt.
-   - **Normaler Modus:** Aktiv, wenn der ExtensionMode nicht aktiv ist.
+## **Summary of Main Factors**
+1. **Time (Extension Mode or Normal Mode):**
+   - **Extension Mode:** Active when `ApiSettingExtentionMode == true` and the current time is outside the exclusion period.
+   - **Normal Mode:** Active when Extension Mode is not active.
 
-2. **Solarleistung (hoch, mittel, niedrig):**
-   - Hohe Solarleistung: Priorisiere Batterieladung.
-   - Mittlere Solarleistung: Abhängig vom Akkustand.
-   - Niedrige Solarleistung: Abhängig von Akkustand und Strompreisen.
+2. **Solar Power (high, medium, low):**
+   - High solar power: Prioritize battery charging.
+   - Medium solar power: Dependent on battery level.
+   - Low solar power: Dependent on battery level and electricity prices.
 
-3. **Akkustand (voll, leer, teilweise geladen):**
-   - Voll: Fokus auf Lastpriorisierung.
-   - Leer: Fokus auf Batterieladung oder Lastreduktion.
+3. **Battery Level (full, empty, partially charged):**
+   - Full: Focus on load prioritization.
+   - Empty: Focus on battery charging or load reduction.
 
-4. **Strompreise (günstig, teuer):**
-   - Günstig: Priorisiere Batterieladung.
-   - Teuer: Aktiviere Energiesparmodus.
+4. **Electricity Prices (cheap, expensive):**
+   - Cheap: Prioritize battery charging.
+   - Expensive: Activate energy saving mode.
+
+

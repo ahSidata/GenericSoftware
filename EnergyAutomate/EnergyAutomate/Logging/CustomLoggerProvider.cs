@@ -14,17 +14,15 @@ public class CustomLoggerProvider : ILoggerProvider
         LogLevel = logLevel;
     }
 
-    public Lock LogMessages_Lock = new Lock();
+    public ConcurrentBag<CustomTraceLog> LogMessages { get; set; } = [];
 
-    public ObservableCollection<CustomTraceLog> LogMessages { get; set; } = new ObservableCollection<CustomTraceLog>();
-
-    public List<CustomTraceLog> GetLogMessages()
+    public void LogMessagesAdd(CustomTraceLog item)
     {
-        lock(LogMessages_Lock)
-        {
-            return LogMessages.ToList();
-        }
+        LogMessages.Add(item);
+        LogMessagesChanged?.Invoke();
     }
+
+    public event Action? LogMessagesChanged;
 
     public LogLevel LogLevel { get; set; } = LogLevel.Trace;
 

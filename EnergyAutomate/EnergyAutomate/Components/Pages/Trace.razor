@@ -3,33 +3,39 @@
 @rendermode Microsoft.AspNetCore.Components.Web.RenderMode.InteractiveServer
 
 <h3>Trace Log</h3>
+<button @onclick="DownloadLogFile">Download Logs</button>
 
-@if (((CustomLoggerProvider)CustomLoggerProvider).GetLogMessages().Any())
+@if (((CustomLoggerProvider)CustomLoggerProvider).LogMessages.Any())
 {
     <Tabs @ref="tabsMainRef">
-        @foreach (var category in LogMessageCategories)
+        @foreach(var category in LogMessageCategories)
         {
-            <Tab Title="@category">
-                <Content>
-                    <table class="table">
-                        <thead>
-                            <tr>
-                                <th>Timestamp</th>
-                                <th>Message</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var log in ((CustomLoggerProvider)CustomLoggerProvider).GetLogMessages().Where(x => x.Category == category || x.Category!.Split(".").Last() == category).OrderByDescending(x => x.TS).Take(500))
+            <Tab Title="@category.Item1" Active="@category.Item2" OnClick="(args) => OnTabClick(args)">
+            <Content>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Timestamp</th>
+                            <th>Message</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @{
+                        if (selectedCategory == category.Item1)
+                        {
+                            @foreach (var log in ((CustomLoggerProvider)CustomLoggerProvider).LogMessages.Where(x => x.Category == @category.Item1 || x.Category!.Split(".").Last() == @category.Item1).OrderByDescending(x => x.TS).Take(500))
                             {
                                 <tr>
                                     <td>@log.TS</td>
                                     <td>@log.Message</td>
                                 </tr>
                             }
-                        </tbody>
-                    </table>
-                </Content>
-            </Tab>
+                        }
+                    }
+                </tbody>
+            </table>
+        </Content>
+    </Tab>
         }
     </Tabs>
 }
@@ -41,30 +47,55 @@ else
 @code {
 
     [Inject]
+    private IJSRuntime JSRuntime { get; set; } = default!;
+
+    [Inject]
     private ILoggerProvider CustomLoggerProvider { get; set; } = default!;
 
-    private List<string> LogMessageCategories
+    private async Task DownloadLogFile()
     {
-        get
-        {
-            var categories = ((CustomLoggerProvider)CustomLoggerProvider).GetLogMessages().Where(x => x.Category != null).Select(s => s.Category!.Contains(".") ? s.Category.Split(".").Last() : s.Category);
-            if (categories != null)
-                return categories.GroupBy(x => x).Select(s => s.Key).OrderBy(o => o).ToList();
-            else
-                return new List<string>();
-        }
-    } 
+        // Generiere die Log-Nachrichten im gewünschten Format
+        var logContent = GetLogMessagesForAI(); // Verwende die Methode aus vorherigen Beispielen
+
+        // Rufe die JavaScript-Funktion auf, um die Datei herunterzuladen
+        await JSRuntime.InvokeVoidAsync("downloadFile", "logs.txt", logContent);
+    }
+
+    private string GetLogMessagesForAI()
+    {
+        var logMessages = ((CustomLoggerProvider)CustomLoggerProvider).LogMessages
+    .Select(log => $"[{log.TS}] <{log.Category}>: {log.Message}");
+
+        return string.Join("\n", logMessages);
+    }
+
+    private List<Tuple<string, bool>> LogMessageCategories = new List<Tuple<string, bool>>();
 
     private Tabs tabsMainRef = default!;
 
+    private void OnTabClick(TabEventArgs args) => selectedCategory = args.Title;
+
+    private string selectedCategory = default!;
 
     protected override void OnInitialized()
     {
-        ((CustomLoggerProvider)CustomLoggerProvider).LogMessages.CollectionChanged += CollectionChanged;
-    }
+        ((CustomLoggerProvider)CustomLoggerProvider).LogMessagesChanged += () =>
+        {
+            var categories = ((CustomLoggerProvider)CustomLoggerProvider).LogMessages.Where(x => x.Category != null).Select(s => s.Category!.Contains(".") ? s.Category.Split(".").Last() : s.Category);
+            if (categories != null)
+            {
+                var groupedCategories = categories.GroupBy(x => x).Select(s => s.Key).OrderBy(o => o).ToList();
 
-    private async void CollectionChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
-    {
-        await InvokeAsync(StateHasChanged);
+                foreach (var category in groupedCategories)
+                {
+                    if (!LogMessageCategories.Any(x => x.Item1 == category))
+                    {
+                        LogMessageCategories.Add(new Tuple<string,bool>(category, false));
+                    }
+                }
+            }
+
+            InvokeAsync(StateHasChanged); // Nur der Bereich mit der Collection wird aktualisiert
+        };
     }
 }

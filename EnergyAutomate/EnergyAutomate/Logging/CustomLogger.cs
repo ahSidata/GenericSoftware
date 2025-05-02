@@ -22,18 +22,15 @@ public class CustomLogger : ILogger
     {
         if (_categoryFilter == null || _categoryFilter != null && _categoryFilter(_name))
         {
-            lock (_provider.LogMessages_Lock)
+            _provider.LogMessagesAdd(new CustomTraceLog
             {
-                _provider.LogMessages.Add(new CustomTraceLog
-                {
-                    Category = _name,
-                    LogLevel = logLevel,
-                    EventId = eventId,
-                    Message = state?.ToString(),
-                    Exception = exception?.ToString(),
-                    TS = DateTimeOffset.UtcNow
-                });
-            }
+                Category = _name,
+                LogLevel = logLevel,
+                EventId = eventId,
+                Message = state?.ToString(),
+                Exception = exception?.ToString(),
+                TS = DateTimeOffset.UtcNow
+            });
         }
     }
 
