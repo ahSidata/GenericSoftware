@@ -1356,12 +1356,21 @@ namespace EnergyAutomate.Services
         private async Task TibberRTMDefaultLoadPrioritySolarInputAsync(TibberRealTimeMeasurement value, int reduction = 0)
         {
             await TibberRTMCheckConditionAsync("BatteryPriority_SetPower_SolarInput", [
-                new(
-                    async () => {
+                new (
+                    async () =>
+                    {
                         await GrowattClearAllDeviceNoahTimeSegments();
-                        await GrowattClearSetPowerAsync(value.TS, 0);
                     },
-                null
+                    async () =>
+                    {
+                        // Check if any time segments are enabled
+                        var allTimesegmentsDisabled = GrowattLatestNoahInfoDatas().All(x => x!.TimeSegments.All(x => x.Enable == "0"));
+
+                        LoggerRTM.LogTrace("allTimesegmentsDisabled: {allTimesegmentsDisabled}",
+                            allTimesegmentsDisabled);
+
+                        return await Task.FromResult(allTimesegmentsDisabled);
+                    }
                 )
             ]);
 
