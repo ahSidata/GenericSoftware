@@ -15,29 +15,37 @@ This document outlines the decision-making flow and operational modes of the Tib
   - **ELSE** Continue to next check
 
 ### 2. Inactivity Check
-- **IF** No PV power available AND all batteries empty
+- **IF** No PV power (effectiveSolarPower <= 0) AND battery empty
   - **THEN** No action, exit
   - **ELSE** Continue to next check
 
 ### 3. Mode Determination
-- **IF** `ApiSettingExtentionMode = true` AND current time is outside Exclusion period
+- **IF** `TibberRTMAdjustment3IsExtensionModeActive()` returns true
   - **THEN** Enter Extension Mode (step 4)
   - **ELSE** Enter Normal Mode (step 5)
 
 ## 4. Extension Mode Logic
 
-Extension mode is active when configured and outside the exclusion time window (default: 07:00-18:00).
+Extension mode is active when `ApiSettingExtentionMode` is true and current time is outside the exclusion period (default: 07:00-18:00).
 
 ### Priority Sequence:
 1. **Power Price Check**
-   - **IF** `IsExpensiveRestrictionMode or not below avg price` 
-     - **THEN** Activate AutoMode
+   - **IF** `IsCheapRestrictionMode` (cheap electricity prices)
+     - **THEN** `TibberRTMDefaultBatteryPriorityAsync()` (charge battery)
+   - **IF** `IsExpensiveRestrictionMode` (expensive electricity prices)
+     - **THEN** `TibberRTMAdjustment3AutoMode()` (activate energy saving mode)
 
 2. **Morning Price Forecast**
-   - **IF** High-price phase expected next morning
-     - **THEN** Conserve battery, feed with average power only
-     - **ACTION:** `TibberRTMDefaultLoadPriorityAsync()`
-     - **RESULT:** Battery is preserved for high-price periods
+   - **IF** `TibberRTMAdjustment3IsMorningApproaching()` AND `TibberRTMAdjustment3ShouldPreserveBatteryForMorning()`
+     - **THEN** `TibberRTMDefaultLoadPriorityAvgAsync()` (conserve battery, feed with average power only)
+
+3. **Battery Level Based Decisions**
+   - **IF** Battery level > `MEDIUM_BATTERY_THRESHOLD` (50%)
+     - **THEN** `TibberRTMDefaultLoadPriorityMaxAsync()` (maximize load operation)
+   - **ELSE IF** Battery level > `CRITICAL_BATTERY_THRESHOLD` (20%)
+     - **THEN** `TibberRTMAdjustment3AutoMode()` (activate energy saving mode)
+   - **ELSE** 
+     - **THEN** `TibberRTMDefaultLoadPriorityAvgAsync()` (run with average load)
 
 ## 5. Normal Mode Logic
 
@@ -45,39 +53,99 @@ Normal mode is the default operational state when Extension Mode is not active.
 
 ### Priority Sequence:
 
-1. **Direct Solar Usage Optimization**
-   - **IF** `!IsCheapMode` (Not in cheap price mode)
-     - **ACTION:** `TibberRTMDefaultLoadPrioritySolarInputAsync(value)`
-     - **RESULT:** Load prioritized to use solar energy directly without battery
+1. **Expensive Price Check**
+   - **IF** `IsExpensiveRestrictionMode` (expensive electricity prices)
+     - **THEN** `TibberRTMAdjustment3AutoMode()` (activate energy saving mode)
+     - **ELSE** Continue to next check
 
-2. **Battery Charging Prioritization**
+2. **Direct Solar Usage Optimization**
+   - **IF** `!IsCheapRestrictionMode` (Not in cheap price mode)
+     - **THEN** `TibberRTMDefaultLoadPrioritySolarInputAsync()` (prioritize direct solar usage)
+     - **ELSE** Continue to next check
+
+3. **Battery Charging Prioritization**
    - **IF** Any of the following conditions are true:
-     - Poor weather forecast (little sun expected)
-     - Low battery level + cheap prices
-     - Low battery level + poor weather forecast
-     - Battery level < 80% with good weather forecast
-     - **ACTION:** `TibberRTMDefaultBatteryPriorityAsync(value)`
-     - **RESULT:** Battery charging is prioritized
+     - Battery is full (`isBatteryFull`)
+     - Battery charging window is active (`isBatteryChargingWindowActive`)
+     - Low prices (`isLowPrices` = `IsCheapRestrictionMode || IsBelowAvgPrice`)
+     - Low battery level (< 30%) and cloudy weather
+     - Battery level below high threshold (< 80%) and good weather
+     - **THEN** `TibberRTMDefaultBatteryPriorityAsync()` (prioritize battery charging)
+     - **ELSE** Continue to default fallback
 
-5. **Default Fallback**
+4. **Default Fallback**
    - When no other condition applies
-     - **ACTION:** `AutoMode`
-     - **RESULT:** Optimal distribution based on current measurements
+     - **THEN** `TibberRTMAdjustment3AutoMode()` (optimal distribution based on measurements)
 
-## Reserve Calculation
+## Auto Mode Operation
 
-The system dynamically calculates battery reserves based on a reorganization run to optimally adjust capacity for future requirements.
+The Auto Mode (`TibberRTMAdjustment3AutoMode`) performs the following:
 
-- **Process:** Call `CalculateReserveBasedOnReorg()`
-- **Effect:** May override `ApiSettingExtentionReserveThreshold` and `ApiSettingExtentionMinimalReserve`
-- **Analysis Method:** Uses historical data and future requirements
+1. Clears time segments for Noah devices if needed
+2. Calls `TibberRTMAdjustment3SetPower()` to adjust power distribution
+
+### Power Adjustment Logic (`TibberRTMAdjustment3SetPower`)
+
+1. **Maximum Power Limit Check**
+   - **IF** `Math.Abs(value.TotalPower) > ApiSettingMaxPower`
+     - **IF** TotalPower is negative: Set all devices to 0W
+     - **IF** TotalPower is positive: Distribute maximum power evenly among devices
+
+2. **Hysteresis Range Check**
+   - **IF** TotalPower is within hysteresis range (between lower and upper limits)
+     - **THEN** Perform load balancing without changing total power
+
+3. **Power Adjustment Based on Delta**
+   - **IF** Delta is positive: Increase total power (capped at max)
+     - Distribute with high SoC prioritization
+   - **IF** Delta is negative: Decrease total power (minimum 0)
+     - Distribute with low SoC prioritization
+   - **IF** Delta is zero: Perform load balancing
+
+## Forecast and Condition Evaluation
+
+### Morning Preservation Check
+The system evaluates whether to preserve battery for the morning based on:
+- **Price Forecast**: Checks if tomorrow morning (6AM-12PM) has any expensive pricing periods
+- **Weather Forecast**: Checks if tomorrow has forecasted poor weather (cloudy/rainy)
+
+### Extension Mode Activation
+Extension mode is active when:
+- `ApiSettingExtentionMode` is true AND
+- Current time is outside the exclusion period (outside of `ApiSettingExtentionExclusionFrom` to `ApiSettingExtentionExclusionUntil`)
+
+## Battery Thresholds
+
+| Threshold | Value | Description |
+|-----------|-------|-------------|
+| `CRITICAL_BATTERY_THRESHOLD` | 20% | Minimum safe level for battery operation |
+| `LOW_BATTERY_THRESHOLD` | 30% | Low battery level requiring attention |
+| `MEDIUM_BATTERY_THRESHOLD` | 50% | Medium battery level for normal operation |
+| `HIGH_BATTERY_THRESHOLD` | 80% | High battery level for optimal flexibility |
+
+## Solar Power Thresholds
+
+| Threshold | Value | Description |
+|-----------|-------|-------------|
+| `HIGH_SOLAR_RATIO` | 0.75 | High solar production ratio |
+| `VERY_HIGH_SOLAR_RATIO` | 0.8 | Very high solar production ratio |
 
 ## Configuration Parameters
 
 ### Extension Mode Parameters
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `ApiSettingExtentionMode` | bool | `true` | Enables/disables Extension Mode |
-| `ApiSettingExtentionExclusionFrom` | TimeSpan | `07:00` | Start of exclusion period |
-| `ApiSettingExtentionExclusionUntil` | TimeSpan | `18:00` | End of exclusion period |
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `ApiSettingExtentionMode` | bool | Enables/disables Extension Mode |
+| `ApiSettingExtentionExclusionFrom` | TimeSpan | Start of exclusion period |
+| `ApiSettingExtentionExclusionUntil` | TimeSpan | End of exclusion period |
+
+### Power Adjustment Parameters
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `ApiSettingAvgPower` | int | Target average power |
+| `ApiSettingAvgPowerOffset` | int | Offset for the target power |
+| `ApiSettingAvgPowerHysteresis` | int | Hysteresis range for power adjustments |
+| `ApiSettingMaxPower` | int | Maximum allowed power |
+| `ApiSettingPowerAdjustmentFactor` | int | Adjustment factor in percentage |
+| `ApiSettingPowerAdjustmentWaitCycles` | int | Number of cycles to wait before adjustment |
 
