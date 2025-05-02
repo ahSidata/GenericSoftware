@@ -30,7 +30,7 @@ Extension mode is active when configured and outside the exclusion time window (
 
 ### Priority Sequence:
 1. **Power Price Check**
-   - **IF** `IsExpensiveRestrictionMode`
+   - **IF** `IsExpensiveRestrictionMode or not below avg price` 
      - **THEN** Activate AutoMode
 
 2. **Morning Price Forecast**
