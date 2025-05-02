@@ -57,36 +57,36 @@ namespace EnergyAutomate.Definitions
                 return level == PriceLevel.Cheap || level == PriceLevel.VeryCheap;
             }
         }
-        public bool IsCloudy
+        public bool IsCloudy(WeatherForecast? weatherForecast = null)
         {
-            get
+            weatherForecast ??= WeatherForecastToday;
+
+            var values = weatherForecast?.Hourly?.Direct_radiation_instant;
+            var times = weatherForecast?.Hourly?.Time;
+
+            if (values != null && times != null)
             {
-                var values = WeatherForecast?.Hourly?.Direct_radiation_instant;
-                var times = WeatherForecast?.Hourly?.Time;
-
-                if (values != null && times != null)
+                var powerCount = 0;
+                var totalCount = 0;
+                for (int i = 0; i < times.Length; i++)
                 {
-                    var powerCount = 0;
-                    var totalCount = 0;
-                    for (int i = 0; i < times.Length; i++)
+                    var hour = DateTime.Parse(times[i]).Hour;
+                    if (hour > 10 && hour < 16 && values[i].HasValue)
                     {
-                        var hour = DateTime.Parse(times[i]).Hour;
-                        if (hour > 10 && hour < 16 && values[i].HasValue)
-                        {
-                            totalCount++;
-                            powerCount += (int)values[i]!.Value;
-                        }
+                        totalCount++;
+                        powerCount += (int)values[i]!.Value;
                     }
-
-                    var averagePower = powerCount / totalCount;
-
-                    // Check if the average power is less than 200 W/m²
-                    return averagePower < 200;
                 }
 
-                return false;
+                var averagePower = powerCount / totalCount;
+
+                // Check if the average power is less than 200 W/m²
+                return averagePower < 200;
             }
+
+            return false;
         }
+
         public bool IsExpensiveRestrictionMode
         {
             get
@@ -106,11 +106,12 @@ namespace EnergyAutomate.Definitions
         public bool IsGrowattNoahSufficientSurplusAvailable => GrowattNoahTotalPPV >= _apiService.ApiSettingMaxPower;
         /// <summary>Returns true if all Growatt devices are offline.</summary>
         public bool IsGrowattOnline => _apiService.GrowattGetDevicesNoahOnline().Any();
-        public TimeSpan? SunRise => WeatherForecast?.Daily?.Sunrise?.Length > 0 ? DateTime.Parse(WeatherForecast.Daily.Sunrise[0]).TimeOfDay : null;
-        public TimeSpan? SunSet => WeatherForecast?.Daily?.Sunset?.Length > 0 ? DateTime.Parse(WeatherForecast.Daily.Sunset[0]).TimeOfDay : null;
+        public TimeSpan? SunRise => WeatherForecastToday?.Daily?.Sunrise?.Length > 0 ? DateTime.Parse(WeatherForecastToday.Daily.Sunrise[0]).TimeOfDay : null;
+        public TimeSpan? SunSet => WeatherForecastToday?.Daily?.Sunset?.Length > 0 ? DateTime.Parse(WeatherForecastToday.Daily.Sunset[0]).TimeOfDay : null;
         /// <summary>Current UTC time with the API setting time offset applied.</summary>
         public DateTimeOffset UtcNow => DateTimeOffset.UtcNow;
-        public WeatherForecast? WeatherForecast { get; set; }
+        public WeatherForecast? WeatherForecastToday { get; set; }
+        public WeatherForecast? WeatherForecastTomorrow { get; set; }
         private Coordinate Coordinate => _serviceProvider.GetRequiredService<Coordinate>();
         private ILogger<ApiState> Logger { get; set; }
         private OpenMeteo.OpenMeteoClient OpenMeteoClient { get; set; } = new OpenMeteo.OpenMeteoClient();
@@ -128,7 +129,7 @@ namespace EnergyAutomate.Definitions
             return false;
         }
 
-        public async Task<WeatherForecast?> GetWeatherForecastAsync()
+        public async Task<WeatherForecast?> GetWeatherForecastAsync(DateTime? dateTime = null)
         {
             // Set custom options
             WeatherForecastOptions options = new WeatherForecastOptions();
@@ -136,8 +137,10 @@ namespace EnergyAutomate.Definitions
             options.Temperature_Unit = TemperatureUnitType.celsius;
             options.Past_Days = 0;
 
-            options.Start_date = DateTime.Now.ToString("yyyy-MM-dd");
-            options.End_date = DateTime.Now.ToString("yyyy-MM-dd");
+            dateTime ??= DateTime.UtcNow;
+
+            options.Start_date = dateTime.Value.ToString("yyyy-MM-dd");
+            options.End_date = dateTime.Value.ToString("yyyy-MM-dd");
 
             options.Hourly.Add(HourlyOptionsParameter.direct_radiation_instant);
             options.Hourly.Add(HourlyOptionsParameter.cloudcover_low);
@@ -183,7 +186,7 @@ namespace EnergyAutomate.Definitions
                 })
                 .ToList();
 
-            
+
 
             // Berechne den Durchschnitt
             return groupedPpvSums.Any() ? groupedPpvSums.Sum(x => x.PpvSum) : 0;

@@ -1436,7 +1436,7 @@ namespace EnergyAutomate.Services
             try
             {
                 ApiSettingAvgPowerAdjustmentTraceValues.AddOrUpdate(new APiTraceValue() { Index = 1, Key = "GrowattNoahTotalPPV", Value = CurrentState.GrowattNoahTotalPPV.ToString() });
-                ApiSettingAvgPowerAdjustmentTraceValues.AddOrUpdate(new APiTraceValue() { Index = 2, Key = "WeatherIsCloudy", Value = CurrentState.IsCloudy.ToString() });
+                ApiSettingAvgPowerAdjustmentTraceValues.AddOrUpdate(new APiTraceValue() { Index = 2, Key = "WeatherIsCloudy", Value = CurrentState.IsCloudy().ToString() });
 
                 var dbContext = ApiGetDbContext();
 
@@ -1469,11 +1469,12 @@ namespace EnergyAutomate.Services
                     }
                 }
 
-                var firstTime = CurrentState.WeatherForecast?.Hourly?.Time?.FirstOrDefault();
+                var firstTime = CurrentState.WeatherForecastToday?.Hourly?.Time?.FirstOrDefault();
 
                 if (firstTime == null || firstTime != null && DateTime.Parse(firstTime).Date != CurrentState.UtcNow.Date)
                 {
-                    CurrentState.WeatherForecast = await CurrentState.GetWeatherForecastAsync();
+                    CurrentState.WeatherForecastToday = await CurrentState.GetWeatherForecastAsync();
+                    CurrentState.WeatherForecastTomorrow = await CurrentState.GetWeatherForecastAsync(DateTime.Today.AddDays(1));
                 }
 
                 var ajustmentElement = dbContext.GrowattElements.FirstOrDefault(x => x.ElementType == GrowattElement.ElementTypes.Adjustment && x.IsActive);
@@ -1560,6 +1561,13 @@ namespace EnergyAutomate.Services
             return deviceNoahLastData.totalBatteryPackChargingStatus == 0
                 ? Math.Abs(deviceNoahLastData.totalBatteryPackSoc - deviceNoahLastData.chargeSocLimit) < 6
                 : false;
+        }
+
+        public int GrowattGetBatteryLevel()
+        {
+            // Aktuellen Batteriestand aus Daten ermitteln
+            var lastData = GrowattLatestNoahLastDatas().FirstOrDefault();
+            return lastData?.totalBatteryPackSoc ?? 0;
         }
 
         #endregion Static

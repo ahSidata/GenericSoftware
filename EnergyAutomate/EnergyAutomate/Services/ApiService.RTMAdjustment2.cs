@@ -41,7 +41,7 @@ namespace EnergyAutomate.Services
                 else
                 {
                     //If cloudy
-                    if (CurrentState.IsCloudy)
+                    if (CurrentState.IsCloudy())
                     {
                         await TibberRTMAdjustment2PowerSet(value);
                         ApiSettingAvgPowerHysteresis = 10;
@@ -71,7 +71,7 @@ namespace EnergyAutomate.Services
                 else
                 {
                     //If cloudy
-                    if (CurrentState.IsCloudy)
+                    if (CurrentState.IsCloudy())
                     {
                         if (CurrentState.IsExpensiveRestrictionMode || ApiSettingAutoMode)
                         {
