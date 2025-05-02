@@ -7,16 +7,6 @@
     {
         #region Private Methods
 
-        // Diese Methode ermittelt die erwartete Solarleistung für die nächsten Stunden
-        public double GetExpectedSolarProductionForNextHours(int hours)
-        {
-            // Hier könnte eine Integration mit Wetterdaten erfolgen Vereinfachte Version:
-            if (CurrentState.IsCloudy())
-                return 0.3 * ApiSettingMaxPower * hours; // 30% bei bewölktem Wetter
-            else
-                return 0.7 * ApiSettingMaxPower * hours; // 70% bei sonnigem Wetter
-        }
-
         /// <summary>
         /// Handles automatic power adjustment when in auto mode or under expensive restriction mode.
         /// </summary>
@@ -78,43 +68,6 @@
             }
         }
 
-        /// <summary>Handles decisions for battery charging prioritization</summary>
-        private async Task TibberRTMAdjustment3HandleBatteryChargingDecisions(TibberRealTimeMeasurement value, double effectiveSolarPower, int batteryLevel)
-        {
-            // Calculate solar forecast and check conditions
-            double expectedSolarProduction = GetExpectedSolarProductionForNextHours(FORECAST_HOURS);
-            bool poorSolarForecast = expectedSolarProduction < ApiSettingAvgPower * 3;
-            bool lowBatteryLevel = batteryLevel < LOW_BATTERY_THRESHOLD;
-            bool cheapPrices = CurrentState.IsCheapRestrictionMode;
-            bool goodWeather = !CurrentState.IsCloudy();
-
-            // Log forecast information
-            LoggerRTM.LogInformation($"Normal Mode: Expected solar production for next {FORECAST_HOURS} hours: {expectedSolarProduction}W");
-
-            // Check all battery charging conditions
-            if (poorSolarForecast ||
-                (lowBatteryLevel && cheapPrices) ||
-                (lowBatteryLevel && CurrentState.IsCloudy()) ||
-                (batteryLevel < HIGH_BATTERY_THRESHOLD && goodWeather))
-            {
-                TibberRTMAdjustment3LogConditionsForBatteryCharging(poorSolarForecast, lowBatteryLevel, cheapPrices, batteryLevel, goodWeather);
-                await TibberRTMDefaultBatteryPriorityAsync(value);
-                return;
-            }
-
-            // High solar power check
-            if (effectiveSolarPower > ApiSettingMaxPower * VERY_HIGH_SOLAR_RATIO)
-            {
-                LoggerRTM.LogInformation($"Normal Mode: Very high current solar power ({effectiveSolarPower}W), prioritizing battery charging");
-                await TibberRTMDefaultBatteryPriorityAsync(value);
-                return;
-            }
-
-            // Default Fallback - when no other condition applies
-            LoggerRTM.LogInformation("Normal Mode: No specific conditions met, using auto mode for optimal distribution");
-            await TibberRTMAdjustment3AutoMode(value);
-        }
-
         /// <summary>Determines if extension mode is currently active</summary>
         private bool TibberRTMAdjustment3IsExtensionModeActive()
         {
@@ -128,24 +81,6 @@
         {
             var currentHour = DateTime.Now.Hour;
             return currentHour >= 1 && currentHour <= 5;
-        }
-
-        /// <summary>Logs detailed information about which conditions triggered battery charging</summary>
-        private void TibberRTMAdjustment3LogConditionsForBatteryCharging(bool poorSolarForecast, bool lowBatteryLevel, bool cheapPrices, int batteryLevel, bool goodWeather)
-        {
-            LoggerRTM.LogInformation("Normal Mode: Conditions favorable for battery charging");
-
-            if (poorSolarForecast)
-                LoggerRTM.LogInformation("- Poor expected solar production");
-
-            if (lowBatteryLevel && cheapPrices)
-                LoggerRTM.LogInformation("- Low battery level ({0}%) with cheap prices", batteryLevel);
-
-            if (lowBatteryLevel && !goodWeather)
-                LoggerRTM.LogInformation("- Low battery level ({0}%) with cloudy weather", batteryLevel);
-
-            if (batteryLevel < HIGH_BATTERY_THRESHOLD && goodWeather)
-                LoggerRTM.LogInformation("- Battery level ({0}%) below 80% with good weather", batteryLevel);
         }
 
         /// <summary>

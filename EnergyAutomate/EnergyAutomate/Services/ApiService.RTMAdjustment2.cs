@@ -51,7 +51,7 @@ namespace EnergyAutomate.Services
                     {
                         // If the battery is not full and the restriction mode is cheap load with
                         // full soloar power
-                        await TibberRTMDefaultLoadPriorityMaxAsync(value, GrowattGetDeviceNoahSnList());
+                        await TibberRTMDefaultLoadPriorityMaxAsync(value);
                     }
                 }
             }

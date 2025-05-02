@@ -30,3 +30,15 @@ function blurElement(elementSelector) {
     var selectors = document.querySelectorAll(elementSelector);
     selectors[0].blur();
 }
+
+function downloadFile(filename, content) {
+    var blob = new Blob([content], { type: 'text/plain' });
+    var url = window.URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+}

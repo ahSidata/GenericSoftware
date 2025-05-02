@@ -11,7 +11,6 @@ namespace EnergyAutomate.Services
         #region Fields
 
         private const int CRITICAL_BATTERY_THRESHOLD = 20;
-        private const int FORECAST_HOURS = 6;
         private const int HIGH_BATTERY_THRESHOLD = 80;
         private const double HIGH_SOLAR_RATIO = 0.75;
         private const int LOW_BATTERY_THRESHOLD = 30;
@@ -41,7 +40,6 @@ namespace EnergyAutomate.Services
             var effectiveSolarPower = CurrentState.GrowattNoahGetAvgPpvLast5Minutes();
             var batteryLevel = GrowattGetBatteryLevel();
             var isBatteryEmpty = CurrentState.IsGrowattBatteryEmpty;
-            var isBatteryFull = CurrentState.IsGrowattBatteryFull;
 
             // 2. Inactivity Check
             if (effectiveSolarPower <= 0 && isBatteryEmpty)
@@ -65,8 +63,8 @@ namespace EnergyAutomate.Services
             }
             else
             {
-                ApiSettingAvgPowerAdjustmentTraceValues.AddOrUpdate(new APiTraceValue() { Index = 1001, Key = "TibberAdjustment3Mode", Value = "Auto" });
-                await TibberRTMAdjustment3HandleNormalMode(value, effectiveSolarPower, batteryLevel, isBatteryFull);
+                ApiSettingAvgPowerAdjustmentTraceValues.AddOrUpdate(new APiTraceValue() { Index = 1001, Key = "TibberAdjustment3Mode", Value = "Normal" });
+                await TibberRTMAdjustment3HandleNormalMode(value, batteryLevel);
             }
         }
 
@@ -102,7 +100,7 @@ namespace EnergyAutomate.Services
             if (batteryLevel > MEDIUM_BATTERY_THRESHOLD)
             {
                 LoggerRTM.LogInformation($"Extension Mode: High battery level ({batteryLevel}%), maximizing load operation");
-                await TibberRTMDefaultLoadPriorityMaxAsync(value, GrowattGetDeviceNoahSnList());
+                await TibberRTMDefaultLoadPriorityMaxAsync(value);
             }
             else if (batteryLevel > CRITICAL_BATTERY_THRESHOLD)
             {
@@ -117,7 +115,7 @@ namespace EnergyAutomate.Services
         }
 
         /// <summary>Handles Normal Mode logic per the documented decision flow</summary>
-        private async Task TibberRTMAdjustment3HandleNormalMode(TibberRealTimeMeasurement value, double effectiveSolarPower, int batteryLevel, bool isBatteryFull)
+        private async Task TibberRTMAdjustment3HandleNormalMode(TibberRealTimeMeasurement value, int batteryLevel)
         {
             // Special case from original code
             if (CurrentState.IsExpensiveRestrictionMode)
@@ -135,25 +133,53 @@ namespace EnergyAutomate.Services
                 return;
             }
 
-            // Special case: Full battery
-            if (isBatteryFull)
+            // 2. Battery Charging Prioritization
+            await TibberRTMAdjustment3HandleBatteryChargingDecisions(value, batteryLevel);
+        }
+
+        /// <summary>Handles decisions for battery charging prioritization</summary>
+        private async Task TibberRTMAdjustment3HandleBatteryChargingDecisions(TibberRealTimeMeasurement value, int batteryLevel)
+        {
+            // Calculate solar forecast and check conditions
+
+            bool lowBatteryLevel = batteryLevel < LOW_BATTERY_THRESHOLD;
+            bool underThresholdBatteryLevel = batteryLevel < HIGH_BATTERY_THRESHOLD;
+            bool isLowPrices = CurrentState.IsCheapRestrictionMode || CurrentState.IsBelowAvgPrice;
+            bool isGoodWeather = !CurrentState.IsCloudy();
+            bool isBadWeather = CurrentState.IsCloudy();
+            var isBatteryFull = CurrentState.IsGrowattBatteryFull;
+            var isBatteryChargingWindowActive = CurrentState.IsBatteryChargingWindowActive();
+
+            // Check all battery charging conditions
+            if 
+            (
+                isBatteryFull ||
+                isBatteryChargingWindowActive ||
+                isLowPrices ||
+                (lowBatteryLevel && CurrentState.IsCloudy()) ||
+                (underThresholdBatteryLevel && isGoodWeather)
+            )
             {
-                if (effectiveSolarPower > ApiSettingMaxPower * HIGH_SOLAR_RATIO)
-                {
-                    LoggerRTM.LogInformation($"Normal Mode: Battery full with high solar power ({effectiveSolarPower}W), maximizing consumption");
-                    await TibberRTMDefaultLoadPriorityMaxAsync(value, GrowattGetDeviceNoahSnList());
-                }
-                else
-                {
-                    LoggerRTM.LogInformation("Normal Mode: Battery full, standard load operation");
-                    await TibberRTMDefaultLoadPriorityAvgAsync(value);
-                }
+                LoggerRTM.LogInformation(
+                    "Normal Mode: BatteryChargingDecisions" + 
+                    " isBatteryFull({isBatteryFull}," +
+                    " isBatteryChargingWindowActive({isBatteryChargingWindowActive})," +
+                    " lowBatteryLevel({lowBatteryLevel})" +
+                    " isLowPrices({cheapPrices})" +
+                    " isBadWeather({badWeather})" +
+                    " isGoodWeather({goodWeather})" +
+                    " underThresholdBatteryLevel({underThresholdBatteryLevel})",
+                    isBatteryFull, isBatteryChargingWindowActive, lowBatteryLevel, isLowPrices, isGoodWeather, isBadWeather, underThresholdBatteryLevel);
+                await TibberRTMDefaultBatteryPriorityAsync(value);
                 return;
             }
 
-            // 2. Battery Charging Prioritization
-            await TibberRTMAdjustment3HandleBatteryChargingDecisions(value, effectiveSolarPower, batteryLevel);
+            // Default Fallback - when no other condition applies
+            LoggerRTM.LogInformation("Normal Mode: No specific conditions met, using auto mode for optimal distribution");
+            await TibberRTMAdjustment3AutoMode(value);
         }
+
+
 
         #endregion Private Methods
     }

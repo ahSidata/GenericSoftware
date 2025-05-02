@@ -46,6 +46,24 @@ namespace EnergyAutomate.Components.Pages
             var weatherForecast = await ApiService.CurrentState.GetWeatherForecastAsync();
             var label_values = weatherForecast?.Hourly?.Time?.Select(s => DateTime.Parse(s).ToString("HH:mm")).ToList();
             var direct_radiation_instant = weatherForecast?.Hourly?.Direct_radiation_instant?.Select(s => (double?)s).ToList();
+            var charge_window = weatherForecast?.Hourly?.Direct_radiation_instant?.Select(s => (double?)s).ToList();
+            if (charge_window != null && label_values != null)
+            {
+                for (int i = 0; i < charge_window.Count; i++)
+                {
+                    if 
+                    (
+                        !(
+                        label_values[i] == DateTime.Parse(ApiService.CurrentState.BatteryChargeStart.TimeOfDay.ToString()).ToString("HH:mm") ||
+                        label_values[i] == DateTime.Parse(ApiService.CurrentState.BatteryChargeEnd.TimeOfDay.ToString()).ToString("HH:mm") 
+                        )
+                    )
+                    {
+                        charge_window[i] = null;
+                    }
+                }
+            }
+
             var cloudcover_low = weatherForecast?.Hourly?.Cloudcover_low?.Select(s => (double?)s).ToList();
             var cloudcover_mid = weatherForecast?.Hourly?.Cloudcover_mid?.Select(s => (double?)s).ToList();
             var cloudcover_high = weatherForecast?.Hourly?.Cloudcover_high?.Select(s => (double?)s).ToList();
@@ -59,13 +77,28 @@ namespace EnergyAutomate.Components.Pages
                 {
                     new LineChartDataset()
                     {
+
+                        Label = "charge_window",
+                        Data = charge_window,
+                        BackgroundColor = "rgba(0, 255, 0, 0.5)",
+                        BorderColor = "rgb(0, 255, 0)",
+                        BorderWidth = 2,
+                        PointRadius = new List<double>() { 0 },
+                        Stepped = true,
+                        Fill = true,                        
+                        Order = 2
+                    },
+                    new LineChartDataset()
+                    {
+
                         Label = "direct_radiation_instant",
                         Data = direct_radiation_instant,
                         BackgroundColor = "rgb(255, 0, 0)",
                         BorderColor = "rgb(255, 0, 0)",
                         BorderWidth = 2,
                         PointRadius = new List<double>() { 0 },
-                        Order = 3
+                        Stepped = true,
+                        Order = 1
                     }
                 },
             };
@@ -79,30 +112,36 @@ namespace EnergyAutomate.Components.Pages
                     {
                         Label = "cloudcover_low",
                         Data = cloudcover_low,
-                        BackgroundColor = "rgb(173,216,230)",
+                        BackgroundColor = "rgba(173,216,230, 0.5)",
                         BorderColor = "rgb(173,216,230)",
                         BorderWidth = 2,
                         PointRadius = new List<double>() { 2 },
+                        Stepped = true,
+                        Fill = true,
                         Order = 1
                     },
                     new LineChartDataset()
                     {
                         Label = "cloudcover_mid",
                         Data = cloudcover_mid,
-                        BackgroundColor = "rgb(0, 0, 255)",
+                        BackgroundColor = "rgba(0, 0, 255, 0.5)",
                         BorderColor = "rgb(0, 0, 255)",
                         BorderWidth = 2,
                         PointRadius = new List<double>() { 2 },
+                        Stepped = true,
+                        Fill = true,
                         Order = 2
                     },
                     new LineChartDataset()
                     {
                         Label = "cloudcover_high",
                         Data = cloudcover_high,
-                        BackgroundColor = "rgb(0, 0, 155)",
+                        BackgroundColor = "rgba(0, 0, 155, 0.5)",
                         BorderColor = "rgb(0, 0, 155)",                        
                         BorderWidth = 2,
                         PointRadius = new List<double>() { 2 },
+                        Stepped = true,
+                        Fill = true,
                         Order = 3
                     }
                 },

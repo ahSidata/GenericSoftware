@@ -192,6 +192,90 @@ namespace EnergyAutomate.Definitions
             return groupedPpvSums.Any() ? groupedPpvSums.Sum(x => x.PpvSum) : 0;
         }
 
+        public Dictionary<TimeSpan, float?> GetSolarProductionPerQuareMeter()
+        {
+            Dictionary<TimeSpan,float?> solarProduction = [];
+
+            var weatherForecast = WeatherForecastToday;
+
+            if (weatherForecast?.Hourly?.Time != null)
+            {
+
+                var length = weatherForecast?.Hourly.Time.Length ?? 0;
+
+                for (int i = 0; i < length; i++)
+                {
+                    if (weatherForecast?.Hourly.Time[i] != null)
+                    {
+                        var time = DateTime.Parse(weatherForecast.Hourly.Time[i]).ToUniversalTime();
+                        var radiation = weatherForecast?.Hourly?.Direct_radiation_instant?[i];
+                        if (radiation != null)
+                        {
+                            solarProduction.Add(time.TimeOfDay, radiation);
+                        }
+                    }
+                }
+            }
+
+            return solarProduction;
+        }
+
+        public (DateTime windowStart, DateTime windowEnd) CalculateBatteryChargingWindow()
+        {
+            var expectedSolarProduction = GetSolarProductionPerQuareMeter();
+
+            double chargePower = CalculateRequiredChargingPower(_apiService.GrowattGetBatteryLevel(), _apiService.GrowattGetBatteryMaxSoc());
+
+            // Step 1: Calculate solar noon
+            var solarNoon = DateTime.UtcNow.Date.AddHours(12); // Assuming solar noon is at 12:00 UTC
+
+
+            var windowStart = solarNoon;
+            var windowEnd = solarNoon.AddHours(1);
+
+            // Step 2: Calculate the time window for charging
+            var expectedPower = expectedSolarProduction.FirstOrDefault(x => x.Key == solarNoon.TimeOfDay).Value;
+
+            for (int i = 0; i < 12; i++)
+            {
+                if (expectedPower >= chargePower) break;
+                expectedPower += expectedSolarProduction.FirstOrDefault(x => x.Key == solarNoon.AddHours(+i).TimeOfDay).Value;
+                windowEnd = windowEnd.AddHours(+1);
+
+                if (expectedPower >= chargePower) break;                
+                expectedPower += expectedSolarProduction.FirstOrDefault(x => x.Key == solarNoon.AddHours(-i).TimeOfDay).Value;
+                windowStart = windowStart.AddHours(-1);
+            }
+
+            // Step 5: Return the window start and end times
+            return (windowStart, windowEnd);
+        }
+
+        private double CalculateRequiredChargingPower(int currentSOC, int targetSOC, double batteryCapacity = 4096.0)
+        {
+            // If target is lower than current or time is zero/negative, return 0
+            if (targetSOC <= currentSOC)
+                return 0;
+
+            // Calculate energy needed in kWh
+            double energyNeeded = batteryCapacity * (targetSOC - currentSOC) / 100.0;
+
+            // Account for charging efficiency (85%)
+            energyNeeded = energyNeeded / 0.85;
+
+            return energyNeeded;
+        }
+
+        public DateTime BatteryChargeStart { get; set; }
+
+        public DateTime BatteryChargeEnd { get; set; }
+
+        public bool IsBatteryChargingWindowActive()
+        {
+            var now = DateTime.UtcNow;
+            return now >= BatteryChargeStart && now <= BatteryChargeEnd;
+        }
+
         #endregion Properties
     }
 }

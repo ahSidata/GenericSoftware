@@ -81,23 +81,3 @@ The system dynamically calculates battery reserves based on a reorganization run
 | `ApiSettingExtentionExclusionFrom` | TimeSpan | `07:00` | Start of exclusion period |
 | `ApiSettingExtentionExclusionUntil` | TimeSpan | `18:00` | End of exclusion period |
 
-## Decision Factors Summary
-
-1. **Time Factor**
-   - Extension Mode: Active outside exclusion period when enabled
-   - Normal Mode: Active during exclusion period or when Extension Mode disabled
-
-2. **Solar Power Factor**
-   - High: Prioritize battery charging
-   - Medium: Decisions based on battery level
-   - Low: Decisions based on battery level and electricity prices
-
-3. **Battery Level Factor**
-   - Full: Focus on load prioritization
-   - Empty: Focus on battery charging or load reduction
-   - Partial: Decision based on other factors
-
-4. **Electricity Price Factor**
-   - Cheap: Prioritize battery charging
-   - Expensive: Activate energy saving mode
-

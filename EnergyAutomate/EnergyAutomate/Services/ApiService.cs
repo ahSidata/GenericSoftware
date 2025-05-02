@@ -1298,7 +1298,7 @@ namespace EnergyAutomate.Services
                         var avgPerDevice = ApiSettingAvgPower / GrowattGetDevicesNoahOnline().Count;
 
                         // Check if power default and commited values are equal to avg
-                        var allDevicesConform = GrowattGetDevicesNoahOnline().All(x => x.PowerValueCommited == avgPerDevice);
+                        var allDevicesConform = GrowattGetDevicesNoahOnline().All(x => x.PowerValueCommited == avgPerDevice|| x.PowerValueDefault == avgPerDevice);
 
                         LoggerRTM.LogTrace(" allDevicesConform: {allDevicesConform}",
                             allDevicesConform);
@@ -1309,9 +1309,10 @@ namespace EnergyAutomate.Services
             ]);
         }
 
-        private async Task TibberRTMDefaultLoadPriorityMaxAsync(TibberRealTimeMeasurement value, string deviceSn = "")
+        private async Task TibberRTMDefaultLoadPriorityMaxAsync(TibberRealTimeMeasurement value, string? deviceSn = null)
         {
-            await TibberRTMCheckConditionAsync($"LoadPriority_SetPower_{ApiSettingMaxPower}", [
+            deviceSn ??= GrowattGetDeviceNoahSnList();
+            await TibberRTMCheckConditionAsync($"LoadPriority_SetPower_Max_{ApiSettingMaxPower}", [
                 new (
                     async () => {
                         value.PowerValueNewRequested = ApiSettingMaxPower;
@@ -1337,8 +1338,11 @@ namespace EnergyAutomate.Services
                     async () => {
                         await GrowattClearSetPowerAsync(value.TS, ApiSettingMaxPower);
                     }, async () => {
+
+                        var maxPerDevice = ApiSettingMaxPower / GrowattGetDevicesNoahOnline().Count;
+
                         // Check if power default and commited values are equal to avg
-                        var allDevicesConform = GrowattGetDevicesNoahOnline().All(x => x.PowerValueCommited == ApiSettingMaxPower);
+                        var allDevicesConform = GrowattGetDevicesNoahOnline().All(x => x.PowerValueCommited == maxPerDevice || x.PowerValueDefault == maxPerDevice);
 
                         LoggerRTM.LogTrace("allDevicesConform: {allDevicesConform}",
                             allDevicesConform);
@@ -1475,6 +1479,8 @@ namespace EnergyAutomate.Services
                 {
                     CurrentState.WeatherForecastToday = await CurrentState.GetWeatherForecastAsync();
                     CurrentState.WeatherForecastTomorrow = await CurrentState.GetWeatherForecastAsync(DateTime.Today.AddDays(1));
+                    
+                    (CurrentState.BatteryChargeStart, CurrentState.BatteryChargeEnd ) = CurrentState.CalculateBatteryChargingWindow();
                 }
 
                 var ajustmentElement = dbContext.GrowattElements.FirstOrDefault(x => x.ElementType == GrowattElement.ElementTypes.Adjustment && x.IsActive);
@@ -1568,6 +1574,12 @@ namespace EnergyAutomate.Services
             // Aktuellen Batteriestand aus Daten ermitteln
             var lastData = GrowattLatestNoahLastDatas().FirstOrDefault();
             return lastData?.totalBatteryPackSoc ?? 0;
+        }
+
+        public int GrowattGetBatteryMaxSoc()
+        {
+            // Aktuellen Batteriestand aus Daten ermitteln
+            return (int)(GrowattLatestNoahLastDatas().Any() ? GrowattLatestNoahLastDatas().Average(x => x.chargeSocLimit) : 100);
         }
 
         #endregion Static
