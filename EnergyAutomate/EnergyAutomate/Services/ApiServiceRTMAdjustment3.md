@@ -3,131 +3,101 @@ Please provide your response in English, formatted as Markdown formated text and
 **Prompt End:**
 
 
-# Decision Logic of TibberRTMAdjustment3
+# TibberRTMAdjustment3 Decision Logic Documentation
 
-## Check Sequence (from highest to lowest priority)
+This document outlines the decision-making flow and operational modes of the TibberRTMAdjustment3 energy management system.
 
-1. **Auto Mode Check**
-   - If `ApiSettingAutoMode = true`: Call `TibberRTMAdjustment3AutoMode(value)` and exit.
-   - Otherwise: Continue with step 2.
+## Decision Hierarchy
 
-2. **Inactivity Check**
-   - If no PV power available AND all batteries empty: No action, exit.
-   - Otherwise: Continue with step 3.
+### 1. Auto Mode Check (Highest Priority)
+- **IF** `ApiSettingAutoMode = true`
+  - **THEN** Call `TibberRTMAdjustment3AutoMode(value)` and exit
+  - **ELSE** Continue to next check
 
-3. **Operating Mode Determination**
-   - If `ApiSettingExtentionMode = true` AND time not within Exclusion From-To:
-     → Extension Mode active (Step 4)
-   - Otherwise: Normal Mode active (Step 5)
+### 2. Inactivity Check
+- **IF** No PV power available AND all batteries empty
+  - **THEN** No action, exit
+  - **ELSE** Continue to next check
 
-4. **Extension Mode Decisions**
-   - Power price-dependent check (highest priority):
-     - If `IsExpensiveRestrictionMode`: Activate AutoMode
-   - Check if a high-price phase is expected the next morning,
-     - If yes, then conserve battery and only feed with average.
-       - **Action:** `TibberRTMDefaultLoadPriorityAsync()`
-       - **Description:** Battery is preserved.
-   - After each action: End method.
+### 3. Mode Determination
+- **IF** `ApiSettingExtentionMode = true` AND current time is outside Exclusion period
+  - **THEN** Enter Extension Mode (step 4)
+  - **ELSE** Enter Normal Mode (step 5)
 
-5. **Normal Mode Decisions**
-   - **Price-dependent check (highest priority):**
-     - If `IsExpensiveRestrictionMode`: Activate energy saving mode (AutoMode)
-     - **Action:** `AutoMode(value)`
+## 4. Extension Mode Logic
 
-   - **Battery maintenance with full battery (second highest priority):**
-     - If `CurrentState.IsGrowattBatteryFull`: Maintain battery charge level
-       - With high solar output: Maximum consumption for optimal usage
-         - **Condition:** `greater than 75 of ApiSettingMaxPower`
-         - **Action:** `TibberRTMDefaultLoadPriorityMaxAsync(value, GrowattGetDeviceNoahSnList())`
-       - Standard case: Only feed excess
-         - **Action:** `TibberRTMDefaultBatteryPriorityAsync(value)`
-          
-   - **Standard situations during the day with not full battery based on facts:**
+Extension mode is active when configured and outside the exclusion time window (default: 07:00-18:00).
 
-     1. **When battery is empty:**
-        - **Condition:** `Special constellations`
-          - `Battery empty + normal prices: !CurrentState.IsBelowAvgPrice && CurrentState.IsBatteryEmpty`
-        - **Action:** `TibberRTMDefaultLoadPriorityAvgAsync(value)`
-        - **Description:** Only the base load is fed to avoid wasting battery power.
+### Priority Sequence:
+1. **Power Price Check**
+   - **IF** `IsExpensiveRestrictionMode`
+     - **THEN** Activate AutoMode
 
-     2. **When battery should be charged (multiple conditions possible):**
-        - **Conditions:** One of the following cases must apply:
-          - `Poor weather forecast (little sun expected)`
-          - `Low battery level + cheap prices`
-          - `Low battery level + poor weather forecast`
-          - `Battery level < 80% with good weather forecast`
-        - **Action:** `TibberRTMDefaultBatteryPriorityAsync(value)`
-        - **Description:** Battery charging is prioritized.
+2. **Morning Price Forecast**
+   - **IF** High-price phase expected next morning
+     - **THEN** Conserve battery, feed with average power only
+     - **ACTION:** `TibberRTMDefaultLoadPriorityAsync()`
+     - **RESULT:** Battery is preserved for high-price periods
 
-     3. **When direct solar power usage is optimal:**
-        - **Condition:** `Not cheap !IsCheapMode, use only solar power, no battery`
-        - **Action:** `TibberRTMDefaultLoadPrioritySolarInputAsync(value)`
-        - **Description:** Load prioritized to use solar energy directly.
+## 5. Normal Mode Logic
 
-     4. **When no other condition applies:**
-        - **Action:** `TibberRTMAdjustment3AutoMode(value)`
-        - **Description:** Optimal distribution based on current measurements.
+Normal mode is the default operational state when Extension Mode is not active.
 
----
+### Priority Sequence:
 
-## **Reserve Calculation Based on a Reorg Run**
-- **Description:** The reserve is dynamically calculated based on a reorg run to optimally adjust battery capacity to future requirements.
-- **Action:** Call `CalculateReserveBasedOnReorg()` to calculate and adjust the reserve.
-- **Details:**
-  - The reorg run analyzes historical data and future requirements.
-  - The calculated reserve overwrites `ApiSettingExtentionReserveThreshold` and `ApiSettingExtentionMinimalReserve` if necessary.
+1. **Direct Solar Usage Optimization**
+   - **IF** `!IsCheapMode` (Not in cheap price mode)
+     - **ACTION:** `TibberRTMDefaultLoadPrioritySolarInputAsync(value)`
+     - **RESULT:** Load prioritized to use solar energy directly without battery
 
----
+2. **Battery Charging Prioritization**
+   - **IF** Any of the following conditions are true:
+     - Poor weather forecast (little sun expected)
+     - Low battery level + cheap prices
+     - Low battery level + poor weather forecast
+     - Battery level < 80% with good weather forecast
+     - **ACTION:** `TibberRTMDefaultBatteryPriorityAsync(value)`
+     - **RESULT:** Battery charging is prioritized
 
-## **Additional Parameters for Extension Mode**
-1. **`ApiSettingExtentionMode`**
-   - **Type:** `bool`
-   - **Default value:** `true`
-   - **Description:** Enables or disables Extension Mode. If `true`, Extension Mode is used.
+5. **Default Fallback**
+   - When no other condition applies
+     - **ACTION:** `AutoMode`
+     - **RESULT:** Optimal distribution based on current measurements
 
-2. **`ApiSettingExtentionExclusionFrom`**
-   - **Type:** `TimeSpan`
-   - **Default value:** `new TimeSpan(7, 0, 0)` (07:00)
-   - **Description:** Specifies the start time of the exclusion period during which Extension Mode is not active.
+## Reserve Calculation
 
-3. **`ApiSettingExtentionExclusionUntil`**
-   - **Type:** `TimeSpan`
-   - **Default value:** `new TimeSpan(18, 0, 0)` (18:00)
-   - **Description:** Specifies the end time of the exclusion period during which Extension Mode is not active.
+The system dynamically calculates battery reserves based on a reorganization run to optimally adjust capacity for future requirements.
 
-4. **`ApiSettingExtentionAvgPower`**
-   - **Type:** `int`
-   - **Default value:** `300`
-   - **Description:** Specifies the amount of power (in watts) fed from the extension battery in Extension Mode.
+- **Process:** Call `CalculateReserveBasedOnReorg()`
+- **Effect:** May override `ApiSettingExtentionReserveThreshold` and `ApiSettingExtentionMinimalReserve`
+- **Analysis Method:** Uses historical data and future requirements
 
-5. **`ApiSettingExtentionReserveThreshold`**
-   - **Type:** `int`
-   - **Default value:** `50` (%)
-   - **Description:** Threshold of battery capacity in percent from which a reserve should be maintained for expensive price periods.
-   
-6. **`ApiSettingExtentionMinimalReserve`**
-   - **Type:** `int`
-   - **Default value:** `20` (%)
-   - **Description:** Minimum battery capacity in percent that should be maintained as an absolute reserve.
+## Configuration Parameters
 
----
+### Extension Mode Parameters
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `ApiSettingExtentionMode` | bool | `true` | Enables/disables Extension Mode |
+| `ApiSettingExtentionExclusionFrom` | TimeSpan | `07:00` | Start of exclusion period |
+| `ApiSettingExtentionExclusionUntil` | TimeSpan | `18:00` | End of exclusion period |
 
-## **Summary of Main Factors**
-1. **Time (Extension Mode or Normal Mode):**
-   - **Extension Mode:** Active when `ApiSettingExtentionMode == true` and the current time is outside the exclusion period.
-   - **Normal Mode:** Active when Extension Mode is not active.
+## Decision Factors Summary
 
-2. **Solar Power (high, medium, low):**
-   - High solar power: Prioritize battery charging.
-   - Medium solar power: Dependent on battery level.
-   - Low solar power: Dependent on battery level and electricity prices.
+1. **Time Factor**
+   - Extension Mode: Active outside exclusion period when enabled
+   - Normal Mode: Active during exclusion period or when Extension Mode disabled
 
-3. **Battery Level (full, empty, partially charged):**
-   - Full: Focus on load prioritization.
-   - Empty: Focus on battery charging or load reduction.
+2. **Solar Power Factor**
+   - High: Prioritize battery charging
+   - Medium: Decisions based on battery level
+   - Low: Decisions based on battery level and electricity prices
 
-4. **Electricity Prices (cheap, expensive):**
-   - Cheap: Prioritize battery charging.
-   - Expensive: Activate energy saving mode.
+3. **Battery Level Factor**
+   - Full: Focus on load prioritization
+   - Empty: Focus on battery charging or load reduction
+   - Partial: Decision based on other factors
 
+4. **Electricity Price Factor**
+   - Cheap: Prioritize battery charging
+   - Expensive: Activate energy saving mode
 

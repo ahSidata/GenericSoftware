@@ -167,7 +167,6 @@
             }
         }
 
-
         /// <summary>
         /// Handles automatic power adjustment when in auto mode or under expensive restriction mode.
         /// </summary>
