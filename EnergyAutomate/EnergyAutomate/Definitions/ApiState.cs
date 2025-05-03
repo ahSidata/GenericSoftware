@@ -236,7 +236,7 @@ namespace EnergyAutomate.Definitions
             // Step 2: Calculate the time window for charging
             var expectedPower = expectedSolarProduction.FirstOrDefault(x => x.Key == solarNoon.TimeOfDay).Value;
 
-            for (int i = 0; i < 12; i++)
+            for (int i = 1; i < 12; i++)
             {
                 if (expectedPower >= chargePower) break;
                 expectedPower += expectedSolarProduction.FirstOrDefault(x => x.Key == solarNoon.AddHours(+i).TimeOfDay).Value;

@@ -47,15 +47,18 @@ namespace EnergyAutomate.Components.Pages
             var label_values = weatherForecast?.Hourly?.Time?.Select(s => DateTime.Parse(s).ToString("HH:mm")).ToList();
             var direct_radiation_instant = weatherForecast?.Hourly?.Direct_radiation_instant?.Select(s => (double?)s).ToList();
             var charge_window = weatherForecast?.Hourly?.Direct_radiation_instant?.Select(s => (double?)s).ToList();
-            if (charge_window != null && label_values != null)
+            var hourlyIndex = weatherForecast?.Hourly?.Time?.Select(s => DateTime.Parse(s).ToUniversalTime()).ToArray();
+
+            if (charge_window != null && hourlyIndex != null)
             {
+
                 for (int i = 0; i < charge_window.Count; i++)
                 {
                     if 
                     (
                         !(
-                        label_values[i] == DateTime.Parse(ApiService.CurrentState.BatteryChargeStart.TimeOfDay.ToString()).ToString("HH:mm") ||
-                        label_values[i] == DateTime.Parse(ApiService.CurrentState.BatteryChargeEnd.TimeOfDay.ToString()).ToString("HH:mm") 
+                        hourlyIndex[i].Hour > ApiService.CurrentState.BatteryChargeStart.Hour ||
+                        hourlyIndex[i].Hour < ApiService.CurrentState.BatteryChargeEnd.Hour 
                         )
                     )
                     {
