@@ -157,7 +157,7 @@ namespace EnergyAutomate.Services
                 return GrowattDevices.Where(x => x.DeviceType == "noah" && x.IsOfflineSince == null).ToList();
         }
 
-        public DeviceNoahInfoData? GrowattGetNoahInfoDataPerDevice(string deviceSn)
+        public DeviceNoahInfoData? GrowattGetNoahInfoDataPerDevice(string? deviceSn)
         {
             lock (GrowattDeviceNoahInfoData._syncRoot)
             {
@@ -173,7 +173,7 @@ namespace EnergyAutomate.Services
             }
         }
 
-        public DeviceNoahLastData? GrowattGetNoahLastDataPerDevice(string deviceSn)
+        public DeviceNoahLastData? GrowattGetNoahLastDataPerDevice(string? deviceSn)
         {
             lock (GrowattDeviceNoahLastData._syncRoot)
             {
@@ -711,7 +711,7 @@ namespace EnergyAutomate.Services
                         {
                             //Refresh Last data ever minute
                             var deviceNoahLastDatas = await growattApiClient.GetDeviceLastDataAsync<DeviceNoahLastDataResponse>(lastDataQuery);
-                            if (deviceNoahLastDatas != null)
+                            if (deviceNoahLastDatas?.Data?.Noah != null)
                             {
                                 await GrowattSaveDeviceNoahLastData(deviceNoahLastDatas.Data.Noah);
                             }
@@ -721,7 +721,7 @@ namespace EnergyAutomate.Services
                         {
                             //Refresh Last data ever minute
                             var deviceNoahLastDatas = await growattApiClient.GetDeviceLastDataAsync<DeviceMinLastDataResponse>(lastDataQuery);
-                            if (deviceNoahLastDatas != null)
+                            if (deviceNoahLastDatas?.Data?.Min != null)
                             {
                                 await GrowattSaveDeviceMinLastData(deviceNoahLastDatas.Data.Min);
                             }
@@ -732,7 +732,7 @@ namespace EnergyAutomate.Services
                         {
                             //Refresh Last data ever minute
                             var deviceNoahInfos = await growattApiClient.GetDeviceInfoAsync<DeviceNoahInfoDataResponse>(infoQuery);
-                            if (deviceNoahInfos != null)
+                            if (deviceNoahInfos?.Data?.Noah != null)
                             {
                                 await GrowattSaveDeviceNoahInfoData(deviceNoahInfos.Data.Noah);
                             }
@@ -742,7 +742,7 @@ namespace EnergyAutomate.Services
                         {
                             //Refresh Last data ever minute
                             var deviceNoahInfos = await growattApiClient.GetDeviceInfoAsync<DeviceMinInfoDataResponse>(infoQuery);
-                            if (deviceNoahInfos != null)
+                            if (deviceNoahInfos?.Data?.Min != null)
                             {
                                 await GrowattSaveDeviceMinInfoData(deviceNoahInfos.Data.Min);
                             }
@@ -839,7 +839,7 @@ namespace EnergyAutomate.Services
             await Task.CompletedTask;
         }
 
-        private DeviceNoahSetTimeSegmentQuery GrowattQueryDefaultBattPriorityDeviceNoahTimeSegment(string deviceSn, bool force = true) => new()
+        private DeviceNoahSetTimeSegmentQuery GrowattQueryDefaultBattPriorityDeviceNoahTimeSegment(string? deviceSn, bool force = true) => new()
         {
             Force = force,
             DeviceSn = deviceSn,
@@ -977,49 +977,51 @@ namespace EnergyAutomate.Services
             ApiInvokeStateHasChanged();
         }
 
-        private async Task GrowattSaveDeviceNoahInfoData(List<DeviceNoahInfoData> deviceNoahInfoDatas)
+        private async Task GrowattSaveDeviceNoahInfoData(List<DeviceNoahInfoData>? deviceNoahInfoDatas)
         {
-            var dbContext = ApiGetDbContext();
-
-            foreach (var deviceNoahInfo in deviceNoahInfoDatas)
+            if (deviceNoahInfoDatas != null)
             {
-                var dateTime = DateTimeOffset.FromUnixTimeMilliseconds(deviceNoahInfo.LastUpdateTime).DateTime;
-                var offset = TimeSpan.FromHours(-6); // Beispiel: Offset von 2 Stunden
-                deviceNoahInfo.TS = new DateTimeOffset(dateTime, offset).ToUniversalTime();
-
-                GrowattSetOfflineState(dbContext, deviceNoahInfo.DeviceSn, deviceNoahInfo.Lost ? new DateTime(deviceNoahInfo.LastUpdateTime) : null);
-
-                lock (GrowattDevices._syncRoot)
+                var dbContext = ApiGetDbContext();
+                foreach (var deviceNoahInfo in deviceNoahInfoDatas)
                 {
-                    var device = GrowattDevices.FirstOrDefault(x => x.DeviceSn == deviceNoahInfo.DeviceSn);
-                    if (device != null)
+                    var dateTime = DateTimeOffset.FromUnixTimeMilliseconds(deviceNoahInfo.LastUpdateTime).DateTime;
+                    var offset = TimeSpan.FromHours(-6); // Beispiel: Offset von 2 Stunden
+                    deviceNoahInfo.TS = new DateTimeOffset(dateTime, offset).ToUniversalTime();
+
+                    GrowattSetOfflineState(dbContext, deviceNoahInfo.DeviceSn, deviceNoahInfo.Lost ? new DateTime(deviceNoahInfo.LastUpdateTime) : null);
+
+                    lock (GrowattDevices._syncRoot)
                     {
-                        device.PowerValueDefault = (int)deviceNoahInfo.DefaultPower;
+                        var device = GrowattDevices.FirstOrDefault(x => x.DeviceSn == deviceNoahInfo.DeviceSn);
+                        if (device != null)
+                        {
+                            device.PowerValueDefault = (int)deviceNoahInfo.DefaultPower;
+                        }
+                    }
+
+                    lock (GrowattDeviceNoahInfoData._syncRoot)
+                    {
+                        var apiServiceDeviceNoahInfo = GrowattDeviceNoahInfoData.FirstOrDefault(x => x.DeviceSn == deviceNoahInfo.DeviceSn);
+                        if (apiServiceDeviceNoahInfo != null) GrowattDeviceNoahInfoData.Remove(apiServiceDeviceNoahInfo);
+                        GrowattDeviceNoahInfoData.Add(deviceNoahInfo);
+                    }
+
+                    var dbContextDeviceNoahInfo = await dbContext.GrowattDeviceNoahInfoData.FindAsync(deviceNoahInfo.DeviceSn);
+                    if (dbContextDeviceNoahInfo != null)
+                    {
+                        dbContext.Entry(dbContextDeviceNoahInfo).CurrentValues.SetValues(deviceNoahInfo);
+                    }
+                    else
+                    {
+                        dbContext.GrowattDeviceNoahInfoData.Add(deviceNoahInfo);
                     }
                 }
 
-                lock (GrowattDeviceNoahInfoData._syncRoot)
-                {
-                    var apiServiceDeviceNoahInfo = GrowattDeviceNoahInfoData.FirstOrDefault(x => x.DeviceSn == deviceNoahInfo.DeviceSn);
-                    if (apiServiceDeviceNoahInfo != null) GrowattDeviceNoahInfoData.Remove(apiServiceDeviceNoahInfo);
-                    GrowattDeviceNoahInfoData.Add(deviceNoahInfo);
-                }
+                // Save changes to the database
+                await dbContext.SaveChangesAsync();
 
-                var dbContextDeviceNoahInfo = await dbContext.GrowattDeviceNoahInfoData.FindAsync(deviceNoahInfo.DeviceSn);
-                if (dbContextDeviceNoahInfo != null)
-                {
-                    dbContext.Entry(dbContextDeviceNoahInfo).CurrentValues.SetValues(deviceNoahInfo);
-                }
-                else
-                {
-                    dbContext.GrowattDeviceNoahInfoData.Add(deviceNoahInfo);
-                }
+                ApiInvokeStateHasChanged();
             }
-
-            // Save changes to the database
-            await dbContext.SaveChangesAsync();
-
-            ApiInvokeStateHasChanged();
         }
 
         private async Task GrowattSaveDeviceNoahLastData(List<DeviceNoahLastData> deviceNoahLastDatas)
@@ -1080,7 +1082,7 @@ namespace EnergyAutomate.Services
             ApiInvokeStateHasChanged();
         }
 
-        private void GrowattSetOfflineState(ApplicationDbContext dbContext, string deviceSn, DateTimeOffset? dateTimeOffset)
+        private void GrowattSetOfflineState(ApplicationDbContext dbContext, string? deviceSn, DateTimeOffset? dateTimeOffset)
         {
             lock (GrowattDevices._syncRoot)
             {

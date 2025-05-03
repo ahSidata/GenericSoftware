@@ -17,8 +17,8 @@ namespace EnergyAutomate.Growatt
         public int BmsUsingCap { get; set; }
         public long Calendar { get; set; }
         public int ChipType { get; set; }
-        public string DataLogSn { get; set; }
-        public string DayMap { get; set; }
+        public string? DataLogSn { get; set; }
+        public string? DayMap { get; set; }
         public double DcTemp { get; set; }
         public int DeviceType { get; set; }
         public double EacToday { get; set; }
@@ -46,7 +46,7 @@ namespace EnergyAutomate.Growatt
         public double EpvToday { get; set; }
         public double EpvTotal { get; set; }
         public double EpvYear { get; set; }
-        public string ErrorText { get; set; }
+        public string? ErrorText { get; set; }
         public double EselfHour { get; set; }
         public double EselfMonth { get; set; }
         public double Eselftoday { get; set; }
@@ -77,7 +77,7 @@ namespace EnergyAutomate.Growatt
         public double GenPower { get; set; }
         public double GenVol { get; set; }
         public int GridStatus { get; set; }
-        public string HmiVersion { get; set; }
+        public string? HmiVersion { get; set; }
         public double Iac1 { get; set; }
         public double Iac2 { get; set; }
         public double Ibat { get; set; }
@@ -88,8 +88,8 @@ namespace EnergyAutomate.Growatt
         public double LoadPower1 { get; set; }
         public double LoadPower2 { get; set; }
         public bool Lost { get; set; }
-        public string M1Version { get; set; }
-        public string M2Version { get; set; }
+        public string? M1Version { get; set; }
+        public string? M2Version { get; set; }
         public double Pac { get; set; }
         public double Pac1 { get; set; }
         public double Pac2 { get; set; }
@@ -109,21 +109,21 @@ namespace EnergyAutomate.Growatt
         public double Ppv1 { get; set; }
         public double Ppv2 { get; set; }
         public double Ppv3 { get; set; }
-        public string PpvText { get; set; }
+        public string? PpvText { get; set; }
         public int PriorityChoose { get; set; }
         public double Pself { get; set; }
         public double Psystem { get; set; }
         public double RLoadVol { get; set; }
         public double RLocalEnergy { get; set; }
-        public string SerialNum { get; set; }
+        public string? SerialNum { get; set; }
         public double SLoadVol { get; set; }
         public double SLocalEnergy { get; set; }
         public int Soc { get; set; }
-        public string SocText { get; set; }
-        public string SphBean { get; set; }
+        public string? SocText { get; set; }
+        public string? SphBean { get; set; }
         public int SpStatus { get; set; }
         public int Status { get; set; }
-        public string StatusText { get; set; }
+        public string? StatusText { get; set; }
         public int SysFaultWord { get; set; }
         public int SysFaultWord1 { get; set; }
         public int SysFaultWord2 { get; set; }
@@ -135,7 +135,7 @@ namespace EnergyAutomate.Growatt
         public int SysStatus { get; set; }
         public int SystemFault { get; set; }
         public int SystemWarn { get; set; }
-        public string Time { get; set; }
+        public string? Time { get; set; }
         public double TimeTotal { get; set; }
         public double UpsFac { get; set; }
         public double UpsPac1 { get; set; }
@@ -151,7 +151,7 @@ namespace EnergyAutomate.Growatt
         public double Vpv3 { get; set; }
         public int WarnCode { get; set; }
         public int WarnCode1 { get; set; }
-        public string WarnText { get; set; }
+        public string? WarnText { get; set; }
         public bool WithTime { get; set; }
 
         [JsonIgnore]

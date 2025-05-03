@@ -91,7 +91,7 @@ namespace EnergyAutomate.Components.Pages
         {
             var dataSource = ApiService.TibberListRealTimeMeasurement().OrderByDescending(x => x.TS).Take(61).Reverse().ToList();
 
-            List<double?>? GetDeviceData( string deviceSn, string propertyName)
+            List<double?>? GetDeviceData(string? deviceSn, string propertyName)
             {
                 switch(propertyName)
                 {

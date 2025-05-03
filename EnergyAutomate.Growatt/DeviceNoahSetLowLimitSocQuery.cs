@@ -10,11 +10,10 @@ namespace EnergyAutomate.Growatt
         /// <summary>
         /// device SN, example: xxxxxxx
         /// </summary>
-        public string DeviceSn { get; set; } = string.Empty;
-        /// <summary>
+        public string? DeviceSn { get; set; }
         /// device type, example: noah
         /// </summary>
-        public string DeviceType { get; set; } = string.Empty;
+        public string? DeviceType { get; set; }
 
         /// <summary>
         /// low limit SOC, example: 0
@@ -32,9 +31,9 @@ namespace EnergyAutomate.Growatt
         {
             var keyValuePairs = new[]
             {
-            new KeyValuePair<string, string>("deviceSn", DeviceSn),
-            new KeyValuePair<string, string>("deviceType", DeviceType),
-            new KeyValuePair<string, string>("value", Value.ToString())
+            new KeyValuePair<string, string?>("deviceSn", DeviceSn),
+            new KeyValuePair<string, string?>("deviceType", DeviceType),
+            new KeyValuePair<string, string?>("value", Value.ToString())
         };
 
             return new FormUrlEncodedContent(keyValuePairs);

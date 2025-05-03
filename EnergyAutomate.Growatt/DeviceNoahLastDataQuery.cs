@@ -6,8 +6,8 @@ namespace EnergyAutomate.Growatt
     {
         #region Properties
 
-        public string DeviceSn { get; set; } = string.Empty;
-        public string DeviceType { get; set; } = string.Empty;
+        public string? DeviceSn { get; set; }
+        public string? DeviceType { get; set; }
         [JsonIgnore]
         public bool Force { get; set; } = false;
 
@@ -19,8 +19,8 @@ namespace EnergyAutomate.Growatt
         {
             var keyValuePairs = new[]
             {
-                new KeyValuePair<string, string>("deviceSn", DeviceSn),
-                new KeyValuePair<string, string>("deviceType", DeviceType),
+                new KeyValuePair<string, string?>("deviceSn", DeviceSn),
+                new KeyValuePair<string, string?>("deviceType", DeviceType),
             };
 
             return new FormUrlEncodedContent(keyValuePairs);

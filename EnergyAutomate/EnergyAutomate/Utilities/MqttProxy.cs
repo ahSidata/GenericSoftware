@@ -54,9 +54,9 @@ namespace EnergyAutomate.Utilities
                     .Build();
 
                 var mqttFactory = new MqttClientFactory();
-                var brokerClient = mqttFactory.CreateMqttClient();
+                _remoteClient = mqttFactory.CreateMqttClient();
 
-                await brokerClient.ConnectAsync(clientOptions);
+                await _remoteClient.ConnectAsync(clientOptions);
 
                 // Nachrichten vom Client an den Broker weiterleiten
                 _mqttServer.InterceptingPublishAsync += async publishEvent =>
@@ -64,12 +64,12 @@ namespace EnergyAutomate.Utilities
                     if (publishEvent.ClientId == e.ClientId)
                     {
                         Console.WriteLine($"Client {e.ClientId} --> Broker: {publishEvent.ApplicationMessage.Topic}");
-                        await brokerClient.PublishAsync(publishEvent.ApplicationMessage);
+                        await _remoteClient.PublishAsync(publishEvent.ApplicationMessage);
                     }
                 };
 
                 // Nachrichten vom Broker an den Client weiterleiten
-                brokerClient.ApplicationMessageReceivedAsync += async brokerMessage =>
+                _remoteClient.ApplicationMessageReceivedAsync += async brokerMessage =>
                 {
                     Console.WriteLine($"Broker --> Client {e.ClientId}: {brokerMessage.ApplicationMessage.Topic}");
                     await _mqttServer.InjectApplicationMessage(new InjectedMqttApplicationMessage(brokerMessage.ApplicationMessage)

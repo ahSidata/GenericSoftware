@@ -236,8 +236,6 @@ namespace EnergyAutomate.Services
                 value.PowerValueNewRequested = powerValue;
                 value.PowerValueNewCommited = 0;
                 value.PowerValueNewDeviceSn = device.DeviceSn;
-
-                ApiInvokeStateHasChanged();
             }
 
             await Task.CompletedTask;

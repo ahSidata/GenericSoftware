@@ -19,7 +19,7 @@ public class DeviceNoahLastData
     /// </summary>
     public int battery1ProtectStatus { get; set; }
     /// <summary>Battery pack 1—SN.</summary>
-    public string battery1SerialNum { get; set; }
+    public string? battery1SerialNum { get; set; }
     /// <summary>Battery pack 1_SOC.</summary>
     public int battery1Soc { get; set; }
     /// <summary>Battery pack 1 temperature.</summary>

@@ -8,10 +8,10 @@ namespace EnergyAutomate.Growatt
 
         public int Address { get; set; }
         public bool Again { get; set; }
-        public string Alias { get; set; }
-        public string BatSn { get; set; }
+        public string? Alias { get; set; }
+        public string? BatSn { get; set; }
         public int BatteryNo { get; set; }
-        public string BatterySN { get; set; }
+        public string? BatterySN { get; set; }
         public double Bdc1ChargePower { get; set; }
         public double Bdc1ChargeTotal { get; set; }
         public double Bdc1DischargePower { get; set; }
@@ -60,13 +60,13 @@ namespace EnergyAutomate.Growatt
         public int BmsError3 { get; set; }
         public int BmsError4 { get; set; }
         public int BmsFaultType { get; set; }
-        public string BmsFwVersion { get; set; }
+        public string? BmsFwVersion { get; set; }
         public double BmsIbat { get; set; }
         public int BmsIcycle { get; set; }
         public double BmsInfo { get; set; }
         public int BmsIosStatus { get; set; }
         public double BmsMaxCurr { get; set; }
-        public string BmsMcuVersion { get; set; }
+        public string? BmsMcuVersion { get; set; }
         public double BmsPackInfo { get; set; }
         public int BmsSoc { get; set; }
         public int BmsSoh { get; set; }
@@ -79,14 +79,14 @@ namespace EnergyAutomate.Growatt
         public int BmsWarnCode { get; set; }
         public int BsystemWorkMode { get; set; }
         public long Calendar { get; set; }
-        public string DataLogSn { get; set; }
-        public string Day { get; set; }
+        public string? DataLogSn { get; set; }
+        public string? Day { get; set; }
         public double DciR { get; set; }
         public double DciS { get; set; }
         public double DciT { get; set; }
         public double DcVoltage { get; set; }
-        public string Debug1 { get; set; }
-        public string Debug2 { get; set; }
+        public string? Debug1 { get; set; }
+        public string? Debug2 { get; set; }
         public int DeratingMode { get; set; }
         public int DryContactStatus { get; set; }
         public double EacChargeToday { get; set; }
@@ -124,7 +124,7 @@ namespace EnergyAutomate.Growatt
         public double Epv4Today { get; set; }
         public double Epv4Total { get; set; }
         public double EpvTotal { get; set; }
-        public string ErrorText { get; set; }
+        public string? ErrorText { get; set; }
         public double EselfToday { get; set; }
         public double EselfTotal { get; set; }
         public double EsystemToday { get; set; }
@@ -173,9 +173,9 @@ namespace EnergyAutomate.Growatt
         public double Pself { get; set; }
         public double Psystem { get; set; }
         public int RealOPPercent { get; set; }
-        public string SerialNum { get; set; }
+        public string? SerialNum { get; set; }
         public int Status { get; set; }
-        public string StatusText { get; set; }
+        public string? StatusText { get; set; }
         public int SysFaultWord { get; set; }
         public int SysFaultWord1 { get; set; }
         public int SysFaultWord2 { get; set; }
@@ -189,7 +189,7 @@ namespace EnergyAutomate.Growatt
         public double Temp3 { get; set; }
         public double Temp4 { get; set; }
         public double Temp5 { get; set; }
-        public string Time { get; set; }
+        public string? Time { get; set; }
         public double TimeTotal { get; set; }
         public double TotalWorkingTime { get; set; }
         [JsonIgnore]
@@ -208,7 +208,7 @@ namespace EnergyAutomate.Growatt
         public double Vpv4 { get; set; }
         public int WarnCode { get; set; }
         public int WarnCode1 { get; set; }
-        public string WarnText { get; set; }
+        public string? WarnText { get; set; }
         public bool WithTime { get; set; }
 
         #endregion Properties

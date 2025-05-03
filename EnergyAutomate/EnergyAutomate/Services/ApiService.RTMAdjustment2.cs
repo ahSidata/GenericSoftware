@@ -183,8 +183,6 @@ namespace EnergyAutomate.Services
                         Logger.LogTrace($"lastCommitedPowerValue: {lastCommitedPowerValue} - lowerDelta: {productionDelta}, calcPowerValue: {calcPowerValue}, OffSet: {ApiSettingAvgPowerOffset}");
                     }
                 }
-
-                ApiInvokeStateHasChanged();
             }
 
             await Task.CompletedTask;

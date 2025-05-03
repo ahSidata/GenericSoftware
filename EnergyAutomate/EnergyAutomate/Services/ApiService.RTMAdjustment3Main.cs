@@ -117,6 +117,14 @@ namespace EnergyAutomate.Services
         /// <summary>Handles Normal Mode logic per the documented decision flow</summary>
         private async Task TibberRTMAdjustment3HandleNormalMode(TibberRealTimeMeasurement value, int batteryLevel)
         {
+            bool lowBatteryLevel = batteryLevel < LOW_BATTERY_THRESHOLD;
+            bool underThresholdBatteryLevel = batteryLevel < HIGH_BATTERY_THRESHOLD;
+            bool isLowPrices = CurrentState.IsCheapRestrictionMode || CurrentState.IsBelowAvgPrice;
+            bool isGoodWeather = !CurrentState.IsCloudy();
+            bool isBadWeather = CurrentState.IsCloudy();
+            var isBatteryFull = CurrentState.IsGrowattBatteryFull;
+            var isBatteryChargingWindowActive = CurrentState.IsBatteryChargingWindowActive();
+
             // Special case from original code
             if (CurrentState.IsExpensiveRestrictionMode)
             {
@@ -126,29 +134,18 @@ namespace EnergyAutomate.Services
             }
 
             // 1. Direct Solar Usage Optimization
-            if (!CurrentState.IsCheapRestrictionMode)
+            if 
+            (
+                isBatteryFull &&
+                CurrentState.GrowattNoahGetAvgPpvLast5Minutes() > ApiSettingAvgPower &&
+                !CurrentState.IsCheapRestrictionMode &&
+                !CurrentState.IsBelowAvgPrice
+            )
             {
                 LoggerRTM.LogInformation("Normal Mode: Not in cheap price mode, prioritizing direct solar usage");
                 await TibberRTMDefaultLoadPrioritySolarInputAsync(value);
                 return;
             }
-
-            // 2. Battery Charging Prioritization
-            await TibberRTMAdjustment3HandleBatteryChargingDecisions(value, batteryLevel);
-        }
-
-        /// <summary>Handles decisions for battery charging prioritization</summary>
-        private async Task TibberRTMAdjustment3HandleBatteryChargingDecisions(TibberRealTimeMeasurement value, int batteryLevel)
-        {
-            // Calculate solar forecast and check conditions
-
-            bool lowBatteryLevel = batteryLevel < LOW_BATTERY_THRESHOLD;
-            bool underThresholdBatteryLevel = batteryLevel < HIGH_BATTERY_THRESHOLD;
-            bool isLowPrices = CurrentState.IsCheapRestrictionMode || CurrentState.IsBelowAvgPrice;
-            bool isGoodWeather = !CurrentState.IsCloudy();
-            bool isBadWeather = CurrentState.IsCloudy();
-            var isBatteryFull = CurrentState.IsGrowattBatteryFull;
-            var isBatteryChargingWindowActive = CurrentState.IsBatteryChargingWindowActive();
 
             // Check all battery charging conditions
             if 

@@ -3,6 +3,6 @@
     public interface IDeviceDataResponse
     {
         int Code { get; set; }
-        string Message { get; set; }
+        string? Message { get; set; }
     }
 }

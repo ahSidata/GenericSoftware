@@ -13,9 +13,9 @@ namespace EnergyAutomate.Growatt
             DeviceNoahTimeSegment,
             SetPowerAsync
         }
-        public string Date { get; set; } = string.Empty;
-        public string DeviceSn { get; set; } = string.Empty;
-        public string DeviceType { get; set; } = string.Empty;
+        public string? Date { get; set; }
+        public string? DeviceSn { get; set; } 
+        public string? DeviceType { get; set; }
         [JsonIgnore]
         public bool Force { get; set; } = false;
 
@@ -27,9 +27,9 @@ namespace EnergyAutomate.Growatt
         {
             var keyValuePairs = new[]
             {
-                new KeyValuePair<string, string>("deviceSn", DeviceSn),
-                new KeyValuePair<string, string>("deviceType", DeviceType),
-                new KeyValuePair<string, string>("date", Date)
+                new KeyValuePair<string, string?>("deviceSn", DeviceSn),
+                new KeyValuePair<string, string?>("deviceType", DeviceType),
+                new KeyValuePair<string, string?>("date", Date)
             };
 
             return new FormUrlEncodedContent(keyValuePairs);

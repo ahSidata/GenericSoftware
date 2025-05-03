@@ -265,22 +265,25 @@ namespace EnergyAutomate.Utilities
             // Apply the calculated power allocations
             foreach (var device in sortedDevices)
             {
-                int allocatedPower = allocations[device.DeviceSn];
-
-                // Check difference to current value
-                int powerChange = allocatedPower - device.PowerValueCommited;
-                LoggerRTM.LogTrace("Device {DeviceSn}: Current {Current}W, Allocated {Allocated}W, Change {Change}W, SoC {Soc}%, Output {Output}W, Solar {Solar}W, Battery {Battery}W",
-                    device.DeviceSn, device.PowerValueCommited, allocatedPower, powerChange, device.Soc,
-                    device.PowerValueOutput, device.PowerValueSolar, device.PowerValueBattery);
-
-                await GrowattDeviceQueryQueueWatchdog.EnqueueAsync(new DeviceNoahSetPowerQuery
+                if (device.DeviceSn != null)
                 {
-                    DeviceType = "noah",
-                    DeviceSn = device.DeviceSn,
-                    Value = allocatedPower,
-                    Force = true,
-                    TS = timestamp
-                });
+                    int allocatedPower = allocations[device.DeviceSn];
+
+                    // Check difference to current value
+                    int powerChange = allocatedPower - device.PowerValueCommited;
+                    LoggerRTM.LogTrace("Device {DeviceSn}: Current {Current}W, Allocated {Allocated}W, Change {Change}W, SoC {Soc}%, Output {Output}W, Solar {Solar}W, Battery {Battery}W",
+                        device.DeviceSn, device.PowerValueCommited, allocatedPower, powerChange, device.Soc,
+                        device.PowerValueOutput, device.PowerValueSolar, device.PowerValueBattery);
+
+                    await GrowattDeviceQueryQueueWatchdog.EnqueueAsync(new DeviceNoahSetPowerQuery
+                    {
+                        DeviceType = "noah",
+                        DeviceSn = device.DeviceSn,
+                        Value = allocatedPower,
+                        Force = true,
+                        TS = timestamp
+                    });
+                }
             }
 
             LoggerRTM.LogTrace("Balanced power distribution completed for {DeviceCount} devices", sortedDevices.Count);
@@ -373,61 +376,70 @@ namespace EnergyAutomate.Utilities
 
             foreach (var device in devices)
             {
-                // Weight based on solar input and battery status
-                int weight = 100; // Base weight
+                if (device.DeviceSn != null)
+                {
+                    // Weight based on solar input and battery status
+                    int weight = 100; // Base weight
 
-                // Add bonus weight for higher solar input
-                weight += (int)(device.PowerValueSolar / 10);
+                    // Add bonus weight for higher solar input
+                    weight += (int)(device.PowerValueSolar / 10);
 
-                // Add bonus/penalty for battery status
-                if (device.PowerValueBattery > 0) // Charging
-                    weight += (int)(device.PowerValueBattery / 20);
-                else if (device.PowerValueBattery < 0) // Discharging
-                    weight -= (int)(Math.Abs(device.PowerValueBattery) / 20);
+                    // Add bonus/penalty for battery status
+                    if (device.PowerValueBattery > 0) // Charging
+                        weight += (int)(device.PowerValueBattery / 20);
+                    else if (device.PowerValueBattery < 0) // Discharging
+                        weight -= (int)(Math.Abs(device.PowerValueBattery) / 20);
 
-                // Ensure minimum weight
-                weight = Math.Max(10, weight);
+                    // Ensure minimum weight
+                    weight = Math.Max(10, weight);
 
-                deviceWeights[device.DeviceSn] = weight;
-                totalWeightingFactor += weight;
+                    deviceWeights[device.DeviceSn] = weight;
+                    totalWeightingFactor += weight;
+                }
             }
 
             // First pass: calculate weighted allocation
             int remainingPower = totalPower;
             foreach (var device in devices)
             {
-                if (totalWeightingFactor == 0)
+                if (device.DeviceSn != null)
                 {
-                    // Fallback to equal distribution
-                    allocations[device.DeviceSn] = Math.Min(maxPowerPerDevice, totalPower / deviceCount);
-                    continue;
+                    if (totalWeightingFactor == 0)
+                    {
+                        // Fallback to equal distribution
+                        allocations[device.DeviceSn] = Math.Min(maxPowerPerDevice, totalPower / deviceCount);
+                        continue;
+                    }
+
+                    double weightRatio = (double)deviceWeights[device.DeviceSn] / totalWeightingFactor;
+                    int initialAllocation = (int)(totalPower * weightRatio);
+
+                    // Cap at maxPowerPerDevice
+                    int allocation = Math.Min(initialAllocation, maxPowerPerDevice);
+                    // Ensure we don't exceed remaining power
+                    allocation = Math.Min(allocation, remainingPower);
+
+                    allocations[device.DeviceSn] = allocation;
+                    remainingPower -= allocation;
                 }
-
-                double weightRatio = (double)deviceWeights[device.DeviceSn] / totalWeightingFactor;
-                int initialAllocation = (int)(totalPower * weightRatio);
-
-                // Cap at maxPowerPerDevice
-                int allocation = Math.Min(initialAllocation, maxPowerPerDevice);
-                // Ensure we don't exceed remaining power
-                allocation = Math.Min(allocation, remainingPower);
-
-                allocations[device.DeviceSn] = allocation;
-                remainingPower -= allocation;
             }
 
             // Second pass: distribute any remaining power
             if (remainingPower > 0)
             {
-                foreach (var device in devices.OrderByDescending(d => deviceWeights[d.DeviceSn]))
+                foreach (var device in devices.Where(x => x.DeviceSn != null).OrderByDescending(d => deviceWeights[d.DeviceSn!]))
                 {
-                    int additionalPower = Math.Min(remainingPower, maxPowerPerDevice - allocations[device.DeviceSn]);
-                    if (additionalPower > 0)
+                    if (device.DeviceSn != null)
                     {
-                        allocations[device.DeviceSn] += additionalPower;
-                        remainingPower -= additionalPower;
+                        int additionalPower = Math.Min(remainingPower, maxPowerPerDevice - allocations[device.DeviceSn]);
+                        if (additionalPower > 0)
+                        {
+                            allocations[device.DeviceSn] += additionalPower;
+                            remainingPower -= additionalPower;
 
-                        if (remainingPower <= 0)
-                            break;
+                            if (remainingPower <= 0)
+                                break;
+                        }
                     }
                 }
             }

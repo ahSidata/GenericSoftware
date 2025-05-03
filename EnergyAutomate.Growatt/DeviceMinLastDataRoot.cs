@@ -4,7 +4,7 @@ public class DeviceMinLastDataRoot
 {
     #region Properties
 
-    public List<DeviceMinLastData> Min { get; set; }
+    public List<DeviceMinLastData>? Min { get; set; }
 
     #endregion Properties
 }
