@@ -46,77 +46,10 @@ namespace EnergyAutomate.Services
             {
                 LoggerRTM.LogInformation("No PV power available and battery empty. No action required.");
                 ApiSettingAvgPowerAdjustmentTraceValues.AddOrUpdate(new APiTraceValue() { Index = 1001, Key = "TibberAdjustment3Mode", Value = "Inactive" });
-                return;
-            }
-
-            // 3. Mode Determination
-            bool isExtensionModeActive = TibberRTMAdjustment3IsExtensionModeActive();
-
-            // Log current system state for better diagnostics
-            LoggerRTM.LogInformation("System state: Battery: {0}%, Solar: {1}W, Mode: {2}",
-                batteryLevel, effectiveSolarPower, isExtensionModeActive ? "Extension" : "Normal");
-
-            if (isExtensionModeActive)
-            {
-                ApiSettingAvgPowerAdjustmentTraceValues.AddOrUpdate(new APiTraceValue() { Index = 1001, Key = "TibberAdjustment3Mode", Value = "Extention" });
-                await TibberRTMAdjustment3HandleExtensionMode(value, batteryLevel);
-            }
-            else
-            {
-                ApiSettingAvgPowerAdjustmentTraceValues.AddOrUpdate(new APiTraceValue() { Index = 1001, Key = "TibberAdjustment3Mode", Value = "Normal" });
-                await TibberRTMAdjustment3HandleNormalMode(value, batteryLevel);
-            }
-        }
-
-        /// <summary>Handles Extension Mode logic per the documented decision flow</summary>
-        private async Task TibberRTMAdjustment3HandleExtensionMode(TibberRealTimeMeasurement value, int batteryLevel)
-        {
-            // Priority Sequence for Extension Mode
-
-            // 1. Power Price Check - highest priority
-            if (CurrentState.IsCheapRestrictionMode)
-            {
-                LoggerRTM.LogInformation("Extension Mode: Cheap electricity prices, charging battery");
                 await TibberRTMDefaultBatteryPriorityAsync(value);
                 return;
             }
 
-            if (CurrentState.IsExpensiveRestrictionMode)
-            {
-                LoggerRTM.LogInformation("Extension Mode: Expensive electricity prices, activating energy saving mode");
-                await TibberRTMAdjustment3AutoMode(value);
-                return;
-            }
-
-            // 2. Morning Price Forecast
-            if (TibberRTMAdjustment3IsMorningApproaching() && TibberRTMAdjustment3ShouldPreserveBatteryForMorning())
-            {
-                LoggerRTM.LogInformation("Extension Mode: Approaching morning hours with expected high prices, preserving battery capacity");
-                await TibberRTMDefaultLoadPriorityAvgAsync(value);
-                return;
-            }
-
-            // 3. Battery Level Based Decisions
-            if (batteryLevel > MEDIUM_BATTERY_THRESHOLD)
-            {
-                LoggerRTM.LogInformation($"Extension Mode: High battery level ({batteryLevel}%), maximizing load operation");
-                await TibberRTMDefaultLoadPriorityMaxAsync(value);
-            }
-            else if (batteryLevel > CRITICAL_BATTERY_THRESHOLD)
-            {
-                LoggerRTM.LogInformation($"Extension Mode: Medium battery level ({batteryLevel}%), activating energy saving mode");
-                await TibberRTMAdjustment3AutoMode(value);
-            }
-            else
-            {
-                LoggerRTM.LogInformation($"Extension Mode: Low battery level ({batteryLevel}%), running with average load");
-                await TibberRTMDefaultLoadPriorityAvgAsync(value);
-            }
-        }
-
-        /// <summary>Handles Normal Mode logic per the documented decision flow</summary>
-        private async Task TibberRTMAdjustment3HandleNormalMode(TibberRealTimeMeasurement value, int batteryLevel)
-        {
             bool lowBatteryLevel = batteryLevel < LOW_BATTERY_THRESHOLD;
             bool underThresholdBatteryLevel = batteryLevel < HIGH_BATTERY_THRESHOLD;
             bool isLowPrices = CurrentState.IsCheapRestrictionMode || CurrentState.IsBelowAvgPrice;
@@ -126,7 +59,7 @@ namespace EnergyAutomate.Services
             var isBatteryChargingWindowActive = CurrentState.IsBatteryChargingWindowActive();
 
             // Special case from original code
-            if (CurrentState.IsExpensiveRestrictionMode)
+            if (CurrentState.IsExpensiveRestrictionMode || !CurrentState.IsBelowAvgPrice)
             {
                 LoggerRTM.LogInformation("Normal Mode: Expensive electricity prices, activating energy saving mode");
                 await TibberRTMAdjustment3AutoMode(value);
@@ -134,7 +67,7 @@ namespace EnergyAutomate.Services
             }
 
             // 1. Direct Solar Usage Optimization
-            if 
+            if
             (
                 isBatteryFull &&
                 CurrentState.GrowattNoahGetAvgPpvLast5Minutes() > ApiSettingAvgPower &&
@@ -148,7 +81,7 @@ namespace EnergyAutomate.Services
             }
 
             // Check all battery charging conditions
-            if 
+            if
             (
                 isBatteryFull ||
                 isBatteryChargingWindowActive ||
@@ -158,7 +91,7 @@ namespace EnergyAutomate.Services
             )
             {
                 LoggerRTM.LogInformation(
-                    "Normal Mode: BatteryChargingDecisions" + 
+                    "Normal Mode: BatteryChargingDecisions" +
                     " isBatteryFull({isBatteryFull}," +
                     " isBatteryChargingWindowActive({isBatteryChargingWindowActive})," +
                     " lowBatteryLevel({lowBatteryLevel})" +
@@ -175,8 +108,6 @@ namespace EnergyAutomate.Services
             LoggerRTM.LogInformation("Normal Mode: No specific conditions met, using auto mode for optimal distribution");
             await TibberRTMAdjustment3AutoMode(value);
         }
-
-
 
         #endregion Private Methods
     }

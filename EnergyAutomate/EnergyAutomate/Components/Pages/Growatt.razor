@@ -127,7 +127,7 @@
                                 </div>
                                 <div class="flex-column ml-3">
                                     <ul>
-                                        @foreach (var lastData in ApiService.GrowattGetNoahLastDatas().Where(x => x != null && x.deviceSn == deviceInfo.DeviceSn))
+                                        @foreach (var lastData in ApiService.GrowattGetNoahLastDatas().Where(x => x != null && x.deviceSn == deviceInfo.DeviceSn).OrderByDescending(x => x.TS).Take(10))
                                         {
 
                                             DateTime time = DateTimeOffset.FromUnixTimeMilliseconds(@lastData.time).DateTime;

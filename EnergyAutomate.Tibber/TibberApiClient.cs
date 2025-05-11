@@ -97,6 +97,12 @@ namespace EnergyAutomate.Tibber
             return result;
         }
 
+        public async Task<Guid?> GetHomeId(CancellationToken cancellationToken = default)
+        {
+            var basicData = await GetBasicData(cancellationToken);
+            return basicData.Data.Viewer.Homes.FirstOrDefault()?.Id;
+        }
+
         /// <summary>
         /// Gets home and features by home id.
         /// </summary>

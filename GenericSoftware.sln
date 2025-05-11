@@ -21,6 +21,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EnergyAutomate.BlazorMonaco
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EnergyAutomate.OpenMeteo", "EnergyAutomate.OpenMeteo\EnergyAutomate.OpenMeteo.csproj", "{5614DA02-94BA-C150-0E76-993455821149}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EnergyAutomate.Emulator", "EnergyAutomate.Emulator\EnergyAutomate.Emulator.csproj", "{1023C6AA-CC55-4B04-AB97-3079D7273FEC}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EnergyAutomate.Emulator.Cli", "EnergyAutomate.Emulator.Cli\EnergyAutomate.Emulator.Cli.csproj", "{14DCA0CA-D0AD-4C98-A47D-B1F33ECA4A76}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -51,6 +55,14 @@ Global
 		{5614DA02-94BA-C150-0E76-993455821149}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5614DA02-94BA-C150-0E76-993455821149}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5614DA02-94BA-C150-0E76-993455821149}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1023C6AA-CC55-4B04-AB97-3079D7273FEC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1023C6AA-CC55-4B04-AB97-3079D7273FEC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1023C6AA-CC55-4B04-AB97-3079D7273FEC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1023C6AA-CC55-4B04-AB97-3079D7273FEC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{14DCA0CA-D0AD-4C98-A47D-B1F33ECA4A76}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{14DCA0CA-D0AD-4C98-A47D-B1F33ECA4A76}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{14DCA0CA-D0AD-4C98-A47D-B1F33ECA4A76}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{14DCA0CA-D0AD-4C98-A47D-B1F33ECA4A76}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

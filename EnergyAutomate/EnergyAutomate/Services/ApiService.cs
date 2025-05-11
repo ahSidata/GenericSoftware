@@ -61,6 +61,7 @@ namespace EnergyAutomate.Services
         public ApiState CurrentState { get; set; }
         public DistributionManager DistributionManager { get; init; }
         public int GrowattDeviceQueryQueueWatchdogCount => GrowattDeviceQueryQueueWatchdog.Count;
+        public Guid? TibberHomeId { get; set; }
         private ApiRealTimeMeasurementWatchdog ApiRealTimeMeasurementWatchdog => ServiceProvider.GetRequiredService<ApiRealTimeMeasurementWatchdog>();
         private GrowattApiClient GrowattApiClient => ServiceProvider.GetRequiredService<GrowattApiClient>();
         private ThreadSafeObservableCollection<DeviceMinInfoData> GrowattDeviceMinInfoData { get; set; } = [];
@@ -72,7 +73,6 @@ namespace EnergyAutomate.Services
         private ILogger Logger => ServiceProvider.GetRequiredService<ILogger<ApiService>>();
         private ILogger LoggerRTM => ServiceProvider.GetRequiredService<ILogger<RealTimeMeasurement>>();
         private IServiceProvider ServiceProvider { get; set; }
-        private Guid? TibberHomeId { get; set; }
         private ThreadSafeObservableCollection<TibberPrice> TibberPrices { get; set; } = [];
         private ThreadSafeObservableCollection<TibberRealTimeMeasurement> TibberRealTimeMeasurement { get; set; } = [];
 
@@ -126,11 +126,7 @@ namespace EnergyAutomate.Services
         }
 
         public async Task ApiStartAsync(CancellationToken cancellationToken)
-        {
-            var tibberClient = ServiceProvider.GetRequiredService<TibberApiClient>();
-            var basicData = await tibberClient.GetHomes(cancellationToken);
-            TibberHomeId = basicData.Data.Viewer.Homes.FirstOrDefault()?.Id;
-
+        {       
             await ApiLoadDataFromDatabase();
         }
 
@@ -1258,6 +1254,9 @@ namespace EnergyAutomate.Services
                         await GrowattClearSetPowerAsync(value.TS, 0);
                     },
                     async () => {
+                        // Check if any device are online
+                        if(!GrowattGetDevicesNoahOnline().Any()) return true;
+
                         // Check if power default and commited values are equal to avg
                         var allDevicesConformCommited = GrowattGetDevicesNoahOnline().All(x => x.PowerValueCommited == 0);
                         var allDevicesConformDefault = GrowattGetDevicesNoahOnline().All(x => x.PowerValueDefault == 0);
@@ -1340,7 +1339,6 @@ namespace EnergyAutomate.Services
                     async () => {
                         await GrowattClearSetPowerAsync(value.TS, ApiSettingMaxPower);
                     }, async () => {
-
                         var maxPerDevice = ApiSettingMaxPower / GrowattGetDevicesNoahOnline().Count;
 
                         // Check if power default and commited values are equal to avg
@@ -1443,11 +1441,13 @@ namespace EnergyAutomate.Services
 
         #region IObservable
 
+        private RealTimeMeasurement realTimeMeasurement = null!;
+        private bool smlParserRunning = false;
         private Timer Timer { get; init; } = null!;
-        // Maximal 1 Thread gleichzeitig
 
         public async void OnNext(RealTimeMeasurement value)
         {
+            realTimeMeasurement = value;
             try
             {
                 ApiSettingAvgPowerAdjustmentTraceValues.AddOrUpdate(new APiTraceValue() { Index = 1, Key = "GrowattNoahTotalPPV", Value = CurrentState.GrowattNoahTotalPPV.ToString() });
@@ -1490,8 +1490,8 @@ namespace EnergyAutomate.Services
                 {
                     CurrentState.WeatherForecastToday = await CurrentState.GetWeatherForecastAsync();
                     CurrentState.WeatherForecastTomorrow = await CurrentState.GetWeatherForecastAsync(DateTime.Today.AddDays(1));
-                    
-                    (CurrentState.BatteryChargeStart, CurrentState.BatteryChargeEnd ) = CurrentState.CalculateBatteryChargingWindow();
+
+                    (CurrentState.BatteryChargeStart, CurrentState.BatteryChargeEnd) = CurrentState.CalculateBatteryChargingWindow();
                 }
 
                 var ajustmentElement = dbContext.GrowattElements.FirstOrDefault(x => x.ElementType == GrowattElement.ElementTypes.Adjustment && x.IsActive);
@@ -1544,6 +1544,14 @@ namespace EnergyAutomate.Services
         {
             try
             {
+                //if (!smlParserRunning)
+                //{
+                //    smlParserRunning = true;
+                //    var smlParser = ServiceProvider.GetRequiredService<SmlParser>();
+                //    await smlParser.GetNodeData(realTimeMeasurement);
+                //    smlParserRunning = false;
+                //}
+
                 await GrowattQueryDevice();
                 await GrowattQueryDeviceNoahInfo();
                 await GrowattQueryDeviceNoahLastData();
@@ -1568,18 +1576,6 @@ namespace EnergyAutomate.Services
             return tickMarks;
         }
 
-        private static bool GrowattNearofBatterySocEmpty(DeviceNoahLastData deviceNoahLastData)
-        {
-            return Math.Abs(deviceNoahLastData.totalBatteryPackSoc - deviceNoahLastData.dischargeSocLimit) < 2;
-        }
-
-        private static bool GrowattNearofBatterySocFull(DeviceNoahLastData deviceNoahLastData)
-        {
-            return deviceNoahLastData.totalBatteryPackChargingStatus == 0
-                ? Math.Abs(deviceNoahLastData.totalBatteryPackSoc - deviceNoahLastData.chargeSocLimit) < 6
-                : false;
-        }
-
         public int GrowattGetBatteryLevel()
         {
             // Aktuellen Batteriestand aus Daten ermitteln
@@ -1591,6 +1587,18 @@ namespace EnergyAutomate.Services
         {
             // Aktuellen Batteriestand aus Daten ermitteln
             return (int)(GrowattLatestNoahLastDatas().Any() ? GrowattLatestNoahLastDatas().Average(x => x.chargeSocLimit) : 100);
+        }
+
+        private static bool GrowattNearofBatterySocEmpty(DeviceNoahLastData deviceNoahLastData)
+        {
+            return Math.Abs(deviceNoahLastData.totalBatteryPackSoc - deviceNoahLastData.dischargeSocLimit) < 2;
+        }
+
+        private static bool GrowattNearofBatterySocFull(DeviceNoahLastData deviceNoahLastData)
+        {
+            return deviceNoahLastData.totalBatteryPackChargingStatus == 0
+                ? Math.Abs(deviceNoahLastData.totalBatteryPackSoc - deviceNoahLastData.chargeSocLimit) < 6
+                : false;
         }
 
         #endregion Static

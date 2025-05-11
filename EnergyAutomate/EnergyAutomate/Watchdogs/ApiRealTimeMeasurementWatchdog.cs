@@ -24,7 +24,7 @@ namespace EnergyAutomate.Watchdogs
         private IObservable<RealTimeMeasurement>? RealTimeMeasurementListener { get; set; }
         private IDisposable? RealTimeMeasurementObserver { get; set; }
         private IServiceProvider ServiceProvider { get; init; }
-        private Guid? TibberHomeId { get; set; }
+
 
         public bool RestartRequested { get; set; }
 
@@ -36,7 +36,7 @@ namespace EnergyAutomate.Watchdogs
         {
             await Task.Delay(5000);
 
-            if (TibberHomeId.HasValue && TibberApiClient != null)
+            if (ApiService.TibberHomeId.HasValue && TibberApiClient != null)
             {
                 try
                 {
@@ -69,19 +69,18 @@ namespace EnergyAutomate.Watchdogs
 
             if (TibberApiClient != null)
             {
-                if (!TibberHomeId.HasValue)
+                if (!ApiService.TibberHomeId.HasValue)
                 {
-                    var basicData = await TibberApiClient.GetHomes(cancellationToken);
-                    TibberHomeId = basicData.Data.Viewer.Homes.FirstOrDefault()?.Id;
+                    ApiService.TibberHomeId = await ServiceProvider.GetRequiredService<TibberApiClient>().GetHomeId(cancellationToken);
                 }
 
-                if (TibberHomeId.HasValue && TibberApiClient != null)
+                if (ApiService.TibberHomeId.HasValue && TibberApiClient != null)
                 {
                     try
                     {
                         Trace.WriteLine("StartRealTimeMeasurementListener calling ...", "Tibber");
 
-                        RealTimeMeasurementListener = await TibberApiClient.StartRealTimeMeasurementListener(TibberHomeId.Value, null, cancellationToken);
+                        RealTimeMeasurementListener = await TibberApiClient.StartRealTimeMeasurementListener(ApiService.TibberHomeId.Value, null, cancellationToken);
                         RealTimeMeasurementObserver = RealTimeMeasurementListener.Subscribe(new RealTimeMeasurementObserver(this, ApiService));
                     }
                     catch (OperationCanceledException ex) when (ex.CancellationToken == cancellationToken)
@@ -108,8 +107,8 @@ namespace EnergyAutomate.Watchdogs
             if (RealTimeMeasurementCancellationTokenSource != null && !RealTimeMeasurementCancellationTokenSource.IsCancellationRequested)
                 await RealTimeMeasurementCancellationTokenSource.CancelAsync();
 
-            if (TibberHomeId.HasValue && TibberApiClient != null)
-                await TibberApiClient.StopRealTimeMeasurementListener(TibberHomeId.Value, cancellationToken);
+            if (ApiService.TibberHomeId.HasValue && TibberApiClient != null)
+                await TibberApiClient.StopRealTimeMeasurementListener(ApiService.TibberHomeId.Value, cancellationToken);
 
             if (RealTimeMeasurementObserver != null)
             {

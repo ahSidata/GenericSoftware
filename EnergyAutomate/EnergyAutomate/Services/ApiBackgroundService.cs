@@ -1,4 +1,5 @@
-﻿using EnergyAutomate.Utilities;
+﻿using EnergyAutomate.Emulator;
+using EnergyAutomate.Utilities;
 
 namespace EnergyAutomate.Services
 {
@@ -21,6 +22,8 @@ namespace EnergyAutomate.Services
         private ApiService ApiService { get; init; }
         private IConfiguration Configuration { get; init; }
 
+        private ShellyPro3EMDevice ShellyPro3EMDevice { get; set; }
+
         #endregion Properties
 
         #region Public Methods
@@ -38,6 +41,11 @@ namespace EnergyAutomate.Services
             //    brokerPort: 7006);
 
             //await proxy.StartAsync();
+
+            //var device = new ShellyPro3EMDevice();
+           //var udpServer = new ShellyPro3EMUdpServer(1010, device); // UDP-Port wie bei Shelly-CoAP
+
+           // _ = Task.Run(udpServer.StartAsync);
 
             await ApiRealTimeMeasurementWatchdog.StartAsync(CancellationTokenSource.CreateLinkedTokenSource(cancellationToken).Token);
             await ApiService.ApiStartAsync(CancellationTokenSource.CreateLinkedTokenSource(cancellationToken).Token);

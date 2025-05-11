@@ -29,6 +29,7 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\..\EnergyAutomate.BlazorMonaco\EnergyAutomate.BlazorMonaco.csproj" />
+		<ProjectReference Include="..\..\EnergyAutomate.Emulator\EnergyAutomate.Emulator.csproj" />
 		<ProjectReference Include="..\..\EnergyAutomate.Growatt\EnergyAutomate.Growatt.csproj" />
 		<ProjectReference Include="..\..\EnergyAutomate.OpenMeteo\EnergyAutomate.OpenMeteo.csproj" />
 		<ProjectReference Include="..\..\EnergyAutomate.Tibber\EnergyAutomate.Tibber.csproj" />
