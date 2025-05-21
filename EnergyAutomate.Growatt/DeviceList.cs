@@ -17,7 +17,8 @@
         public int PowerValueOutput { get; set; }
 
         public int PowerValueSolar { get; set; }
-        public int PowerValueBattery { get; set; }
+        public int PowerValueBatteryPower { get; set; }
+        public int PowerValueBatteryStatus { get; set; }
 
         public bool IsBatteryEmpty { get; set; }
         public bool IsBatteryFull { get; set; }

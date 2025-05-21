@@ -1040,7 +1040,8 @@ namespace EnergyAutomate.Services
                         device.Soc = deviceNoahLastData.totalBatteryPackSoc;
                         device.SocMin = deviceNoahLastData.dischargeSocLimit;
                         device.PowerValueSolar = (int)deviceNoahLastData.ppv;
-                        device.PowerValueBattery = (int)deviceNoahLastData.totalBatteryPackChargingPower;
+                        device.PowerValueBatteryPower = (int)deviceNoahLastData.totalBatteryPackChargingPower;
+                        device.PowerValueBatteryStatus = (int)deviceNoahLastData.totalBatteryPackChargingStatus;
                         device.PowerValueOutput = (int)deviceNoahLastData.pac;
                     }
                 }
@@ -1058,7 +1059,8 @@ namespace EnergyAutomate.Services
                     deviceDbContext.Soc = deviceNoahLastData.totalBatteryPackSoc;
                     deviceDbContext.SocMin = deviceNoahLastData.dischargeSocLimit;
                     deviceDbContext.PowerValueSolar = (int)deviceNoahLastData.ppv;
-                    deviceDbContext.PowerValueBattery = (int)deviceNoahLastData.totalBatteryPackChargingPower;
+                    deviceDbContext.PowerValueBatteryPower = (int)deviceNoahLastData.totalBatteryPackChargingPower;
+                    deviceDbContext.PowerValueBatteryStatus = (int)deviceNoahLastData.totalBatteryPackChargingStatus;
                     deviceDbContext.PowerValueOutput = (int)deviceNoahLastData.pac;
                 }
 
