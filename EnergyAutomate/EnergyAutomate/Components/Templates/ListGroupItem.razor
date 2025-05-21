@@ -1,0 +1,25 @@
+﻿<li class="list-group-item">
+    <span class="mx-3">
+        @Title
+    </span>
+    <Icon Name="@IconName" Size="@IconSize" />
+    <span class="mx-3">
+        @Value
+    </span>
+</li>
+
+@code {
+
+    [Parameter]
+    public string Title { get; set; } = string.Empty;
+
+    [Parameter]
+    public string Value { get; set; } = string.Empty;
+
+    [Parameter]
+    public IconName IconName { get; set; } = IconName.None;
+
+    [Parameter]
+    public IconSize IconSize { get; set; } = IconSize.None;
+
+}

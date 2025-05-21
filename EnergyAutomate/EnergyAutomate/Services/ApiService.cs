@@ -51,7 +51,7 @@ namespace EnergyAutomate.Services
         public TimeSpan ApiSettingExtentionExclusionFrom { get; set; } = new TimeSpan(7, 0, 0);
         public TimeSpan ApiSettingExtentionExclusionUntil { get; set; } = new TimeSpan(18, 0, 0);
         public bool ApiSettingExtentionMode { get; set; } = true;
-        public int ApiSettingMaxPower { get; set; } = 840;
+        public int ApiSettingMaxPower { get; set; } = 800;
         public int ApiSettingPowerAdjustmentFactor { get; set; } = 50;
         public int ApiSettingPowerAdjustmentWaitCycles { get; set; } = 3;
         public bool ApiSettingRestrictionMode { get; set; } = false;
