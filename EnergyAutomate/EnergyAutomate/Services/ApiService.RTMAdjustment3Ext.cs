@@ -176,7 +176,7 @@
                     powerValueTotalCommited, desiredTotalPower, adjustedDelta);
 
                 LoggerRTM.LogTrace("Distributing total power of {TotalPower}W with high SoC prioritization", desiredTotalPower);
-                await DistributionManager.DistributePower(onlineDevices, desiredTotalPower, prioritizeHighSoc: true, value.TS);
+                await DistributionManager.HandleDistributionAsync(onlineDevices, desiredTotalPower, prioritizeHighSoc: true, value.TS);
             }
             else if (deltaTotalPower < 0)
             {
@@ -187,7 +187,7 @@
                     powerValueTotalCommited, desiredTotalPower, adjustedDelta);
 
                 LoggerRTM.LogTrace("Distributing total power of {TotalPower}W with low SoC prioritization", desiredTotalPower);
-                await DistributionManager.DistributePower(onlineDevices, desiredTotalPower, prioritizeHighSoc: false, value.TS);
+                await DistributionManager.HandleDistributionAsync(onlineDevices, desiredTotalPower, prioritizeHighSoc: false, value.TS);
             }
             else
             {

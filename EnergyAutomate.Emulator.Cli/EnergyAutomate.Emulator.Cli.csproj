@@ -11,4 +11,13 @@
     <ProjectReference Include="..\EnergyAutomate.Emulator\EnergyAutomate.Emulator.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="certs\server.crt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="certs\server.key">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>
