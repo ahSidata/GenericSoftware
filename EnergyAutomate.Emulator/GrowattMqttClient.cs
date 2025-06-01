@@ -1,4 +1,5 @@
 ﻿using MQTTnet;
+using MQTTnet.Diagnostics.Logger;
 using MQTTnet.Server;
 using System.Buffers;
 using System.Text;
@@ -6,12 +7,14 @@ using System.Text.Json;
 
 namespace EnergyAutomate.Emulator
 {
-    public class GrowattMQQTClient
+    public class GrowattMqttClient
     {
         private readonly string _brokerHost;
         private readonly int _brokerPort;
 
         public IMqttClient MqttClient { get; private set; }
+
+        private MqttNetEventLogger MqttNetEventLogger { get; set; }
 
         public string ClientId { get; set; }
 
@@ -20,13 +23,15 @@ namespace EnergyAutomate.Emulator
         public MqttClientOptions ClientOptions { get; private set; }
 
         // Delegate for ApplicationMessageReceived
-        public delegate Task ApplicationMessageReceivedDelegate(MqttApplicationMessageReceivedEventArgs arg);
+        public delegate Task ApplicationMessageReceivedDelegate(MqttApplicationMessage mqttApplicationMessage );
 
         // Event/Delegate instance for ApplicationMessageReceived
         public event ApplicationMessageReceivedDelegate? ApplicationMessageReceived;
 
-        public GrowattMQQTClient(string brokerHost, int brokerPort, ClientConnectedEventArgs arg)
+        public GrowattMqttClient(string brokerHost, int brokerPort, ClientConnectedEventArgs arg, MqttNetEventLogger mqttNetEventLogger)
         {
+            MqttNetEventLogger = mqttNetEventLogger;
+
             _brokerHost = brokerHost;
             _brokerPort = brokerPort;
 
@@ -39,7 +44,7 @@ namespace EnergyAutomate.Emulator
                 .WithTcpServer(_brokerHost, _brokerPort)
                 .WithCredentials(arg.UserName, arg.Password)
                 .WithProtocolVersion(arg.ProtocolVersion)
-                .WithKeepAlivePeriod(TimeSpan.FromSeconds(60))
+                .WithKeepAlivePeriod(TimeSpan.FromSeconds(420))
                 .WithTlsOptions(new MqttClientTlsOptions
                 {
                     UseTls = true,
@@ -48,9 +53,9 @@ namespace EnergyAutomate.Emulator
                     IgnoreCertificateRevocationErrors = true,
                     CertificateValidationHandler = context => true
                 })
-                .Build();
+            .Build();
 
-            var mqttFactory = new MqttClientFactory();
+            var mqttFactory = new MqttClientFactory(mqttNetEventLogger);
             MqttClient = mqttFactory.CreateMqttClient();
 
             MqttClient.InspectPacketAsync += RemoteClient_InspectPacketAsync;
@@ -103,35 +108,33 @@ namespace EnergyAutomate.Emulator
             await File.AppendAllTextAsync(logFile, JsonSerializer.Serialize(logObj) + Environment.NewLine);
         }
 
-        private static string MapCloudToNoahTopic(string topic)
-        {
-            if (topic != null && topic.StartsWith("s/33/"))
-            {
-                var parts = topic.Split('/');
-                if (parts.Length == 3)
-                {
-                    return $"s/{parts[2]}";
-                }
-            }
-            return topic ?? "";
-        }
-
         private async Task RemoteClient_ApplicationMessageReceivedAsync(MqttApplicationMessageReceivedEventArgs arg)
         {
-            var clientId = arg.ClientId;
+            Console.WriteLine($"Broker --> Client {arg.ClientId}");
+            Console.WriteLine($"Cloud Application Message Topic: {arg.ApplicationMessage.Topic}");
+            //Console.WriteLine($"CloudApplication Message Payload: {Encoding.UTF8.GetString(arg.ApplicationMessage.Payload.ToArray())}");
 
-            var mappedTopic = MapCloudToNoahTopic(arg.ApplicationMessage.Topic);
-            arg.ApplicationMessage.Topic = mappedTopic;
-            arg.ApplicationMessage.Retain = false;
+            string mappedTopic = arg.ApplicationMessage.Topic;
 
-            Console.WriteLine($"Broker --> Client {clientId}");
-            Console.WriteLine($"Application Message Topic: {arg.ApplicationMessage.Topic}");
-            Console.WriteLine($"Application Message Payload: {Encoding.UTF8.GetString(arg.ApplicationMessage.Payload.ToArray())}");
+            if (arg.ApplicationMessage.Topic == $"s/{arg.ClientId}")
+                mappedTopic = $"s/33/{arg.ClientId}";
+
+            var msgBuilder = new MqttApplicationMessageBuilder()
+                .WithTopic(mappedTopic)
+                .WithPayload(arg.ApplicationMessage.Payload)
+                .WithQualityOfServiceLevel(arg.ApplicationMessage.QualityOfServiceLevel)
+                .WithRetainFlag(arg.ApplicationMessage.Retain);
+
+            var mappedMessage = msgBuilder.Build();
 
             //Invoke the delegate to handle the message
             if (ApplicationMessageReceived != null)
             {
-                await ApplicationMessageReceived(arg);
+                await ApplicationMessageReceived(mappedMessage);
+
+                arg.ReasonCode = MqttApplicationMessageReceivedReasonCode.Success;
+                arg.IsHandled = true;
+                arg.AutoAcknowledge = true;
             }
         }
     }

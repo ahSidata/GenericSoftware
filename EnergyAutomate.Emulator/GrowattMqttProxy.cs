@@ -6,6 +6,7 @@ using System.Text;
 using MQTTnet.Packets;
 using System.Text.Json;
 using System.Buffers;
+using MQTTnet.Diagnostics.Logger;
 
 namespace EnergyAutomate.Emulator
 {
@@ -17,13 +18,13 @@ namespace EnergyAutomate.Emulator
 
         private GrowattMqttServer GrowattMqttServer { get; set; } 
 
-        public GrowattMqttProxy(string proxyCertPath, string proxyKeyPath, int proxyPort)
+        public GrowattMqttProxy(string proxyCertPath, string proxyKeyPath, int proxyPort, MqttNetEventLogger mqttNetEventLogger)
         {
             _proxyCertPath = proxyCertPath;
             _proxyKeyPath = proxyKeyPath;
             _proxyPort = proxyPort;
 
-            GrowattMqttServer = new GrowattMqttServer(proxyCertPath, proxyKeyPath, proxyPort);            
+            GrowattMqttServer = new GrowattMqttServer(proxyCertPath, proxyKeyPath, proxyPort, mqttNetEventLogger);            
         }
 
         public async Task StartAsync()
