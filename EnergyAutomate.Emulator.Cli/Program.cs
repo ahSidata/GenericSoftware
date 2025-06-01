@@ -6,18 +6,18 @@ using MQTTnet.Diagnostics.Logger;
 var mqttEventLogger = new MqttNetEventLogger("MeinProxyLogger");
 
 // Logging-Events abonnieren
-mqttEventLogger.LogMessagePublished += (sender, args) =>
-{
-    var log = args.LogMessage;
+//mqttEventLogger.LogMessagePublished += (sender, args) =>
+//{
+//    var log = args.LogMessage;
 
-    if (log != null)
-    {
-        log.Message = log.Message.Replace("\a", string.Empty);
-    }
+//    if (log != null)
+//    {
+//        log.Message = log.Message.Replace("\a", string.Empty);
+//    }
 
-    Console.WriteLine($"[{log.Timestamp:HH:mm:ss}] [{log.Source}] [{log.Level}] {log}");
-    if (log.Exception != null) Console.WriteLine(log.Exception);
-};
+//    Console.WriteLine($"[{log.Timestamp:HH:mm:ss}] [{log.Source}] [{log.Level}] {log}");
+//    if (log.Exception != null) Console.WriteLine(log.Exception);
+//};
 
 
 Console.WriteLine("EnergyAutomation Emulator Cli!");

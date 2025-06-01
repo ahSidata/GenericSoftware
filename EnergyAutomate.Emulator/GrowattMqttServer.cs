@@ -36,15 +36,11 @@ namespace EnergyAutomate.Emulator
                 .WithEncryptedEndpointPort(_proxyPort)
                 .Build();
 
-            var mqttServerFactory = new MqttServerFactory(mqttNetEventLogger);
+            var mqttServerFactory = new MqttServerFactory();
             MqttServer = mqttServerFactory.CreateMqttServer(mqttServerOptions);
-
-            MqttServer.InterceptingInboundPacketAsync += MqttServer_InterceptingPacketAsync;
-            MqttServer.InterceptingOutboundPacketAsync += MqttServer_InterceptingPacketAsync;
 
             MqttServer.InterceptingPublishAsync += MqttServer_InterceptingPublishAsync;
             MqttServer.ClientConnectedAsync += MqttServer_ClientConnectedAsync;
-            MqttServer.InterceptingSubscriptionAsync += MqttServer_InterceptingSubscriptionAsync;
         }
 
         public async Task StartAsync()
@@ -58,6 +54,9 @@ namespace EnergyAutomate.Emulator
 
         private async Task MqttServer_ClientConnectedAsync(ClientConnectedEventArgs arg)
         {
+            var topic = $"s/{arg.ClientId}";
+            await MqttServer.SubscribeAsync(arg.ClientId, topic);
+
             var growattMqttClient = new GrowattMqttClient("mqtt.growatt.com", 7006, arg, MqttNetEventLogger);
 
             // Fix: Use an event handler method instead of directly assigning a lambda to the event
@@ -104,105 +103,6 @@ namespace EnergyAutomate.Emulator
             arg.Response.ReasonCode = MQTTnet.Protocol.MqttPubAckReasonCode.Success;
 
             await Task.CompletedTask;
-        }
-
-        private async Task MqttServer_InterceptingSubscriptionAsync(InterceptingSubscriptionEventArgs arg)
-        {
-            GrowattMqttClient? remoteClient;
-
-            while (!_remoteClients.TryGetValue(arg.ClientId, out remoteClient))
-            {
-                await Task.Delay(1000);
-            }
-
-            var clientId = arg.ClientId;
-
-            Console.WriteLine($"[Proxy] Subscribing at cloud for ClientId={clientId}: Topic={arg.TopicFilter}");
-
-            var subscribeOptions = new MqttClientSubscribeOptionsBuilder()
-                .WithTopicFilter(f => f.WithTopic($"s/{arg.ClientId}").WithQualityOfServiceLevel(arg.TopicFilter.QualityOfServiceLevel))
-                .Build();
-
-            var result = await remoteClient.MqttClient.SubscribeAsync(subscribeOptions);
-
-            subscribeOptions = new MqttClientSubscribeOptionsBuilder()
-                .WithTopicFilter(f => f.WithTopic($"s/33/{arg.ClientId}").WithQualityOfServiceLevel(arg.TopicFilter.QualityOfServiceLevel))
-                .Build();
-
-            result = await remoteClient.MqttClient.SubscribeAsync(subscribeOptions);
-
-            arg.ProcessSubscription = true;
-            arg.Response.ReasonCode = MQTTnet.Protocol.MqttSubscribeReasonCode.GrantedQoS1;
-
-            await Task.CompletedTask;
-        }
-
-        private readonly object _lock = new object();
-
-        private Task MqttServer_InterceptingPacketAsync(MQTTnet.Server.InterceptingPacketEventArgs arg)
-        {
-            lock (_lock)
-            {
-                Task.Run(async () => { 
-
-                var packetType = arg.Packet?.GetType().Name ?? "null";
-                var clientId = arg.ClientId ?? "";
-                var endpoint = arg.Endpoint ?? "";
-                var timestamp = DateTime.UtcNow.ToString("o");
-
-                string topic = null, payload = null, extra = null;
-                if (arg.Packet is MQTTnet.Packets.MqttPublishPacket pub)
-                {
-                    topic = pub.Topic;
-                    try
-                    {
-                        if (!pub.Payload.IsEmpty)
-                        {
-                            payload = Encoding.UTF8.GetString(pub.Payload.ToArray());
-                        }
-                        else
-                        {
-                            payload = null;
-                        }
-                    }
-                    catch
-                    {
-                        payload = "<Payload not decodable>";
-                    }
-                    extra = $"QoS: {pub.QualityOfServiceLevel}, Retain: {pub.Retain}";
-                }
-                else if (arg.Packet is MQTTnet.Packets.MqttSubscribePacket sub)
-                {
-                    extra = "Topics: " + string.Join(", ", sub.TopicFilters.Select(tf => tf.Topic));
-                }
-                else if (arg.Packet is MQTTnet.Packets.MqttConnectPacket connect)
-                {
-                    extra = $"Username: {connect.Username}, CleanSession: {connect.CleanSession}";
-                }
-                else
-                {
-                    extra = arg.Packet?.ToString();
-                }
-
-                var logObj = new
-                {
-                    Timestamp = timestamp,
-                    ClientId = clientId,
-                    Endpoint = endpoint,
-                    PacketType = packetType,
-                    Topic = topic,
-                    Payload = payload,
-                    Extra = extra
-                };
-
-                var logDir = Path.Combine("Logs", "mqtt_packets");
-                Directory.CreateDirectory(logDir);
-                var logFile = Path.Combine(logDir, $"server_{DateTime.UtcNow:yyyyMMdd}.json");
-                await File.AppendAllTextAsync(logFile, JsonSerializer.Serialize(logObj) + Environment.NewLine);
-                }).Wait();
-            }
-
-            return Task.CompletedTask;
         }
     }
 }
