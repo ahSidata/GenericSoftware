@@ -8,12 +8,10 @@ Console.WriteLine("EnergyAutomation Emulator Cli!");
 
 //Task.Run(udpServer.StartAsync).Wait();
 
-var proxy = new MqttProxy(
+var proxy = new GrowattMqttProxy(
     proxyCertPath: "certs/server.crt",
     proxyKeyPath: "certs/server.key",
-    proxyPort: 7006,
-    brokerHost: "mqtt.growatt.com",
-    brokerPort: 7006);
+    proxyPort: 7006);
 
 await proxy.StartAsync();
 
