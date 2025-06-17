@@ -47,8 +47,8 @@ else:
     GROWATT_CLOUD_ENABLED = False
     GROWATT_CLOUD_FILTER = set()
 
-DUMP_MESSAGES = os.getenv("DUMP_MESSAGES", "true").lower() == "true"
-DUMP_DIR = os.getenv("DUMP_DIR", "c:/dump")
+DUMP_MESSAGES = os.getenv("DUMP_MESSAGES", "false").lower() == "true"
+DUMP_DIR = os.getenv("DUMP_DIR", "/dump")
 
 # Property to flag messages forwarded from growatt cloud
 MQTT_PROP_FORWARD_GROWATT = mqtt.Properties(mqtt.PacketTypes.PUBLISH)
@@ -77,9 +77,9 @@ class Client:
         )
         if grobro_mqtt.username and grobro_mqtt.password:
             self._client.username_pw_set(grobro_mqtt.username, grobro_mqtt.password)
-
-        self._client.tls_set(cert_reqs=ssl.CERT_NONE)
-        self._client.tls_insecure_set(True)
+        if grobro_mqtt.use_tls:
+            self._client.tls_set(cert_reqs=ssl.CERT_NONE)
+            self._client.tls_insecure_set(True)
         self._client.connect(grobro_mqtt.host, grobro_mqtt.port, 60)
         self._client.on_message = self.__on_message
         self._client.subscribe("c/#")
@@ -186,7 +186,7 @@ class Client:
                             LOG.debug("dropping bad payload: %s", device_id)
                             return
                         state.payload[name] = value
-                    self.on_input_register(state)
+                    #self.on_input_register(state)
                     return
 
                 return
@@ -232,8 +232,6 @@ class Client:
         except Exception as e:
             LOG.error(f"Forwarding message: {e}")
 
-
-
     # Setup Growatt MQTT broker for forwarding messages
     def __connect_to_growatt_server(self, client_id):
         if f"forward_client_{client_id}" not in self._forward_clients:
@@ -245,18 +243,10 @@ class Client:
             )
             client = mqtt.Client(
                 client_id=client_id,
-                callback_api_version=mqtt.CallbackAPIVersion.VERSION2
+                callback_api_version=mqtt.CallbackAPIVersion.VERSION2,
             )
-
-            def forward_client_on_log(client_instance_arg: mqtt.Client, userdata, level, buf: str):
-                buf_bytes = buf.encode('utf-8')
-                dump_message_binary(f"s/{client_id}", buf_bytes)
-            
-            client.on_log = forward_client_on_log
-
-            context = ssl.create_default_context()
-
-            client.tls_set_context(context)
+            client.tls_set(cert_reqs=ssl.CERT_NONE)
+            client.tls_insecure_set(True)
             client.on_message = self.__on_message_forward_client
             client.connect(
                 self._forward_mqtt_config.host,

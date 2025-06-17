@@ -11,7 +11,7 @@ LOG = logging.getLogger(__name__)
 class MQTTConfig(BaseModel):
     host: str
     port: int
-    use_tls: bool = False
+    use_tls: bool = True
     username: Optional[str] = None
     password: Optional[str] = None
 

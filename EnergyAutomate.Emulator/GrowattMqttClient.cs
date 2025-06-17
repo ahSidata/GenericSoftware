@@ -26,9 +26,10 @@ namespace EnergyAutomate.Emulator
 
             ClientOptions = new MqttClientOptionsBuilder()
                 .WithClientId(ClientId)
-                .WithCleanSession(false)                
+                .WithCleanSession(false)
+                .WithCleanStart(false)
                 .WithCredentials(username, password)
-                .WithProtocolVersion( MQTTnet.Formatter.MqttProtocolVersion.V311)                
+                .WithProtocolVersion( MQTTnet.Formatter.MqttProtocolVersion.V500)                
                 .WithTcpServer(_brokerHost, _brokerPort)
                 .WithKeepAlivePeriod(TimeSpan.FromSeconds(60))
                 .WithTlsOptions(new MqttClientTlsOptions
@@ -46,17 +47,18 @@ namespace EnergyAutomate.Emulator
             MqttClient.InspectPacketAsync += MqttClient_InspectPacketAsync;
             MqttClient.ConnectedAsync += RemoteClient_ConnectedAsync;
             MqttClient.DisconnectedAsync += RemoteClient_DisconnectedAsync;
-
-            MqttClient.ApplicationMessageReceivedAsync += RemoteClient_ApplicationMessageReceivedAsync;
         }
 
         private Task MqttClient_InspectPacketAsync(MQTTnet.Diagnostics.PacketInspection.InspectMqttPacketEventArgs arg)
         {
-            Console.WriteLine($"Packet (Dir: {arg.Direction})");
-            // Explicitly convert the buffer to a Span<byte> to resolve ambiguity
-            var buffer = new byte[arg.Buffer.Length];
-            arg.Buffer.AsSpan().CopyTo(buffer.AsSpan());
-            Console.WriteLine($" Raw Buffer (Dir: {arg.Direction}): {BitConverter.ToString(buffer).Replace("-", "")}");
+            if (arg.Direction == MQTTnet.Diagnostics.PacketInspection.MqttPacketFlowDirection.Inbound)
+            {
+                Console.WriteLine($"Packet (Dir: {arg.Direction})");
+                // Explicitly convert the buffer to a Span<byte> to resolve ambiguity
+                var buffer = new byte[arg.Buffer.Length];
+                arg.Buffer.AsSpan().CopyTo(buffer.AsSpan());
+                Console.WriteLine($" Raw Buffer (Dir: {arg.Direction}): {BitConverter.ToString(buffer).Replace("-", "")}");
+            }
             return Task.CompletedTask;
         }
 
@@ -100,7 +102,7 @@ namespace EnergyAutomate.Emulator
             {
                 try
                 {
-                    await MqttClient.SubscribeAsync($"+/{ClientId}");
+                    await MqttClient.SubscribeAsync($"s/33/{ClientId}");
                 }
                 catch (Exception)
                 {
@@ -114,34 +116,6 @@ namespace EnergyAutomate.Emulator
 
                 Subscribed = true;
             }
-        }
-
-        private async Task RemoteClient_ApplicationMessageReceivedAsync(MqttApplicationMessageReceivedEventArgs arg)
-        {            
-            Console.WriteLine($"Broker --> Client {arg.ClientId}");
-            Console.WriteLine($"Cloud Application Message Topic: {SubscribedTopics.First().Topic}");
-
-            var msgBuilder = new MqttApplicationMessageBuilder()
-                .WithTopic(SubscribedTopics.First().Topic)
-                .WithResponseTopic(arg.ApplicationMessage.ResponseTopic)
-                .WithContentType(arg.ApplicationMessage.ContentType)                
-                .WithPayload(arg.ApplicationMessage.Payload)
-                .WithPayloadFormatIndicator(arg.ApplicationMessage.PayloadFormatIndicator)
-                .WithQualityOfServiceLevel(arg.ApplicationMessage.QualityOfServiceLevel)
-                .WithRetainFlag(arg.ApplicationMessage.Retain);
-
-            var mappedMessage = msgBuilder.Build();
-
-            //Invoke the delegate to handle the message
-            if (ApplicationMessageReceived != null)
-            {
-                await ApplicationMessageReceived(mappedMessage);
-            }
-           
-            arg.ReasonCode = MqttApplicationMessageReceivedReasonCode.Success;
-            var cancelationTokenSource = new System.Threading.CancellationTokenSource();
-
-            await arg.AcknowledgeAsync(cancelationTokenSource.Token);
         }
 
     }

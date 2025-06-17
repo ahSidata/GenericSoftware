@@ -125,6 +125,7 @@ namespace EnergyAutomate.Emulator.Cli
             var proxy = new GrowattMqttProxy(
                 proxyCertPath: "certs/server.crt",
                 proxyKeyPath: "certs/server.key",
+                proxyHost: "ah.azure.sidata.com",
                 proxyPort: 7006,
                 mqttNetEventLogger: mqttEventLogger);
 
