@@ -1,0 +1,67 @@
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>aae9915a-6337-4e99-9253-5c5b39198d52</ProjectGuid>
+    <ProjectHome>.</ProjectHome>
+    <StartupFile>EnergyAutomation.GroBro.py</StartupFile>
+    <SearchPath>
+    </SearchPath>
+    <WorkingDirectory>.</WorkingDirectory>
+    <OutputPath>.</OutputPath>
+    <Name>EnergyAutomation.GroBro</Name>
+    <RootNamespace>EnergyAutomation.GroBro</RootNamespace>
+    <LaunchProvider>Standard Python launcher</LaunchProvider>
+    <EnableNativeCodeDebugging>False</EnableNativeCodeDebugging>
+    <Environment>SSLKEYLOGFILE="c:/dump/SSLKey.txt"</Environment>
+    <IsWindowsApplication>False</IsWindowsApplication>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
+    <DebugSymbols>true</DebugSymbols>
+    <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
+    <DebugSymbols>true</DebugSymbols>
+    <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="EnergyAutomation.GroBro.py" />
+    <Compile Include="grobro\builder.py" />
+    <Compile Include="grobro\client.py" />
+    <Compile Include="grobro\parser.py" />
+    <Compile Include="grobro\__init__.py" />
+    <Compile Include="ha\client.py" />
+    <Compile Include="ha\__init__.py" />
+    <Compile Include="model\device_config.py" />
+    <Compile Include="model\growatt_registers.py" />
+    <Compile Include="model\modbus_function.py" />
+    <Compile Include="model\modbus_message.py" />
+    <Compile Include="model\mqtt_config.py" />
+    <Compile Include="model\__init__.py" />
+    <Compile Include="tools\grocli.py" />
+    <Compile Include="tools\reg_msg_decoder.py" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="grobro\" />
+    <Folder Include="grobro\__pycache__\" />
+    <Folder Include="ha\" />
+    <Folder Include="model\" />
+    <Folder Include="tools\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="grobro\__pycache__\client.cpython-313.pyc" />
+    <Content Include="grobro\__pycache__\__init__.cpython-313.pyc" />
+    <Content Include="model\growatt_neo_registers.json" />
+    <Content Include="model\growatt_nexa_registers.json" />
+    <Content Include="model\growatt_noah_registers.json" />
+  </ItemGroup>
+  <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets" />
+  <!-- Uncomment the CoreCompile target to enable the Build command in
+       Visual Studio and specify your pre- and post-build commands in
+       the BeforeBuild and AfterBuild targets below. -->
+  <!--<Target Name="CoreCompile" />-->
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+</Project>

@@ -17,6 +17,7 @@ namespace EnergyAutomate.Emulator
         private readonly int _proxyPort;
 
         private MqttServer MqttServer { get; set; }
+
         private MqttNetEventLogger MqttNetEventLogger { get; set; }
 
         private readonly ConcurrentDictionary<string, GrowattMqttClient> _remoteClients = new();
@@ -39,8 +40,27 @@ namespace EnergyAutomate.Emulator
             var mqttServerFactory = new MqttServerFactory();
             MqttServer = mqttServerFactory.CreateMqttServer(mqttServerOptions);
 
+            MqttServer.InterceptingSubscriptionAsync += MqttServer_InterceptingSubscription;
             MqttServer.InterceptingPublishAsync += MqttServer_InterceptingPublishAsync;
             MqttServer.ClientConnectedAsync += MqttServer_ClientConnectedAsync;
+        }
+
+        private Task MqttServer_InterceptingSubscription(InterceptingSubscriptionEventArgs arg)
+        {
+            GrowattMqttClient? growattMqttClient;
+            if(_remoteClients.TryGetValue(arg.ClientId, out growattMqttClient))
+            {
+                Console.WriteLine($"[Proxy] Remote client {arg.ClientId} already exists for subscription.");
+            }
+            else
+            {
+                Console.WriteLine($"[Proxy] Remote client {arg.ClientId} not found for subscription.");
+            }
+
+            Console.WriteLine($"[Proxy] Remote client {arg.ClientId} add subscription: {arg.TopicFilter.Topic}");
+            growattMqttClient?.SubscribedTopics.Add(arg.TopicFilter);
+
+            return Task.CompletedTask;
         }
 
         public async Task StartAsync()
@@ -54,16 +74,11 @@ namespace EnergyAutomate.Emulator
 
         private async Task MqttServer_ClientConnectedAsync(ClientConnectedEventArgs arg)
         {
-            var topic = $"s/{arg.ClientId}";
-            await MqttServer.SubscribeAsync(arg.ClientId, topic);
+            var growattMqttClient = new GrowattMqttClient("mqtt.growatt.com", 7006, arg.ClientId, arg.UserName, arg.Password, MqttNetEventLogger);
+            
+            growattMqttClient.ApplicationMessageReceived += GrowattMqttClient_ApplicationMessageReceived;
 
-            var growattMqttClient = new GrowattMqttClient("mqtt.growatt.com", 7006, arg, MqttNetEventLogger);
-
-            // Fix: Use an event handler method instead of directly assigning a lambda to the event
-            growattMqttClient.ApplicationMessageReceived += async (applicationMessage) =>
-            {
-                await MqttServer.InjectApplicationMessage(new InjectedMqttApplicationMessage(applicationMessage));
-            };
+            _remoteClients.TryAdd(arg.ClientId, growattMqttClient);
 
             await growattMqttClient.ConnectAsync();
 
@@ -72,8 +87,11 @@ namespace EnergyAutomate.Emulator
                 Console.WriteLine($"[Proxy] Warten auf Verbindung des Remote-Clients {arg.ClientId}...");
                 await Task.Delay(1000);
             }
+        }
 
-            _remoteClients.TryAdd(arg.ClientId, growattMqttClient);
+        private async Task GrowattMqttClient_ApplicationMessageReceived(MqttApplicationMessage mqttApplicationMessage)
+        {
+            await MqttServer.InjectApplicationMessage(new InjectedMqttApplicationMessage(mqttApplicationMessage));
         }
 
         private async Task MqttServer_InterceptingPublishAsync(InterceptingPublishEventArgs arg)
@@ -100,7 +118,7 @@ namespace EnergyAutomate.Emulator
             await remoteClient.MqttClient.PublishAsync(mappedMessage);
 
             arg.ProcessPublish = true;
-            arg.Response.ReasonCode = MQTTnet.Protocol.MqttPubAckReasonCode.Success;
+            arg.Response.ReasonCode = MQTTnet.Protocol.MqttPubAckReasonCode.Success;            
 
             await Task.CompletedTask;
         }

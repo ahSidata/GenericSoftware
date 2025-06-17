@@ -7,8 +7,8 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="MQTTnet.AspNetCore" Version="5.0.1.1416" />
-		<PackageReference Include="MQTTnet.Extensions.ManagedClient" Version="4.3.7.1207" />
+	  <ProjectReference Include="..\Nuget\MQTTnet.Server\MQTTnet.Server.csproj" />
+	  <ProjectReference Include="..\Nuget\MQTTnet\MQTTnet.csproj" />
 	</ItemGroup>
 
 </Project>

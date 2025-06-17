@@ -1,0 +1,17 @@
+{
+  "profiles": {
+    "EnergyAutomate.Emulator.Cli": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "SSLKEYLOGFILE": "C:\\dump\\SSLKey1.txt"
+      }
+    },
+    "WSL": {
+      "commandName": "WSL2",
+      "environmentVariables": {
+        "SSLKEYLOGFILE": "/mnt/c/dump/SSLKey1.txt"
+      },
+      "distributionName": ""
+    }
+  }
+}

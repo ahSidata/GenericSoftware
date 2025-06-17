@@ -12,7 +12,6 @@ namespace EnergyAutomate.Utilities
         private readonly int _brokerPort;
 
         private MqttServer? _mqttServer;
-        private IMqttClient? _remoteClient;
 
         public MqttProxy(string proxyCertPath, string proxyKeyPath, string brokerHost, int brokerPort)
         {
@@ -35,58 +34,12 @@ namespace EnergyAutomate.Utilities
             var mqttServerFactory = new MqttServerFactory();
             _mqttServer = mqttServerFactory.CreateMqttServer(mqttServerOptions);
 
-            // Event-Handler für neue Verbindungen
-            _mqttServer.ClientConnectedAsync += async e =>
-            {
-                Console.WriteLine($"Neuer Client verbunden: {e.ClientId}");
-
-                // Erstelle eine neue Broker-Session für diesen Client
-                var clientOptions = new MqttClientOptionsBuilder()
-                    .WithTcpServer(_brokerHost, _brokerPort)
-                    .WithTlsOptions(new MqttClientTlsOptions
-                    {
-                        UseTls = true,
-                        AllowUntrustedCertificates = true,
-                        IgnoreCertificateChainErrors = true,
-                        IgnoreCertificateRevocationErrors = true,
-                        CertificateValidationHandler = context => true
-                    })
-                    .Build();
-
-                var mqttFactory = new MqttClientFactory();
-                _remoteClient = mqttFactory.CreateMqttClient();
-
-                await _remoteClient.ConnectAsync(clientOptions);
-
-                // Nachrichten vom Client an den Broker weiterleiten
-                _mqttServer.InterceptingPublishAsync += async publishEvent =>
-                {
-                    if (publishEvent.ClientId == e.ClientId)
-                    {
-                        Console.WriteLine($"Client {e.ClientId} --> Broker: {publishEvent.ApplicationMessage.Topic}");
-                        await _remoteClient.PublishAsync(publishEvent.ApplicationMessage);
-                    }
-                };
-
-                // Nachrichten vom Broker an den Client weiterleiten
-                _remoteClient.ApplicationMessageReceivedAsync += async brokerMessage =>
-                {
-                    Console.WriteLine($"Broker --> Client {e.ClientId}: {brokerMessage.ApplicationMessage.Topic}");
-                    await _mqttServer.InjectApplicationMessage(new InjectedMqttApplicationMessage(brokerMessage.ApplicationMessage)
-                    {
-                        SenderClientId = e.ClientId
-                    });
-                };
-            };
-
             await _mqttServer.StartAsync();
             Console.WriteLine("Proxy läuft mit TLS (Port 8883). IoT-Device bitte mit mqtts://localhost:8883 verbinden.");
         }
 
         public async Task StopAsync()
         {
-            if (_remoteClient != null)
-                await _remoteClient.DisconnectAsync();
             if (_mqttServer != null)
                 await _mqttServer.StopAsync();
         }
