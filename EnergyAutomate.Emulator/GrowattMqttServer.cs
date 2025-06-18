@@ -76,8 +76,6 @@ namespace EnergyAutomate.Emulator
         {
             var growattMqttClient = new GrowattMqttClient("mqtt.growatt.com", 7006, arg.ClientId, arg.UserName, arg.Password, MqttNetEventLogger);
             
-            growattMqttClient.ApplicationMessageReceived += GrowattMqttClient_ApplicationMessageReceived;
-
             _remoteClients.TryAdd(arg.ClientId, growattMqttClient);
 
             await growattMqttClient.ConnectAsync();

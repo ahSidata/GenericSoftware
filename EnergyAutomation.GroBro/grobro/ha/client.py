@@ -1,22 +1,22 @@
-from model.growatt_registers import HomeAssistantInputRegister
-from model.growatt_registers import KNOWN_NEO_REGISTERS, KNOWN_NOAH_REGISTERS, KNOWN_NEXA_REGISTERS
+from grobro.model.growatt_registers import HomeAssistantInputRegister
+from grobro.model.growatt_registers import KNOWN_NEO_REGISTERS, KNOWN_NOAH_REGISTERS, KNOWN_NEXA_REGISTERS
 import os
 import struct
 import ssl
 import json
 import logging
-import model as model
+import grobro.model as model
 import importlib.resources as resources
 from threading import Timer
 from typing import Callable
 
 import paho.mqtt.client as mqtt
-from model.growatt_registers import HomeAssistantHoldingRegisterInput
-from model.growatt_registers import GroBroRegisters
+from grobro.model.growatt_registers import HomeAssistantHoldingRegisterInput
+from grobro.model.growatt_registers import GroBroRegisters
 from typing import Optional
-from model.modbus_function import GrowattModbusFunctionSingle
-from model.modbus_message import GrowattModbusFunction
-from model.modbus_function import GrowattModbusFunctionMultiple
+from grobro.model.modbus_function import GrowattModbusFunctionSingle
+from grobro.model.modbus_message import GrowattModbusFunction
+from grobro.model.modbus_function import GrowattModbusFunctionMultiple
 
 HA_BASE_TOPIC = os.getenv("HA_BASE_TOPIC", "homeassistant")
 DEVICE_TIMEOUT = int(os.getenv("DEVICE_TIMEOUT", 0))

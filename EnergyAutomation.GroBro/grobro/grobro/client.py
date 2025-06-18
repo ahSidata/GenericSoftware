@@ -14,22 +14,22 @@ from typing import Callable
 import paho.mqtt.client as mqtt
 from paho.mqtt.client import MQTTMessage
 
-import model
-from grobro import parser
+from grobro import model
+from grobro.grobro import parser
 from dis import Positions
-from grobro.builder import append_crc
-from grobro.builder import scramble
-from model.modbus_function import GrowattModbusFunctionSingle
-from model.modbus_message import GrowattModbusFunction
-from model.modbus_message import GrowattModbusMessage
-from model.mqtt_config import MQTTConfig
-from model.growatt_registers import GrowattRegisterDataType
-from model.growatt_registers import GrowattRegisterDataTypes
-from model.growatt_registers import GrowattRegisterEnumTypes
-from model.growatt_registers import HomeAssistantHoldingRegisterInput
-from model.growatt_registers import HomeAssistantHoldingRegisterValue
-from model.growatt_registers import HomeAssistantInputRegister
-from model.growatt_registers import KNOWN_NEO_REGISTERS, KNOWN_NOAH_REGISTERS, KNOWN_NEXA_REGISTERS
+from grobro.grobro.builder import append_crc
+from grobro.grobro.builder import scramble
+from grobro.model.modbus_function import GrowattModbusFunctionSingle
+from grobro.model.modbus_message import GrowattModbusFunction
+from grobro.model.modbus_message import GrowattModbusMessage
+from grobro.model.mqtt_config import MQTTConfig
+from grobro.model.growatt_registers import GrowattRegisterDataType
+from grobro.model.growatt_registers import GrowattRegisterDataTypes
+from grobro.model.growatt_registers import GrowattRegisterEnumTypes
+from grobro.model.growatt_registers import HomeAssistantHoldingRegisterInput
+from grobro.model.growatt_registers import HomeAssistantHoldingRegisterValue
+from grobro.model.growatt_registers import HomeAssistantInputRegister
+from grobro.model.growatt_registers import KNOWN_NEO_REGISTERS, KNOWN_NOAH_REGISTERS, KNOWN_NEXA_REGISTERS
 
 
 LOG = logging.getLogger(__name__)
@@ -48,11 +48,15 @@ else:
     GROWATT_CLOUD_FILTER = set()
 
 DUMP_MESSAGES = os.getenv("DUMP_MESSAGES", "false").lower() == "true"
-DUMP_DIR = os.getenv("DUMP_DIR", "/dump")
+DUMP_DIR = os.getenv("DUMP_DIR", "c:/dump")
 
 # Property to flag messages forwarded from growatt cloud
 MQTT_PROP_FORWARD_GROWATT = mqtt.Properties(mqtt.PacketTypes.PUBLISH)
 MQTT_PROP_FORWARD_GROWATT.UserProperty = [("forwarded-for", "growatt")]
+
+# Property to flag messages forwarded from ha
+MQTT_PROP_FORWARD_HA = mqtt.Properties(mqtt.PacketTypes.PUBLISH)
+MQTT_PROP_FORWARD_HA.UserProperty = [("forwarded-for", "ha")]
 
 # Property to flag messages as dry-run for debugging purposes
 MQTT_PROP_DRY_RUN = mqtt.Properties(mqtt.PacketTypes.PUBLISH)
@@ -61,6 +65,8 @@ MQTT_PROP_DRY_RUN.UserProperty = [("dry-run", "true")]
 
 class Client:
     on_config: Callable[[model.DeviceConfig], None]
+    on_input_register: Callable[HomeAssistantInputRegister, None]
+    on_holding_register_input: Callable[HomeAssistantHoldingRegisterInput, None]
 
     _client: mqtt.Client
     _forward_mqtt_config: model.MQTTConfig
@@ -186,7 +192,7 @@ class Client:
                             LOG.debug("dropping bad payload: %s", device_id)
                             return
                         state.payload[name] = value
-                    #self.on_input_register(state)
+                    self.on_input_register(state)
                     return
 
                 return

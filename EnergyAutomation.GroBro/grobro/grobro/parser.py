@@ -6,7 +6,7 @@ import json
 import sys
 import os
 import logging
-import model as model
+import grobro.model as model
 from itertools import cycle
 import importlib.resources as resources
 

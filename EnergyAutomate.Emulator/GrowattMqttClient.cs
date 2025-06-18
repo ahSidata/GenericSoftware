@@ -13,7 +13,9 @@ namespace EnergyAutomate.Emulator
         private readonly string _brokerHost;
         private readonly int _brokerPort;
 
-        private bool Subscribed { get; set; } = false; // Default to true for testing purposes
+        private int count = 0;
+
+        public IMqttClient? BrokerMqttClient { get; set; }
 
         public GrowattMqttClient(string brokerHost, int brokerPort, string clientId, string username, string password, MqttNetEventLogger mqttNetEventLogger)
         {
@@ -26,12 +28,7 @@ namespace EnergyAutomate.Emulator
 
             ClientOptions = new MqttClientOptionsBuilder()
                 .WithClientId(ClientId)
-                .WithCleanSession(false)
-                .WithCleanStart(false)
-                .WithCredentials(username, password)
-                .WithProtocolVersion( MQTTnet.Formatter.MqttProtocolVersion.V500)                
                 .WithTcpServer(_brokerHost, _brokerPort)
-                .WithKeepAlivePeriod(TimeSpan.FromSeconds(60))
                 .WithTlsOptions(new MqttClientTlsOptions
                 {
                     UseTls = true,
@@ -47,18 +44,37 @@ namespace EnergyAutomate.Emulator
             MqttClient.InspectPacketAsync += MqttClient_InspectPacketAsync;
             MqttClient.ConnectedAsync += RemoteClient_ConnectedAsync;
             MqttClient.DisconnectedAsync += RemoteClient_DisconnectedAsync;
+            MqttClient.ApplicationMessageReceivedAsync += MqttClient_ApplicationMessageReceivedAsync;
+        }
+
+        private async Task MqttClient_ApplicationMessageReceivedAsync(MqttApplicationMessageReceivedEventArgs arg)
+        {
+            var topic = $"s/33/{arg.ClientId}";
+
+            Console.WriteLine($"Client --> Broker {arg.ClientId}, Topic:{topic}");
+
+            var msgBuilder = new MqttApplicationMessageBuilder()
+                .WithTopic(topic)
+                .WithPayload(arg.ApplicationMessage.Payload)
+                .WithQualityOfServiceLevel(MQTTnet.Protocol.MqttQualityOfServiceLevel.AtLeastOnce)
+                .WithRetainFlag(arg.ApplicationMessage.Retain);
+
+            var mappedMessage = msgBuilder.Build();
+
+            if (BrokerMqttClient is not null)
+                await BrokerMqttClient.PublishAsync(mappedMessage);
+
+            arg.AutoAcknowledge = true;
         }
 
         private Task MqttClient_InspectPacketAsync(MQTTnet.Diagnostics.PacketInspection.InspectMqttPacketEventArgs arg)
         {
-            if (arg.Direction == MQTTnet.Diagnostics.PacketInspection.MqttPacketFlowDirection.Inbound)
-            {
-                Console.WriteLine($"Packet (Dir: {arg.Direction})");
-                // Explicitly convert the buffer to a Span<byte> to resolve ambiguity
-                var buffer = new byte[arg.Buffer.Length];
-                arg.Buffer.AsSpan().CopyTo(buffer.AsSpan());
-                Console.WriteLine($" Raw Buffer (Dir: {arg.Direction}): {BitConverter.ToString(buffer).Replace("-", "")}");
-            }
+            Console.WriteLine($"Packet (Dir: {arg.Direction})");
+            // Explicitly convert the buffer to a Span<byte> to resolve ambiguity
+            var buffer = new byte[arg.Buffer.Length];
+            arg.Buffer.AsSpan().CopyTo(buffer.AsSpan());
+            Console.WriteLine($" Raw Buffer (Dir: {arg.Direction}): {BitConverter.ToString(buffer).Replace("-", "")}");
+
             return Task.CompletedTask;
         }
 
@@ -73,12 +89,6 @@ namespace EnergyAutomate.Emulator
         public MqttClientOptions ClientOptions { get; private set; }
 
         public ObservableCollection<MqttTopicFilter> SubscribedTopics { get; } = [];
-
-        // Delegate for ApplicationMessageReceived
-        public delegate Task ApplicationMessageReceivedDelegate(MqttApplicationMessage mqttApplicationMessage );
-
-        // Event/Delegate instance for ApplicationMessageReceived
-        public event ApplicationMessageReceivedDelegate? ApplicationMessageReceived;
 
         public async Task ConnectAsync()
         {
@@ -97,25 +107,7 @@ namespace EnergyAutomate.Emulator
         {
             IsConnected = true;
             Console.WriteLine($"[Proxy] Remote client connected for ClientId: {ClientId}");
-
-            if(!Subscribed)
-            {
-                try
-                {
-                    await MqttClient.SubscribeAsync($"s/33/{ClientId}");
-                }
-                catch (Exception)
-                {
-                    _ = Task.Run(async () =>
-                    {
-                        Task.Delay(1000).Wait();
-                        await ConnectAsync();
-                    });
-
-                }
-
-                Subscribed = true;
-            }
+            await MqttClient.SubscribeAsync($"s/33/{ClientId}", MQTTnet.Protocol.MqttQualityOfServiceLevel.AtLeastOnce);
         }
 
     }

@@ -10,12 +10,10 @@ import signal
 import logging
 import time
 
-import model, ha, grobro
+from grobro import model, ha, grobro
 
 # Setup Logger
 LOG_LEVEL = os.getenv("LOG_LEVEL", "ERROR").upper()
-os.environ["SSLKEYLOGFILE"]="c:/dump/SSLKey.txt"
-
 try:
     logging.basicConfig(
         level=LOG_LEVEL,
@@ -82,25 +80,24 @@ if __name__ == "__main__":
     grobro_client = grobro.Client(GROBRO_MQTT_CONFIG, FORWARD_MQTT_CONFIG)
 
     # setup com: grobro -> ha
-    #grobro_client.on_input_register = ha_client.publish_input_register
-    #grobro_client.on_holding_register_input = ha_client.publish_holding_register_input
+    grobro_client.on_input_register = ha_client.publish_input_register
+    grobro_client.on_holding_register_input = ha_client.publish_holding_register_input
 
     grobro_client.on_config = ha_client.set_config
-
     # setup com: ha -> grobro
-    #ha_client.on_command = grobro_client.send_command
+    ha_client.on_command = grobro_client.send_command
 
     RUNNING = True
     signal_handler = SignalHandler()
 
     # Assume client1 and client2 have .start() and .stop()
-
+    ha_client.start()
     grobro_client.start()
 
     try:
         while signal_handler.caught:
             time.sleep(0.1)
     finally:
+        ha_client.stop()
         grobro_client.stop()
         LOG.info("Stopped both clients. Exiting...")
-

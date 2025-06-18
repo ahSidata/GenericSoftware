@@ -26,34 +26,32 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="EnergyAutomation.GroBro.py" />
-    <Compile Include="grobro\builder.py" />
-    <Compile Include="grobro\client.py" />
-    <Compile Include="grobro\parser.py" />
-    <Compile Include="grobro\__init__.py" />
-    <Compile Include="ha\client.py" />
-    <Compile Include="ha\__init__.py" />
-    <Compile Include="model\device_config.py" />
-    <Compile Include="model\growatt_registers.py" />
-    <Compile Include="model\modbus_function.py" />
-    <Compile Include="model\modbus_message.py" />
-    <Compile Include="model\mqtt_config.py" />
-    <Compile Include="model\__init__.py" />
-    <Compile Include="tools\grocli.py" />
-    <Compile Include="tools\reg_msg_decoder.py" />
+    <Compile Include="grobro\grobro\builder.py" />
+    <Compile Include="grobro\grobro\client.py" />
+    <Compile Include="grobro\grobro\parser.py" />
+    <Compile Include="grobro\grobro\__init__.py" />
+    <Compile Include="grobro\ha\client.py" />
+    <Compile Include="grobro\ha\__init__.py" />
+    <Compile Include="grobro\model\device_config.py" />
+    <Compile Include="grobro\model\growatt_registers.py" />
+    <Compile Include="grobro\model\modbus_function.py" />
+    <Compile Include="grobro\model\modbus_message.py" />
+    <Compile Include="grobro\model\mqtt_config.py" />
+    <Compile Include="grobro\model\__init__.py" />
+    <Compile Include="grobro\tools\grocli.py" />
+    <Compile Include="grobro\tools\reg_msg_decoder.py" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="grobro\" />
-    <Folder Include="grobro\__pycache__\" />
-    <Folder Include="ha\" />
-    <Folder Include="model\" />
-    <Folder Include="tools\" />
+    <Folder Include="grobro\grobro\" />
+    <Folder Include="grobro\ha\" />
+    <Folder Include="grobro\model\" />
+    <Folder Include="grobro\tools\" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="grobro\__pycache__\client.cpython-313.pyc" />
-    <Content Include="grobro\__pycache__\__init__.cpython-313.pyc" />
-    <Content Include="model\growatt_neo_registers.json" />
-    <Content Include="model\growatt_nexa_registers.json" />
-    <Content Include="model\growatt_noah_registers.json" />
+    <Content Include="grobro\model\growatt_neo_registers.json" />
+    <Content Include="grobro\model\growatt_nexa_registers.json" />
+    <Content Include="grobro\model\growatt_noah_registers.json" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets" />
   <!-- Uncomment the CoreCompile target to enable the Build command in

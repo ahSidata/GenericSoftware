@@ -6,7 +6,7 @@ import logging
 from pydantic.main import BaseModel
 from enum import Enum
 from pylint.checkers.base import register
-from model.growatt_registers import GrowattRegisterPosition
+from grobro.model.growatt_registers import GrowattRegisterPosition
 
 LOG = logging.getLogger(__name__)
 

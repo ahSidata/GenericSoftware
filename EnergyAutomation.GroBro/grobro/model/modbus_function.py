@@ -1,4 +1,4 @@
-from model.modbus_message import GrowattModbusFunction
+from grobro.model.modbus_message import GrowattModbusFunction
 import struct
 from pydantic import BaseModel
 from enum import Enum
