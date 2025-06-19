@@ -9,6 +9,8 @@ namespace EnergyAutomate.Emulator
 {
     public class PythonWrapper
     {
+        public GrowattClientOptions? GrowattClientOptions { get; set; }
+
         // Define the delegate type for callbacks from Python
         public delegate void LogCallback(string message);
 
@@ -54,7 +56,6 @@ namespace EnergyAutomate.Emulator
                         stream: sysmod.stdout
                     );
 
-
                     // Create a delegate instance
                     LogCallback logCallback = LogFromPython;
 
@@ -66,6 +67,12 @@ namespace EnergyAutomate.Emulator
 
                     Console.WriteLine("[TRACE] Creating instance of Client class");
                     dynamic clientInstance = ClientClass(logCallback);
+
+                    if (GrowattClientOptions is not null)
+                    {
+                        Console.WriteLine("[TRACE] Set options");
+                        clientInstance.set_options(GrowattClientOptions);
+                    }
 
                     Console.WriteLine("[TRACE] Starting Python client");
                     clientInstance.start();

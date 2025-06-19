@@ -47,6 +47,10 @@ class SignalHandler:
 
 class Client:
 
+    _host = "mqtt.growatt.com"
+    _port = 7006
+    _clientId = "" 
+
     _client: mqtt.Client
     _forward_clients = {}
 
@@ -61,6 +65,15 @@ class Client:
 
         self._client.tls_set(cert_reqs=ssl.CERT_NONE)
         self._client.tls_insecure_set(True)
+
+    def set_options(self, options):
+        LOG.debug(f"[TRACE] Python received options: Host={options.Host}, Port={options.Port}")
+        self._host = options.Host
+        self._port = options.Port
+
+    def set_clientId(self, clientId):
+        LOG.debug(f"[TRACE] Python received clientid: {clientId}")
+        self._clientId = clientId
 
     def start(self):
 
@@ -154,7 +167,7 @@ class Client:
                 7006,
                 60,
             )
-            #client.subscribe(f"+/{client_id}")
+
             client.loop_start()
             self._forward_clients[f"forward_client_{client_id}"] = client
         return self._forward_clients[f"forward_client_{client_id}"]
