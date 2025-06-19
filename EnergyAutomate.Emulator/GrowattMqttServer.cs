@@ -7,6 +7,7 @@ using MQTTnet.Packets;
 using System.Text.Json;
 using System.Buffers;
 using MQTTnet.Diagnostics.Logger;
+using System.Net.Sockets;
 
 namespace EnergyAutomate.Emulator
 {
@@ -18,36 +19,27 @@ namespace EnergyAutomate.Emulator
 
         private MqttServer MqttServer { get; set; }
 
-        private MqttNetEventLogger MqttNetEventLogger { get; set; }
-
-        public GrowattMqttServer(string proxyCertPath, string proxyKeyPath, int proxyPort, MqttNetEventLogger mqttNetEventLogger)
+        public GrowattMqttServer(string proxyCertPath, string proxyKeyPath, int proxyPort)
         {
-            MqttNetEventLogger = mqttNetEventLogger;
-
             _proxyCertPath = proxyCertPath;
             _proxyKeyPath = proxyKeyPath;
             _proxyPort = proxyPort;
 
             var proxyCert = X509Certificate2.CreateFromPemFile(_proxyCertPath, _proxyKeyPath);
-            var mqttServerOptions = new MqttServerOptionsBuilder()
+            var mqttServerOptions = new MqttServerOptionsBuilder()                
+                .WithPersistentSessions(true)                 
                 .WithEncryptedEndpoint()
                 .WithEncryptionCertificate(proxyCert.Export(X509ContentType.Pfx))
                 .WithEncryptedEndpointPort(_proxyPort)
+                .WithMaxPendingMessagesPerClient(1000)
                 .Build();
+
+            //mqttServerOptions.TlsEndpointOptions.NoDelay = false;
+            mqttServerOptions.TlsEndpointOptions.AllowPacketFragmentation = false;
+            //mqttServerOptions.TlsEndpointOptions.LingerState = new LingerOption(false, 0) ;
 
             var mqttServerFactory = new MqttServerFactory();
             MqttServer = mqttServerFactory.CreateMqttServer(mqttServerOptions);
-
-            MqttServer.InterceptingSubscriptionAsync += MqttServer_InterceptingSubscription;
-            MqttServer.InterceptingPublishAsync += MqttServer_InterceptingPublishAsync;
-            MqttServer.ClientConnectedAsync += MqttServer_ClientConnectedAsync;
-        }
-
-        private Task MqttServer_InterceptingSubscription(InterceptingSubscriptionEventArgs arg)
-        {
-            Console.WriteLine($"[Proxy] Remote client {arg.ClientId} add subscription: {arg.TopicFilter.Topic}");
-
-            return Task.CompletedTask;
         }
 
         public async Task StartAsync()
@@ -57,36 +49,6 @@ namespace EnergyAutomate.Emulator
             {
                 await MqttServer.StartAsync();
             }
-        }
-
-        private async Task MqttServer_ClientConnectedAsync(ClientConnectedEventArgs arg)
-        {
-
-        }
-
-        private async Task GrowattMqttClient_ApplicationMessageReceived(MqttApplicationMessage mqttApplicationMessage)
-        {
-            await MqttServer.InjectApplicationMessage(new InjectedMqttApplicationMessage(mqttApplicationMessage));
-        }
-
-        private async Task MqttServer_InterceptingPublishAsync(InterceptingPublishEventArgs arg)
-        {
-            var msgBuilder = new MqttApplicationMessageBuilder()
-                .WithTopic(arg.ApplicationMessage.Topic)
-                .WithPayload(arg.ApplicationMessage.Payload)
-                .WithQualityOfServiceLevel(arg.ApplicationMessage.QualityOfServiceLevel)
-                .WithRetainFlag(arg.ApplicationMessage.Retain);
-
-            var mappedMessage = msgBuilder.Build();
-
-            Console.WriteLine($"Client --> Broker {arg.ClientId}");
-            Console.WriteLine($"Client Application Message Topic: {arg.ApplicationMessage.Topic}");
-            //Console.WriteLine($"ClientApplication Message Payload: {Encoding.UTF8.GetString(arg.ApplicationMessage.Payload.ToArray())}");
-
-            arg.ProcessPublish = true;
-            arg.Response.ReasonCode = MQTTnet.Protocol.MqttPubAckReasonCode.Success;            
-
-            await Task.CompletedTask;
         }
     }
 }

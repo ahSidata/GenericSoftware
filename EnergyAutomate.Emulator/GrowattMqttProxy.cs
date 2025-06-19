@@ -13,24 +13,14 @@ namespace EnergyAutomate.Emulator
 {
     public class GrowattMqttProxy
     {
-        #region Fields
-
-        private readonly string _proxyCertPath;
-        private readonly string _proxyKeyPath;
-        private readonly int _proxyPort;
-
-        #endregion Fields
-
         #region Public Constructors
 
-        public GrowattMqttProxy(string proxyCertPath, string proxyKeyPath, string brokerHost, int brokerPort, string growattHost, int growattPort)
+        public GrowattMqttProxy(string brokerHost, int brokerPort, string growattHost, int growattPort)
         {
             ClientId = "0PVPG5ZR23CT00V4";
 
-            _proxyCertPath = proxyCertPath;
-            _proxyKeyPath = proxyKeyPath;
-
             BrokerClientOptions = new MqttClientOptionsBuilder()
+                .WithoutPacketFragmentation()
                 .WithClientId("Proxy")
                 .WithCleanSession(false)
                 .WithProtocolVersion(MQTTnet.Formatter.MqttProtocolVersion.V500)
@@ -45,6 +35,8 @@ namespace EnergyAutomate.Emulator
                 })
             .Build();
 
+            BrokerClientOptions.AllowPacketFragmentation = false;
+
             var mqttFactory = new MqttClientFactory();
             BrokerMqttClient = mqttFactory.CreateMqttClient();
 
@@ -54,6 +46,7 @@ namespace EnergyAutomate.Emulator
 
             GrowattClientOptions = new MqttClientOptionsBuilder()
                 .WithClientId(ClientId)
+                .WithCleanSession(false)
                 .WithTcpServer(growattHost, growattPort)
                 .WithKeepAlivePeriod(TimeSpan.FromSeconds(420))
                 .WithTlsOptions(new MqttClientTlsOptions
@@ -66,16 +59,17 @@ namespace EnergyAutomate.Emulator
                 })
             .Build();
 
+            GrowattClientOptions.AllowPacketFragmentation = false;
+
+            var _tcpOptions = (MqttClientTcpOptions)GrowattClientOptions.ChannelOptions;
+            _tcpOptions.LingerState = new System.Net.Sockets.LingerOption(false, 0);
+            _tcpOptions.NoDelay = false;
+            
             GrowattMqttClient = mqttFactory.CreateMqttClient();
-            GrowattMqttClient.InspectPacketAsync += GrowattMqttClient_InspectPacketAsync;
+            //GrowattMqttClient.InspectPacketAsync += GrowattMqttClient_InspectPacketAsync;
             GrowattMqttClient.ConnectedAsync += GrowattMqttClient_ConnectedAsync;
             GrowattMqttClient.DisconnectedAsync += GrowattMqttClient_DisconnectedAsync;
             GrowattMqttClient.ApplicationMessageReceivedAsync += GrowattMqttClient_ApplicationMessageReceivedAsync;
-        }
-
-        private async Task BrokerMqttClient_ConnectedAsync(MqttClientConnectedEventArgs arg)
-        {
-            await BrokerMqttClient.SubscribeAsync(new MqttTopicFilterBuilder().WithTopic($"c/33/{ClientId}").Build());
         }
 
         #endregion Public Constructors
@@ -115,6 +109,14 @@ namespace EnergyAutomate.Emulator
         #endregion Public Methods
 
         #region Private Methods
+        private async Task BrokerMqttClient_ConnectedAsync(MqttClientConnectedEventArgs arg)
+        {
+            await BrokerMqttClient.SubscribeAsync(new MqttTopicFilterBuilder()
+                .WithTopic($"c/33/{ClientId}")
+                .WithAtLeastOnceQoS()
+                .Build()
+            );
+        }
 
         private async Task BrokerMqttClient_DisconnectedAsync(MqttClientDisconnectedEventArgs arg)
         {
@@ -141,10 +143,10 @@ namespace EnergyAutomate.Emulator
             Console.WriteLine($"[Proxy] Remote client connected for ClientId: {ClientId}");
 
             _ = Task.Run(async () => {
-                await Task.Delay(1000);
-                await GrowattMqttClient.SubscribeAsync($"s/33/{ClientId}", MQTTnet.Protocol.MqttQualityOfServiceLevel.AtLeastOnce);
-                await GrowattMqttClient.SubscribeAsync($"s/{ClientId}", MQTTnet.Protocol.MqttQualityOfServiceLevel.AtLeastOnce);
-                await GrowattMqttClient.SubscribeAsync($"#/{ClientId}", MQTTnet.Protocol.MqttQualityOfServiceLevel.AtLeastOnce);
+                await Task.Delay(100);
+                await GrowattMqttClient.SubscribeAsync(new MqttClientSubscribeOptionsBuilder()
+                .WithTopicFilter(x => x.WithTopic($"s/33/{ClientId}").WithAtLeastOnceQoS())                
+                .Build());
             });
 
             return Task.CompletedTask;
@@ -166,7 +168,7 @@ namespace EnergyAutomate.Emulator
                 .WithTopic(arg.ApplicationMessage.Topic)
                 .WithPayload(arg.ApplicationMessage.Payload)
                 .WithRetainFlag(arg.ApplicationMessage.Retain)
-                .WithQualityOfServiceLevel(MQTTnet.Protocol.MqttQualityOfServiceLevel.AtLeastOnce);
+                .WithQualityOfServiceLevel(arg.ApplicationMessage.QualityOfServiceLevel);
 
             var mappedMessage = msgBuilder.Build();
 
@@ -177,13 +179,13 @@ namespace EnergyAutomate.Emulator
         {
             var topic = $"s/33/{arg.ClientId}";
 
-            Console.WriteLine($"Client --> Broker {arg.ClientId}, Topic:{topic}");
+            Console.WriteLine($"Client --> Broker {arg.ClientId}, Topic: {topic}");
 
             var msgBuilder = new MqttApplicationMessageBuilder()
                 .WithTopic(topic)
                 .WithPayload(arg.ApplicationMessage.Payload)
-                .WithQualityOfServiceLevel(MQTTnet.Protocol.MqttQualityOfServiceLevel.AtLeastOnce)
-                .WithRetainFlag(arg.ApplicationMessage.Retain);
+                .WithRetainFlag(arg.ApplicationMessage.Retain)
+                .WithQualityOfServiceLevel(arg.ApplicationMessage.QualityOfServiceLevel);
 
             var mappedMessage = msgBuilder.Build();
 

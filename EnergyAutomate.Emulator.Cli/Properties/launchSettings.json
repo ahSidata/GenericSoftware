@@ -3,7 +3,7 @@
     "EnergyAutomate.Emulator.Cli": {
       "commandName": "Project",
       "environmentVariables": {
-        "SSLKEYLOGFILE": "C:\\dump\\SSLKey1.txt"
+        "PYTHONNET_RUNTIME": "coreclr"
       }
     },
     "WSL": {

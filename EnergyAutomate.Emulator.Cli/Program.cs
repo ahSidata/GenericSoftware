@@ -1,26 +1,27 @@
-﻿using EnergyAutomate.Emulator;
+﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using MQTTnet.Diagnostics.Logger;
+using Python.Runtime;
+using System.Net;
 using System.Net.Security;
 using System.Net.Sockets;
-using System.Net;
 using System.Runtime.ConstrainedExecution;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace EnergyAutomate.Emulator.Cli
 {
     internal class Program
     {
+
+
+
         public static IHostBuilder CreateHostBuilder(string[] args) =>
             Host.CreateDefaultBuilder(args)
-        // .UseWindowsService() // Uncomment for Windows Service
-        // .UseSystemd()        // Uncomment for Linux systemd
-        .ConfigureServices((hostContext, services) =>
-        {
-            services.AddHostedService<MqttProxyWorker>();
-        });
+            .ConfigureServices((hostContext, services) =>
+            {
+                services.AddHostedService<MqttProxyWorker>();
+            });
 
         public static void Main(string[] args)
         {
