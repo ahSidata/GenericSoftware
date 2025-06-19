@@ -1,48 +1,40 @@
 ﻿using MQTTnet;
+using MQTTnet.Diagnostics.Logger;
+using MQTTnet.Packets;
 using MQTTnet.Server;
+using System.Buffers;
 using System.Collections.Concurrent;
+using System.Collections.ObjectModel;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
-using MQTTnet.Packets;
 using System.Text.Json;
-using System.Buffers;
-using MQTTnet.Diagnostics.Logger;
 
 namespace EnergyAutomate.Emulator
 {
     public class GrowattMqttProxy
     {
+        #region Fields
+
         private readonly string _proxyCertPath;
         private readonly string _proxyKeyPath;
         private readonly int _proxyPort;
 
-        private MqttNetEventLogger MqttNetEventLogger { get; set; }
+        #endregion Fields
 
-        private GrowattMqttServer? GrowattMqttServer { get; set; }
+        #region Public Constructors
 
-        public IMqttClient BrokerMqttClient { get; private set; }
-
-        public MqttClientOptions BrokerClientOptions { get; private set; }
-
-        private readonly ConcurrentDictionary<string, GrowattMqttClient> _remoteClients = new();
-
-        public GrowattMqttProxy(string proxyCertPath, string proxyKeyPath, string proxyHost, int proxyPort, MqttNetEventLogger mqttNetEventLogger)
+        public GrowattMqttProxy(string proxyCertPath, string proxyKeyPath, string brokerHost, int brokerPort, string growattHost, int growattPort)
         {
+            ClientId = "0PVPG5ZR23CT00V4";
+
             _proxyCertPath = proxyCertPath;
             _proxyKeyPath = proxyKeyPath;
-            _proxyPort = proxyPort;
-
-            MqttNetEventLogger = mqttNetEventLogger;
-
-            //GrowattMqttServer = new GrowattMqttServer(proxyCertPath, proxyKeyPath, proxyPort, mqttNetEventLogger);
-            //
 
             BrokerClientOptions = new MqttClientOptionsBuilder()
                 .WithClientId("Proxy")
                 .WithCleanSession(false)
                 .WithProtocolVersion(MQTTnet.Formatter.MqttProtocolVersion.V500)
-                .WithTcpServer(proxyHost, proxyPort)
-                .WithKeepAlivePeriod(TimeSpan.FromSeconds(60))
+                .WithTcpServer(brokerHost, brokerPort)
                 .WithTlsOptions(new MqttClientTlsOptions
                 {
                     UseTls = true,
@@ -55,59 +47,65 @@ namespace EnergyAutomate.Emulator
 
             var mqttFactory = new MqttClientFactory();
             BrokerMqttClient = mqttFactory.CreateMqttClient();
+
+            BrokerMqttClient.ConnectedAsync += BrokerMqttClient_ConnectedAsync;
             BrokerMqttClient.DisconnectedAsync += BrokerMqttClient_DisconnectedAsync;
+            BrokerMqttClient.ApplicationMessageReceivedAsync += BrokerMqttClient_ApplicationMessageReceivedAsync;
 
-            BrokerMqttClient.ApplicationMessageReceivedAsync += async (arg) =>
-            {
-                // Handle incoming messages from the broker
-                var clientId = arg.ApplicationMessage.Topic.Split('/')[2]; // Assuming topic format is "s/33/{clientId}"
-
-                Console.WriteLine($"Broker --> Client {clientId}, Topic: {arg.ApplicationMessage.Topic}");
-                
-                if (_remoteClients.TryGetValue(clientId, out var growattMqttClient))
+            GrowattClientOptions = new MqttClientOptionsBuilder()
+                .WithClientId(ClientId)
+                .WithTcpServer(growattHost, growattPort)
+                .WithKeepAlivePeriod(TimeSpan.FromSeconds(420))
+                .WithTlsOptions(new MqttClientTlsOptions
                 {
-                    var msgBuilder = new MqttApplicationMessageBuilder()
-                        .WithTopic(arg.ApplicationMessage.Topic)
-                        .WithPayload(arg.ApplicationMessage.Payload)
-                        .WithRetainFlag(arg.ApplicationMessage.Retain)
-                        .WithQualityOfServiceLevel( MQTTnet.Protocol.MqttQualityOfServiceLevel.AtLeastOnce);
+                    UseTls = true,
+                    AllowUntrustedCertificates = true,
+                    IgnoreCertificateChainErrors = true,
+                    IgnoreCertificateRevocationErrors = true,
+                    CertificateValidationHandler = context => true
+                })
+            .Build();
 
-                    var mappedMessage = msgBuilder.Build();
-
-                    await growattMqttClient.MqttClient.PublishAsync(mappedMessage);
-
-                    arg.AutoAcknowledge = true;
-                }
-                else
-                {
-                    Console.WriteLine($"[Proxy] Remote client {clientId} not found for message: {arg.ApplicationMessage.Topic}");
-                }
-            };
+            GrowattMqttClient = mqttFactory.CreateMqttClient();
+            GrowattMqttClient.InspectPacketAsync += GrowattMqttClient_InspectPacketAsync;
+            GrowattMqttClient.ConnectedAsync += GrowattMqttClient_ConnectedAsync;
+            GrowattMqttClient.DisconnectedAsync += GrowattMqttClient_DisconnectedAsync;
+            GrowattMqttClient.ApplicationMessageReceivedAsync += GrowattMqttClient_ApplicationMessageReceivedAsync;
         }
 
-        private async Task BrokerMqttClient_DisconnectedAsync(MqttClientDisconnectedEventArgs arg)
+        private async Task BrokerMqttClient_ConnectedAsync(MqttClientConnectedEventArgs arg)
         {
-            while (!BrokerMqttClient.IsConnected)
-            {
-                await Task.Delay(1000);
-
-                await ConnectBroker("0PVPG5ZR23CT00V4");
-            }
+            await BrokerMqttClient.SubscribeAsync(new MqttTopicFilterBuilder().WithTopic($"c/33/{ClientId}").Build());
         }
+
+        #endregion Public Constructors
+
+        #region Properties
+
+        public MqttClientOptions BrokerClientOptions { get; private set; }
+
+        public IMqttClient BrokerMqttClient { get; set; }
+
+        public string ClientId { get; set; }
+
+        public MqttClientOptions GrowattClientOptions { get; private set; }
+
+        public IMqttClient GrowattMqttClient { get; private set; }
+
+
+        private GrowattMqttServer? GrowattMqttServer { get; set; }
+
+        #endregion Properties
+
+        #region Public Methods
 
         public async Task StartAsync()
         {
-            //await GrowattMqttServer.StartAsync();
-
-            await ConnectBroker("0PVPG5ZR23CT00V4");
-
-            await AddClient("0PVPG5ZR23CT00V4");
-        }
-
-        private async Task ConnectBroker(string clientId)
-        {
+            Console.WriteLine($"Starting broker connection for ClientId: {ClientId}");
             await BrokerMqttClient.ConnectAsync(BrokerClientOptions);
-            await BrokerMqttClient.SubscribeAsync(new MqttTopicFilterBuilder().WithTopic($"c/33/{clientId}").Build());
+
+            Console.WriteLine($"Starting growatt connection for ClientId: {ClientId}");
+            await GrowattMqttClient.ConnectAsync(GrowattClientOptions);
         }
 
         public async Task StopAsync()
@@ -115,20 +113,79 @@ namespace EnergyAutomate.Emulator
             await Task.CompletedTask;
         }
 
-        private async Task AddClient(string clientId)
+        #endregion Public Methods
+
+        #region Private Methods
+
+        private async Task BrokerMqttClient_DisconnectedAsync(MqttClientDisconnectedEventArgs arg)
         {
-            var growattMqttClient = new GrowattMqttClient("mqtt.growatt.com", 7006, clientId, clientId, "Growatt", MqttNetEventLogger);
-            growattMqttClient.BrokerMqttClient = BrokerMqttClient;
-
-            await growattMqttClient.ConnectAsync();            
-
-            while (!growattMqttClient.IsConnected)
+            while (!BrokerMqttClient.IsConnected)
             {
-                Console.WriteLine($"[Proxy] Warten auf Verbindung des Remote-Clients {clientId}...");
                 await Task.Delay(1000);
-            }
 
-            _remoteClients.TryAdd(clientId, growattMqttClient);
+                await BrokerMqttClient.ConnectAsync(BrokerClientOptions);
+            }
         }
+
+        private async Task GrowattMqttClient_InspectPacketAsync(MQTTnet.Diagnostics.PacketInspection.InspectMqttPacketEventArgs arg)
+        {
+            Console.WriteLine($"Packet (Dir: {arg.Direction})");
+            // Explicitly convert the buffer to a Span<byte> to resolve ambiguity
+            var buffer = new byte[arg.Buffer.Length];
+            arg.Buffer.AsSpan().CopyTo(buffer.AsSpan());
+            Console.WriteLine($" Raw Buffer (Dir: {arg.Direction}): {BitConverter.ToString(buffer).Replace("-", "")}");
+
+            await Task.CompletedTask;
+        }
+
+        private async Task GrowattMqttClient_ConnectedAsync(MqttClientConnectedEventArgs arg)
+        {
+            Console.WriteLine($"[Proxy] Remote client connected for ClientId: {ClientId}");
+            await GrowattMqttClient.SubscribeAsync($"s/33/{ClientId}", MQTTnet.Protocol.MqttQualityOfServiceLevel.AtLeastOnce);
+            await GrowattMqttClient.SubscribeAsync($"s/{ClientId}", MQTTnet.Protocol.MqttQualityOfServiceLevel.AtLeastOnce);
+        }
+
+        private Task GrowattMqttClient_DisconnectedAsync(MqttClientDisconnectedEventArgs arg)
+        {
+            Console.WriteLine($"[Proxy] Growatt client disconnected for ClientId: {ClientId}");
+            return Task.CompletedTask;
+        }
+
+        private async Task BrokerMqttClient_ApplicationMessageReceivedAsync(MqttApplicationMessageReceivedEventArgs arg)
+        {
+            await Task.Delay(1000);
+
+            Console.WriteLine($"Broker --> Client {ClientId}, Topic: {arg.ApplicationMessage.Topic}");
+
+            var msgBuilder = new MqttApplicationMessageBuilder()
+                .WithTopic(arg.ApplicationMessage.Topic)
+                .WithPayload(arg.ApplicationMessage.Payload)
+                .WithRetainFlag(arg.ApplicationMessage.Retain)
+                .WithQualityOfServiceLevel(MQTTnet.Protocol.MqttQualityOfServiceLevel.AtLeastOnce);
+
+            var mappedMessage = msgBuilder.Build();
+
+            await GrowattMqttClient.PublishAsync(mappedMessage);
+        }
+
+        private async Task GrowattMqttClient_ApplicationMessageReceivedAsync(MqttApplicationMessageReceivedEventArgs arg)
+        {
+            var topic = $"s/33/{arg.ClientId}";
+
+            Console.WriteLine($"Client --> Broker {arg.ClientId}, Topic:{topic}");
+
+            var msgBuilder = new MqttApplicationMessageBuilder()
+                .WithTopic(topic)
+                .WithPayload(arg.ApplicationMessage.Payload)
+                .WithQualityOfServiceLevel(MQTTnet.Protocol.MqttQualityOfServiceLevel.AtLeastOnce)
+                .WithRetainFlag(arg.ApplicationMessage.Retain);
+
+            var mappedMessage = msgBuilder.Build();
+
+            if (BrokerMqttClient is not null)
+                await BrokerMqttClient.PublishAsync(mappedMessage);
+        }
+
+        #endregion Private Methods
     }
 }
