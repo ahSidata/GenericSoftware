@@ -92,7 +92,6 @@ namespace EnergyAutomate.Emulator
 
         public IMqttClient GrowattMqttClient { get; private set; }
 
-
         private GrowattMqttServer? GrowattMqttServer { get; set; }
 
         #endregion Properties
@@ -129,20 +128,26 @@ namespace EnergyAutomate.Emulator
 
         private async Task GrowattMqttClient_InspectPacketAsync(MQTTnet.Diagnostics.PacketInspection.InspectMqttPacketEventArgs arg)
         {
-            Console.WriteLine($"Packet (Dir: {arg.Direction})");
             // Explicitly convert the buffer to a Span<byte> to resolve ambiguity
             var buffer = new byte[arg.Buffer.Length];
             arg.Buffer.AsSpan().CopyTo(buffer.AsSpan());
-            Console.WriteLine($" Raw Buffer (Dir: {arg.Direction}): {BitConverter.ToString(buffer).Replace("-", "")}");
+            Console.WriteLine($"GrowattMqttClient Packet (Dir: {arg.Direction}), Raw Buffer (Dir: {arg.Direction}): {BitConverter.ToString(buffer).Replace("-", "")}");
 
             await Task.CompletedTask;
         }
 
-        private async Task GrowattMqttClient_ConnectedAsync(MqttClientConnectedEventArgs arg)
+        private Task GrowattMqttClient_ConnectedAsync(MqttClientConnectedEventArgs arg)
         {
             Console.WriteLine($"[Proxy] Remote client connected for ClientId: {ClientId}");
-            await GrowattMqttClient.SubscribeAsync($"s/33/{ClientId}", MQTTnet.Protocol.MqttQualityOfServiceLevel.AtLeastOnce);
-            await GrowattMqttClient.SubscribeAsync($"s/{ClientId}", MQTTnet.Protocol.MqttQualityOfServiceLevel.AtLeastOnce);
+
+            _ = Task.Run(async () => {
+                await Task.Delay(1000);
+                await GrowattMqttClient.SubscribeAsync($"s/33/{ClientId}", MQTTnet.Protocol.MqttQualityOfServiceLevel.AtLeastOnce);
+                await GrowattMqttClient.SubscribeAsync($"s/{ClientId}", MQTTnet.Protocol.MqttQualityOfServiceLevel.AtLeastOnce);
+                await GrowattMqttClient.SubscribeAsync($"#/{ClientId}", MQTTnet.Protocol.MqttQualityOfServiceLevel.AtLeastOnce);
+            });
+
+            return Task.CompletedTask;
         }
 
         private Task GrowattMqttClient_DisconnectedAsync(MqttClientDisconnectedEventArgs arg)
