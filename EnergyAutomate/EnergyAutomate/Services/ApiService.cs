@@ -40,6 +40,7 @@ namespace EnergyAutomate.Services
 
         #region Properties
 
+        public bool IsEnabled { get; set; } = false;
         public bool ApiSettingAutoMode { get; set; }
         public int ApiSettingAvgPower { get; set; } = 200;
         public List<APiTraceValue> ApiSettingAvgPowerAdjustmentTraceValues { get; set; } = [];
@@ -1449,96 +1450,99 @@ namespace EnergyAutomate.Services
 
         public async void OnNext(RealTimeMeasurement value)
         {
-            realTimeMeasurement = value;
-            try
+            if (IsEnabled)
             {
-                ApiSettingAvgPowerAdjustmentTraceValues.AddOrUpdate(new APiTraceValue() { Index = 1, Key = "GrowattNoahTotalPPV", Value = CurrentState.GrowattNoahTotalPPV.ToString() });
-                ApiSettingAvgPowerAdjustmentTraceValues.AddOrUpdate(new APiTraceValue() { Index = 2, Key = "WeatherIsCloudy", Value = CurrentState.IsCloudy().ToString() });
-
-                var dbContext = ApiGetDbContext();
-
-                var tibberRealTimeMeasurement = new TibberRealTimeMeasurement(value);
-
-                var calculationElement = dbContext.GrowattElements.FirstOrDefault(x => x.ElementType == GrowattElement.ElementTypes.Calculation && x.IsActive);
-                if (calculationElement != null)
+                realTimeMeasurement = value;
+                try
                 {
-                    if (calculationElement.Id == GrowattElements.Calculation1.Id)
-                    {
-                        await TibberRTMCalculation1(tibberRealTimeMeasurement);
-                    }
-                    else if (calculationElement.Id == GrowattElements.Calculation2.Id)
-                    {
-                        await TibberRTMCalculation2(tibberRealTimeMeasurement);
-                    }
-                }
+                    ApiSettingAvgPowerAdjustmentTraceValues.AddOrUpdate(new APiTraceValue() { Index = 1, Key = "GrowattNoahTotalPPV", Value = CurrentState.GrowattNoahTotalPPV.ToString() });
+                    ApiSettingAvgPowerAdjustmentTraceValues.AddOrUpdate(new APiTraceValue() { Index = 2, Key = "WeatherIsCloudy", Value = CurrentState.IsCloudy().ToString() });
 
-                if (tibberRealTimeMeasurement == null)
+                    var dbContext = ApiGetDbContext();
+
+                    var tibberRealTimeMeasurement = new TibberRealTimeMeasurement(value);
+
+                    var calculationElement = dbContext.GrowattElements.FirstOrDefault(x => x.ElementType == GrowattElement.ElementTypes.Calculation && x.IsActive);
+                    if (calculationElement != null)
+                    {
+                        if (calculationElement.Id == GrowattElements.Calculation1.Id)
+                        {
+                            await TibberRTMCalculation1(tibberRealTimeMeasurement);
+                        }
+                        else if (calculationElement.Id == GrowattElements.Calculation2.Id)
+                        {
+                            await TibberRTMCalculation2(tibberRealTimeMeasurement);
+                        }
+                    }
+
+                    if (tibberRealTimeMeasurement == null)
+                    {
+                        Logger.LogWarning("No Tibber real-time measurement available.");
+                        return;
+                    }
+
+                    if (!TibberPrices.Where(x => x.StartsAt.UtcDateTime.Date == CurrentState.UtcNow.Date).Any() || (CurrentState.UtcNow.Hour > 13 && CurrentState.UtcNow.AddDays(1).Date != TibberPrices.Max(x => x.StartsAt.UtcDateTime).Date))
+                    {
+                        if (CurrentState.CheckTibberPricesCondition($"GetTomorrowPrices_{CurrentState.UtcNow.Hour}"))
+                        {
+                            await TibberGetTomorrowPrices();
+                        }
+                    }
+
+                    var firstTime = CurrentState.WeatherForecastToday?.Hourly?.Time?.FirstOrDefault();
+
+                    if (firstTime == null || firstTime != null && DateTime.Parse(firstTime).Date != CurrentState.UtcNow.Date)
+                    {
+                        CurrentState.WeatherForecastToday = await CurrentState.GetWeatherForecastAsync();
+                        CurrentState.WeatherForecastTomorrow = await CurrentState.GetWeatherForecastAsync(DateTime.Today.AddDays(1));
+
+                        (CurrentState.BatteryChargeStart, CurrentState.BatteryChargeEnd) = CurrentState.CalculateBatteryChargingWindow();
+                    }
+
+                    var ajustmentElement = dbContext.GrowattElements.FirstOrDefault(x => x.ElementType == GrowattElement.ElementTypes.Adjustment && x.IsActive);
+                    if (ajustmentElement != null)
+                    {
+                        if (ajustmentElement.Id == GrowattElements.Adjustment1.Id)
+                        {
+                            await TibberRTMAdjustment1(tibberRealTimeMeasurement);
+                        }
+                        else if (ajustmentElement.Id == GrowattElements.Adjustment2.Id)
+                        {
+                            await TibberRTMAdjustment2(tibberRealTimeMeasurement);
+                        }
+                        else if (ajustmentElement.Id == GrowattElements.Adjustment3.Id)
+                        {
+                            await TibberRTMAdjustment3(tibberRealTimeMeasurement);
+                        }
+                    }
+
+                    tibberRealTimeMeasurement.PowerValueTotalDefault = CurrentState.GrowattNoahTotalDefaultPower;
+                    ApiSettingAvgPowerAdjustmentTraceValues.AddOrUpdate(new APiTraceValue(tibberRealTimeMeasurement.TS, 3, "RTMTotalPowerDefaultNoah", (tibberRealTimeMeasurement.PowerValueTotalDefault ?? 0).ToString()));
+
+                    tibberRealTimeMeasurement.PowerValueTotalCommited = CurrentState.PowerValueTotalCommited;
+                    ApiSettingAvgPowerAdjustmentTraceValues.AddOrUpdate(new APiTraceValue(tibberRealTimeMeasurement.TS, 4, "RTMTotalPowerCommited", (tibberRealTimeMeasurement.PowerValueTotalCommited ?? 0).ToString()));
+
+                    tibberRealTimeMeasurement.PowerValueTotalRequested = CurrentState.PowerValueTotalRequested;
+                    ApiSettingAvgPowerAdjustmentTraceValues.AddOrUpdate(new APiTraceValue(tibberRealTimeMeasurement.TS, 5, "RTMTotalPowerRequested", (tibberRealTimeMeasurement.PowerValueTotalRequested ?? 0).ToString()));
+
+                    tibberRealTimeMeasurement.SettingPowerLoadSeconds = ApiSettingAvgPowerLoadSeconds;
+                    tibberRealTimeMeasurement.SettingOffSetAvg = ApiSettingAvgPowerOffset;
+                    tibberRealTimeMeasurement.SettingAvgPowerHysteresis = ApiSettingAvgPowerHysteresis;
+
+                    lock (TibberRealTimeMeasurement._syncRoot)
+                    {
+                        TibberRealTimeMeasurement.Add(tibberRealTimeMeasurement);
+                    }
+
+                    dbContext.TibberRealTimeMeasurements.Add(tibberRealTimeMeasurement); // Speichern in der Datenbank
+                    await dbContext.SaveChangesAsync(); // Änderungen speichern
+
+                    ApiInvokeStateHasChanged();
+                }
+                catch (Exception ex)
                 {
-                    Logger.LogWarning("No Tibber real-time measurement available.");
-                    return;
+                    Logger.LogError(ex, ex.Message);
                 }
-
-                if (!TibberPrices.Where(x => x.StartsAt.UtcDateTime.Date == CurrentState.UtcNow.Date).Any() || (CurrentState.UtcNow.Hour > 13 && CurrentState.UtcNow.AddDays(1).Date != TibberPrices.Max(x => x.StartsAt.UtcDateTime).Date))
-                {
-                    if (CurrentState.CheckTibberPricesCondition($"GetTomorrowPrices_{CurrentState.UtcNow.Hour}"))
-                    {
-                        await TibberGetTomorrowPrices();
-                    }
-                }
-
-                var firstTime = CurrentState.WeatherForecastToday?.Hourly?.Time?.FirstOrDefault();
-
-                if (firstTime == null || firstTime != null && DateTime.Parse(firstTime).Date != CurrentState.UtcNow.Date)
-                {
-                    CurrentState.WeatherForecastToday = await CurrentState.GetWeatherForecastAsync();
-                    CurrentState.WeatherForecastTomorrow = await CurrentState.GetWeatherForecastAsync(DateTime.Today.AddDays(1));
-
-                    (CurrentState.BatteryChargeStart, CurrentState.BatteryChargeEnd) = CurrentState.CalculateBatteryChargingWindow();
-                }
-
-                var ajustmentElement = dbContext.GrowattElements.FirstOrDefault(x => x.ElementType == GrowattElement.ElementTypes.Adjustment && x.IsActive);
-                if (ajustmentElement != null)
-                {
-                    if (ajustmentElement.Id == GrowattElements.Adjustment1.Id)
-                    {
-                        await TibberRTMAdjustment1(tibberRealTimeMeasurement);
-                    }
-                    else if (ajustmentElement.Id == GrowattElements.Adjustment2.Id)
-                    {
-                        await TibberRTMAdjustment2(tibberRealTimeMeasurement);
-                    }
-                    else if (ajustmentElement.Id == GrowattElements.Adjustment3.Id)
-                    {
-                        await TibberRTMAdjustment3(tibberRealTimeMeasurement);
-                    }
-                }
-
-                tibberRealTimeMeasurement.PowerValueTotalDefault = CurrentState.GrowattNoahTotalDefaultPower;
-                ApiSettingAvgPowerAdjustmentTraceValues.AddOrUpdate(new APiTraceValue(tibberRealTimeMeasurement.TS, 3, "RTMTotalPowerDefaultNoah", (tibberRealTimeMeasurement.PowerValueTotalDefault ?? 0).ToString()));
-
-                tibberRealTimeMeasurement.PowerValueTotalCommited = CurrentState.PowerValueTotalCommited;
-                ApiSettingAvgPowerAdjustmentTraceValues.AddOrUpdate(new APiTraceValue(tibberRealTimeMeasurement.TS, 4, "RTMTotalPowerCommited", (tibberRealTimeMeasurement.PowerValueTotalCommited ?? 0).ToString()));
-
-                tibberRealTimeMeasurement.PowerValueTotalRequested = CurrentState.PowerValueTotalRequested;
-                ApiSettingAvgPowerAdjustmentTraceValues.AddOrUpdate(new APiTraceValue(tibberRealTimeMeasurement.TS, 5, "RTMTotalPowerRequested", (tibberRealTimeMeasurement.PowerValueTotalRequested ?? 0).ToString()));
-
-                tibberRealTimeMeasurement.SettingPowerLoadSeconds = ApiSettingAvgPowerLoadSeconds;
-                tibberRealTimeMeasurement.SettingOffSetAvg = ApiSettingAvgPowerOffset;
-                tibberRealTimeMeasurement.SettingAvgPowerHysteresis = ApiSettingAvgPowerHysteresis;
-
-                lock (TibberRealTimeMeasurement._syncRoot)
-                {
-                    TibberRealTimeMeasurement.Add(tibberRealTimeMeasurement);
-                }
-
-                dbContext.TibberRealTimeMeasurements.Add(tibberRealTimeMeasurement); // Speichern in der Datenbank
-                await dbContext.SaveChangesAsync(); // Änderungen speichern
-
-                ApiInvokeStateHasChanged();
-            }
-            catch (Exception ex)
-            {
-                Logger.LogError(ex, ex.Message);
             }
         }
 

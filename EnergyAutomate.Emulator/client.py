@@ -15,8 +15,6 @@ from typing import Callable
 import paho.mqtt.client as mqtt
 from paho.mqtt.client import MQTTMessage
 
-LOG = logging.getLogger(__name__)
-
 class SignalHandler:
     """
     Catches SIGINT and SIGTERM in order to trigger
@@ -54,41 +52,45 @@ class Client:
     _client: mqtt.Client
     _forward_clients = {}
 
-    def __init__(self, log_callback=None):
-        self.log_callback = log_callback
-        
+    def __init__(self):        
         self._client = mqtt.Client(
             client_id="grobro-grobro",
-            callback_api_version=mqtt.CallbackAPIVersion.VERSION2,
-            protocol=mqtt.MQTTv5,
         )
 
         self._client.tls_set(cert_reqs=ssl.CERT_NONE)
         self._client.tls_insecure_set(True)
 
+    def set_log_callback(self, log_callback=None):
+        self.log_callback = log_callback
+        
+        if self.log_callback:
+            self.log_callback("Logging initialized!")
+
+    def set_dump_callback(self, dump_callback=None):
+        self.dump_callback = dump_callback
+
     def set_options(self, options):
-        LOG.debug(f"[TRACE] Python received options: Host={options.Host}, Port={options.Port}")
+        if self.log_callback:
+            self.log_callback(f"[TRACE] Python received options: Host={options.Host}, Port={options.Port}")
         self._host = options.Host
         self._port = options.Port
 
     def set_clientId(self, clientId):
-        LOG.debug(f"[TRACE] Python received clientid: {clientId}")
+        if self.log_callback:
+            self.log_callback(f"[TRACE] Python received clientid: {clientId}")
         self._clientId = clientId
 
     def start(self):
 
         if self.log_callback:
             self.log_callback("Python client started!")
-        # ... rest of your logic ...
-        if self.log_callback:
-            self.log_callback("Python client finished!")
-
-        LOG.debug("GroBro: Start")
 
         self._client.connect("localhost", 7006, 60)
         self._client.on_message = self.__on_message
         
-        LOG.debug("Subscribe c/#")
+        if self.log_callback:
+            self.log_callback("Subscribe c/#")
+
         self._client.subscribe("c/#")
 
         self._client.loop_start()
@@ -99,25 +101,30 @@ class Client:
             while signal_handler.caught:
                 time.sleep(0.1)
         finally:
-
-            LOG.info("Stopped both clients. Exiting...")
+            if self.log_callback:
+                self.log_callback("Stopped both clients. Exiting...")
 
     def stop(self):
-        LOG.debug("GroBro: Stop")
+        if self.log_callback:
+            self.log_callback("GroBro: Stop")
         self._client.loop_stop()
         self._client.disconnect()
         for key, client in self._forward_clients.items():
             client.loop_stop()
             client.disconnect()
 
+        if self.log_callback:
+            self.log_callback("Python client finished!")
+
     def __on_message(self, client, userdata, msg: MQTTMessage):
         try:
-            
-            LOG.debug("Message from Broker")
+            if self.dump_callback:
+                self.dump_callback(msg.topic, msg.payload, msg.qos, msg.retain, msg.state, msg.dup, msg.mid)
 
             device_id = msg.topic.split("/")[-1]
-
-            LOG.debug(f"Message DeviceID: {device_id}")
+            
+            if self.log_callback:
+                self.log_callback(f"Message from Broker, Topic: {msg.topic}, DeviceID: {device_id}")
 
             forward_client = self.__connect_to_growatt_server(device_id)
             forward_client.publish(
@@ -127,14 +134,18 @@ class Client:
                 retain=msg.retain,
             )
         except Exception as e:
-            LOG.error(f"Processing message: {e}")
+
+            self.log_callback(f"Error Processing message: {e}")
 
     def __on_message_forward_client(self, client, userdata, msg: MQTTMessage):
         try:
-
-            LOG.debug("Message from Growatt")
+            if self.dump_callback:
+                self.dump_callback(msg.topic, msg.payload, msg.qos, msg.retain, msg.state, msg.dup, msg.mid)
 
             device_id = msg.topic.split("/")[-1]
+
+            if self.log_callback:
+                self.log_callback(f"Message from Growatt, Topic: {msg.topic}, DeviceID: {device_id}")
 
             # We need to publish the messages from Growatt on the Topic
             # s/33/{deviceid}. Growatt sends them on Topic s/{deviceid}
@@ -145,19 +156,16 @@ class Client:
                 retain=msg.retain,
             )
         except Exception as e:
-            LOG.error(f"Forwarding message: {e}")
+            if self.log_callback:
+                self.log_callback(f"Forwarding message: {e}")
 
     # Setup Growatt MQTT broker for forwarding messages
     def __connect_to_growatt_server(self, client_id):
         if f"forward_client_{client_id}" not in self._forward_clients:
-            LOG.info(
-                "Connecting to Growatt broker at '%s:%s'",
-                "mqtt.growatt.com",
-                7006,
-            )
+            if self.log_callback:
+                self.log_callback("Connecting to Growatt broker at 'mqtt.growatt.com:7006'")
             client = mqtt.Client(
                 client_id=client_id,
-                callback_api_version=mqtt.CallbackAPIVersion.VERSION2,
             )
             client.tls_set(cert_reqs=ssl.CERT_NONE)
             client.tls_insecure_set(True)

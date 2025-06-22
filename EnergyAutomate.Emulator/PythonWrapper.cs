@@ -1,25 +1,40 @@
-﻿using Python.Runtime;
-using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using paho.mqtt.client;
+using Python.Runtime;
+using System.Reflection;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace EnergyAutomate.Emulator
 {
     public class PythonWrapper
     {
+        private GrowattModbusMqttParser GrowattModbusMqttParser { get; set; }
+
+        private IServiceProvider ServiceProvider { get; set; }
+        private ILogger<PythonWrapper> Logger => ServiceProvider.GetRequiredService<ILogger<PythonWrapper>>();
+
         public GrowattClientOptions? GrowattClientOptions { get; set; }
 
         // Define the delegate type for callbacks from Python
         public delegate void LogCallback(string message);
 
+        public delegate void DumpCallback(string topic, byte[] payload, int qos, int retain, int state, int dup, int mid);
+
         private Thread? _pythonThread;
         private AutoResetEvent _stopPythonEvent = new AutoResetEvent(false);
 
+        public PythonWrapper(IServiceProvider serviceProvider)
+        {
+            ServiceProvider = serviceProvider;
+
+            GrowattModbusMqttParser  = new GrowattModbusMqttParser(serviceProvider.GetRequiredService<ILogger<GrowattModbusMqttParser>>());
+        }
+
         public void StartPythonClient()
         {
-            Console.WriteLine("[TRACE] Starting Python background thread");
+            LogFromPython("[TRACE] Starting Python background thread");
             _pythonThread = new Thread(RunPythonClient)
             {
                 IsBackground = true
@@ -27,78 +42,154 @@ namespace EnergyAutomate.Emulator
             _pythonThread.Start();
 
 
-            Console.WriteLine("[TRACE] Python client running in background. Press ENTER to stop...");
-            Console.ReadLine();
+            LogFromPython("[TRACE] Python client running in background. Press ENTER to stop...");
+        }
 
-            Console.WriteLine("[TRACE] Signaling Python thread to stop");
+        public void StopPythonClient()
+        {
             _stopPythonEvent.Set();
-            _pythonThread.Join();
+            _pythonThread?.Join();
         }
 
         private void RunPythonClient()
         {
             try
             {
-                Console.WriteLine("[TRACE] Initializing Python runtime in background thread");
-                Python.Runtime.Runtime.PythonDLL = @"C:\Users\alexander.hailfinger\AppData\Local\Programs\Python\Python313\python313.dll";
+                string assemblyDirectory = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) ?? AppContext.BaseDirectory;
+                LogFromPython($"[TRACE] Assembly directory: {assemblyDirectory}");
+
+                LogFromPython("[TRACE] Initializing Python runtime in background thread");
+                //Python.Runtime.Runtime.PythonDLL = @"C:\Users\alexander.hailfinger\AppData\Local\Programs\Python\Python313\python313.dll";
                 PythonEngine.Initialize();
                 using (Py.GIL())
                 {
                     dynamic sys = Py.Import("sys");
-                    sys.path.append(@"E:\VisualStudio\Repos\GenericSoftware\EnergyAutomate.Emulator.Cli");
+                    sys.path.append(assemblyDirectory);
 
-                    Console.WriteLine("[TRACE] Configuring Python logging");
-                    dynamic logging = Py.Import("logging");
                     dynamic sysmod = Py.Import("sys");
-                    logging.basicConfig(
-                        level: logging.DEBUG,
-                        format: "%(asctime)s [%(levelname)s] %(name)s: %(message)s",
-                        stream: sysmod.stdout
-                    );
 
                     // Create a delegate instance
                     LogCallback logCallback = LogFromPython;
 
-                    Console.WriteLine("[TRACE] Importing Python client module");
+                    // Create a delegate instance
+                    DumpCallback dumpCallback = DumpFromPython;
+
+                    LogFromPython("[TRACE] Importing Python client module");
                     dynamic clientModule = Py.Import("client");
 
-                    Console.WriteLine("[TRACE] Getting Client class from client module");
+                    LogFromPython("[TRACE] Getting Client class from client module");
                     dynamic ClientClass = clientModule.Client;
 
-                    Console.WriteLine("[TRACE] Creating instance of Client class");
-                    dynamic clientInstance = ClientClass(logCallback);
+                    LogFromPython("[TRACE] Creating instance of Client class");
+                    dynamic clientInstance = ClientClass();
+
+                    clientInstance.set_log_callback(logCallback);
+                    clientInstance.set_dump_callback(dumpCallback);
 
                     if (GrowattClientOptions is not null)
                     {
-                        Console.WriteLine("[TRACE] Set options");
+                        LogFromPython("[TRACE] Set options");
                         clientInstance.set_options(GrowattClientOptions);
                     }
 
-                    Console.WriteLine("[TRACE] Starting Python client");
+                    LogFromPython("[TRACE] Starting Python client");
                     clientInstance.start();
 
-                    Console.WriteLine("[TRACE] Python client started. Waiting for stop signal...");
+                    LogFromPython("[TRACE] Python client started. Waiting for stop signal...");
                     _stopPythonEvent.WaitOne();
 
-                    Console.WriteLine("[TRACE] Stopping Python client");
+                    LogFromPython("[TRACE] Stopping Python client");
                     if (clientInstance.HasAttr("stop"))
                     {
                         clientInstance.stop();
                     }
                 }
                 PythonEngine.Shutdown();
-                Console.WriteLine("[TRACE] Python runtime shutdown complete");
+                LogFromPython("[TRACE] Python runtime shutdown complete");
             }
             catch (Exception ex)
             {
-                Console.WriteLine("[TRACE] Exception in Python thread: " + ex);
+                LogFromPython("[TRACE] Exception in Python thread: " + ex);
             }
         }
 
         // This method will be called from Python
         public void LogFromPython(string message)
         {
-            Console.WriteLine($"[PYTHON LOG] {message}");
+            Logger.LogInformation("{Message}", message);
+        }
+
+        // This method will be called from Python
+        public void DumpFromPython(string topic, byte[] payload, int qos, int retain, int state, int dup, int mid)
+        {
+            MQTTMessage message = new MQTTMessage
+            {
+                Topic = topic,
+                Payload = payload,
+                Qos = qos,
+                Retain = retain,
+                Timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
+                State = state,
+                Dup = dup,
+                Mid = mid
+            };
+
+            Logger.LogInformation("[TRACE] DumpFromPython called for topic '{Topic}' at timestamp {Timestamp}", message.Topic, message.Timestamp);
+
+            try
+            {
+                // Ensure the dump directory exists
+                string dumpDirectory = Path.Combine(AppContext.BaseDirectory, "dump");
+                if (!Directory.Exists(dumpDirectory))
+                {
+                    Directory.CreateDirectory(dumpDirectory);
+                    Logger.LogInformation("[TRACE] Created dump directory at {DumpDirectory}", dumpDirectory);
+                }
+
+                // Format date and topic for filename
+                DateTime dateTime = DateTimeOffset.FromUnixTimeSeconds((long)message.Timestamp).DateTime;
+                string datePart = dateTime.ToString("yyyyMMdd_HHmmss");
+                string topicPart = string.Join("_", message.Topic.Split(Path.GetInvalidFileNameChars(), StringSplitOptions.RemoveEmptyEntries));
+                string fileName = $"{datePart}_{topicPart}.txt";
+                string filePath = Path.Combine(dumpDirectory, fileName);
+
+                // Prepare message content
+                StringBuilder sb = new StringBuilder();
+                sb.AppendLine($"Timestamp: {message.Timestamp}");
+                sb.AppendLine($"DateTime: {dateTime:O}");
+                sb.AppendLine($"Topic: {message.Topic}");
+                sb.AppendLine($"Payload: {Encoding.UTF8.GetString(message.Payload)}");
+                sb.AppendLine($"Qos: {message.Qos}");
+                sb.AppendLine($"Retain: {message.Retain}");
+                sb.AppendLine($"Mid: {message.Mid}");
+                sb.AppendLine($"State: {message.State}");
+                sb.AppendLine($"Dup: {message.Dup}");
+
+                //Parse the payload of the message
+
+                var modBusMessage = GrowattModbusMqttParser.ParseModbusMessage(message.Payload);
+
+                if (modBusMessage != null)
+                {
+                    sb.AppendLine("Parsed Modbus Message:");
+                    sb.AppendLine($"  Function Code: {modBusMessage.FunctionCode}");
+                    sb.AppendLine($"  Data: {BitConverter.ToString(modBusMessage.Data)}");
+                    sb.AppendLine($"  Address: {modBusMessage.DeviceId}");
+                    sb.AppendLine($"  Raw: {BitConverter.ToString(modBusMessage.Raw)}");
+                }
+                else
+                {
+                    sb.AppendLine("No Modbus message parsed from payload.");
+                } 
+
+                // Write to file
+                File.WriteAllText(filePath, sb.ToString());
+                Logger.LogInformation("[TRACE] MQTT message dumped to file: {FilePath}", filePath);
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError("[TRACE] Error dumping MQTT message: {Exception}", ex);
+            }
         }
     }
 }

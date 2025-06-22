@@ -185,7 +185,13 @@ else
                                             @segment.EndTime
                                         </div>
                                         <div class="col-md-2">
-                                            @(segment.Mode == "0" ? "Load" : "Batt")
+                                            @(segment.Mode switch
+                                            {
+                                                "0" => "Load",
+                                                "1" => "Batt",
+                                                "2" => "Smart",
+                                                _   => "Unknown"
+                                            })
                                         </div>
                                         <div class="col-md-2">
                                             @segment.Power W

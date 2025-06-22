@@ -1,0 +1,26 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <OutputType>Library</OutputType>
+    <RootNamespace>uPLibrary.Networking.M2Mqtt</RootNamespace>
+    <AssemblyTitle>M2Mqtt</AssemblyTitle>
+    <Description>MQTT Client Library for M2M communication</Description>
+    <Company>Paolo Patierno</Company>
+    <Product>M2Mqtt</Product>
+    <Copyright>Copyright © Paolo Patierno 2014</Copyright>
+    <AssemblyVersion>4.3.0.0</AssemblyVersion>
+    <FileVersion>4.3.0.0</FileVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <OutputPath>..\bin\Debug\M2Mqtt.Net</OutputPath>
+    <DefineConstants>TRACE;DEBUG;SSL</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <OutputPath>..\bin\Release\M2Mqtt.Net</OutputPath>
+    <DefineConstants>TRACE;SSL</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
+    <PackageReference Include="System.Data.DataSetExtensions" Version="4.5.0" />
+  </ItemGroup>
+</Project>

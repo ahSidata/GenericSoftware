@@ -7,6 +7,7 @@ global using EnergyAutomate.Tibber;
 global using EnergyAutomate.Watchdogs;
 using CoordinateSharp;
 using EnergyAutomate.Definitions;
+using EnergyAutomate.Emulator;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -101,6 +102,7 @@ public class Program
 
         // Registrieren des Hintergrunddienstes
         builder.Services.AddHostedService<ApiBackgroundService>();
+        builder.Services.AddHostedService<MqttProxyWorker>();
         builder.Services.AddBlazorBootstrap();
 
         var app = builder.Build();

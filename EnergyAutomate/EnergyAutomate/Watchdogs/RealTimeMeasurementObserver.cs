@@ -47,7 +47,7 @@
 
         public void OnNext(RealTimeMeasurement value) 
         {
-            ApiService?.OnNext(value); 
+            ApiService?.OnNext(value);
         }
 
         #endregion Public Methods

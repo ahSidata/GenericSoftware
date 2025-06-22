@@ -10,11 +10,21 @@ RUN apt-get update && apt-get install -y tzdata \
     && echo $TZ > /etc/timezone \
     && DEBIAN_FRONTEND=noninteractive dpkg-reconfigure -f noninteractive tzdata
 
+# Install Python
+RUN apt-get update && \
+    apt-get install -y python3-full python3-pip python3-venv python3-dev && \
+    ln -s /usr/bin/python3 /usr/bin/python
+
+# Install required Python packages
+RUN apt-get install -y python3-paho-mqtt
+
+# Set environment variable for pythonnet to find libpython
+ENV PYTHONNET_PYDLL=/usr/lib/x86_64-linux-gnu/libpython3.11.so
+
 USER $APP_UID
 WORKDIR /app
 EXPOSE 8080
 EXPOSE 8081
-
 
 # Diese Stufe wird zum Erstellen des Dienstprojekts verwendet.
 FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build

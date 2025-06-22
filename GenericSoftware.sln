@@ -34,6 +34,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MQTTnet", "Nuget\MQTTnet\MQ
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MQTTnet.Server", "Nuget\MQTTnet.Server\MQTTnet.Server.csproj", "{D4BC37FA-1BFC-10C8-E8C6-30BFCABFB348}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "M2Mqtt.Net", "Nuget\M2Mqtt\M2Mqtt.Net.csproj", "{2D71AB0A-3050-46E2-C1CE-DD80AA4DE719}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -82,6 +84,10 @@ Global
 		{D4BC37FA-1BFC-10C8-E8C6-30BFCABFB348}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D4BC37FA-1BFC-10C8-E8C6-30BFCABFB348}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D4BC37FA-1BFC-10C8-E8C6-30BFCABFB348}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2D71AB0A-3050-46E2-C1CE-DD80AA4DE719}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2D71AB0A-3050-46E2-C1CE-DD80AA4DE719}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2D71AB0A-3050-46E2-C1CE-DD80AA4DE719}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2D71AB0A-3050-46E2-C1CE-DD80AA4DE719}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -89,6 +95,7 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{42FB0303-7ABF-0B1A-D099-7C91D9088356} = {10F3DA9F-BA49-42A9-AA4F-81C761AB1FE7}
 		{D4BC37FA-1BFC-10C8-E8C6-30BFCABFB348} = {10F3DA9F-BA49-42A9-AA4F-81C761AB1FE7}
+		{2D71AB0A-3050-46E2-C1CE-DD80AA4DE719} = {10F3DA9F-BA49-42A9-AA4F-81C761AB1FE7}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {C102F243-1405-406D-9EF4-F8B5F552E015}
