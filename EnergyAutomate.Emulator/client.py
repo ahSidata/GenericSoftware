@@ -109,15 +109,6 @@ class Client:
     def __on_broker_disconnect(self, client: mqtt.Client, userdata, rc):
         if self.log_callback:
             self.log_callback("Disconnected from Broker, trying to reconnect...")
-        try:
-            client.loop_stop()
-            client.reconnect()
-            client.loop_start()
-            if self.log_callback:
-                self.log_callback("Reconnected to Broker")
-        except Exception as e:
-            if self.log_callback:
-                self.log_callback(f"Error reconnecting to Broker: {e}")
             self.__connect_to_broker(client)
 
     def __connect_to_broker(self):               
@@ -153,15 +144,6 @@ class Client:
     def __on_growatt_disconnect(self, client, userdata, rc):
         if self.log_callback:
             self.log_callback("Disconnected from Growatt, trying to reconnect...")
-        try:
-            self._clientGrowatt.loop_stop()
-            self._clientGrowatt.reconnect()
-            self._clientGrowatt.loop_start()
-            if self.log_callback:
-                self.log_callback("Reconnected to Growatt server")
-        except Exception as e:
-            if self.log_callback:
-                self.log_callback(f"Error reconnecting to Growatt: {e}")
             self.__connect_to_growatt_server()
 
     def __connect_to_growatt_server(self):
