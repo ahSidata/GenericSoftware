@@ -10,10 +10,9 @@
 		<PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="9.0.6" />
 		<PackageReference Include="pythonnet" Version="3.0.5" />
 	</ItemGroup>
-	
+
 	<ItemGroup>
-	  <ProjectReference Include="..\Nuget\MQTTnet.Server\MQTTnet.Server.csproj" />
-	  <ProjectReference Include="..\Nuget\MQTTnet\MQTTnet.csproj" />
+	  <ProjectReference Include="..\Nuget\M2Mqtt\M2Mqtt.Net.csproj" />
 	</ItemGroup>
 	
 	<ItemGroup>

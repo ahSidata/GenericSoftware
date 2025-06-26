@@ -134,8 +134,6 @@ namespace EnergyAutomate.Emulator
                 Mid = mid
             };
 
-            Logger.LogInformation("[TRACE] DumpFromPython called for topic '{Topic}' at timestamp {Timestamp}", message.Topic, message.Timestamp);
-
             try
             {
                 // Ensure the dump directory exists
@@ -184,7 +182,6 @@ namespace EnergyAutomate.Emulator
 
                 // Write to file
                 File.WriteAllText(filePath, sb.ToString());
-                Logger.LogInformation("[TRACE] MQTT message dumped to file: {FilePath}", filePath);
             }
             catch (Exception ex)
             {

@@ -346,7 +346,7 @@ namespace uPLibrary.Networking.M2Mqtt
 		/// <param name="userCertificateSelectionCallback">A LocalCertificateSelectionCallback delegate responsible for selecting the certificate used for authentication</param>
 		public MqttClient(string brokerHostName, int brokerPort, bool secure, MqttSslProtocols sslProtocol, 
 			RemoteCertificateValidationCallback userCertificateValidationCallback, 
-			LocalCertificateSelectionCallback userCertificateSelectionCallback)
+			LocalCertificateSelectionCallback userCertificateSelectionCallback = null)
 			: this(brokerHostName, brokerPort, secure, null, null, sslProtocol, userCertificateValidationCallback, userCertificateSelectionCallback)
 		{
 		}
@@ -364,7 +364,7 @@ namespace uPLibrary.Networking.M2Mqtt
 		/// <param name="userCertificateSelectionCallback">A LocalCertificateSelectionCallback delegate responsible for selecting the certificate used for authentication</param>
 		public MqttClient(string brokerHostName, int brokerPort, bool secure, X509Certificate caCert, X509Certificate clientCert, MqttSslProtocols sslProtocol,
 			RemoteCertificateValidationCallback userCertificateValidationCallback,
-			LocalCertificateSelectionCallback userCertificateSelectionCallback)
+			LocalCertificateSelectionCallback userCertificateSelectionCallback = null)
 		{
 			this.Init(brokerHostName, brokerPort, secure, caCert, clientCert, sslProtocol, userCertificateValidationCallback, userCertificateSelectionCallback);
 		}
@@ -420,7 +420,7 @@ namespace uPLibrary.Networking.M2Mqtt
 		/// <param name="userCertificateValidationCallback">A LocalCertificateSelectionCallback delegate responsible for selecting the certificate used for authentication</param>
 		private void Init(string brokerHostName, int brokerPort, bool secure, X509Certificate caCert, X509Certificate clientCert, MqttSslProtocols sslProtocol,
 			RemoteCertificateValidationCallback userCertificateValidationCallback,
-			LocalCertificateSelectionCallback userCertificateSelectionCallback)
+			LocalCertificateSelectionCallback userCertificateSelectionCallback = null)
 #elif (WINDOWS_APP || WINDOWS_PHONE_APP)
 		private void Init(string brokerHostName, int brokerPort, bool secure, MqttSslProtocols sslProtocol)
 #else

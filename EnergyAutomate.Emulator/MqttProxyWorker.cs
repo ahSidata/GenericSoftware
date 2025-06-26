@@ -11,43 +11,38 @@ namespace EnergyAutomate.Emulator
         private ILogger<MqttProxyWorker> Logger => ServiceProvider.GetRequiredService<ILogger<MqttProxyWorker>>();
 
         private PythonWrapper _pythonWrapper;
-        private GrowattMqttServer _growattMqttServer;
+        private GrowattMqttProxy _growattMqttProxy;
 
         public MqttProxyWorker(IServiceProvider serviceProvider)
         {
             ServiceProvider = serviceProvider;
-
-            _growattMqttServer = new GrowattMqttServer(
-                proxyCertPath: "certs/server.crt",
-                proxyKeyPath: "certs/server.key",
-                7006);
-
             _pythonWrapper = new PythonWrapper(ServiceProvider);
+
+            _pythonWrapper.GrowattClientOptions = new GrowattClientOptions() {
+                ClientId = "0PVP50ZR16ST00CB",
+                BrokerHost = "ah.azure.sidata.com",
+                BrokerPort= 7006,
+                GrowattHost= "mqtt.growatt.com",
+                GrowattPort=7006
+            };
+
+            _growattMqttProxy = new GrowattMqttProxy(
+                "0PVP50ZR16ST00CB",
+                "ah.azure.sidata.com",
+                7006,
+                "mqtt.growatt.com",
+                7006,
+                serviceProvider.GetRequiredService<ILogger<GrowattMqttProxy>>()
+            );
         }
 
-        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
-        {
-            await StartBrokerAsync();
-            await StartProxyAsync();
-        }
-
-        private async Task StartBrokerAsync()
-        {
-            await _growattMqttServer.StartAsync();
-        }
-
-        private async Task StartProxyAsync()
+        protected override Task ExecuteAsync(CancellationToken stoppingToken)
         {
             _pythonWrapper.StartPythonClient();
-            await Task.CompletedTask;
+            //_growattMqttProxy.Start();
 
-            //var proxy = new GrowattMqttProxy(
-            //    brokerHost: "localhost",
-            //    brokerPort: 7006,
-            //    growattHost: "mqtt.growatt.com",
-            //    growattPort: 7006);
-
-            //await proxy.StartAsync();
+            return Task.CompletedTask;
         }
+
     }
 }

@@ -175,7 +175,7 @@ namespace uPLibrary.Networking.M2Mqtt
         /// <param name="userCertificateValidationCallback">A LocalCertificateSelectionCallback delegate responsible for selecting the certificate used for authentication</param>
         public MqttNetworkChannel(string remoteHostName, int remotePort, bool secure, X509Certificate caCert, X509Certificate clientCert, MqttSslProtocols sslProtocol,
             RemoteCertificateValidationCallback userCertificateValidationCallback,
-            LocalCertificateSelectionCallback userCertificateSelectionCallback)
+            LocalCertificateSelectionCallback userCertificateSelectionCallback = null)
 #else
         public MqttNetworkChannel(string remoteHostName, int remotePort, bool secure, X509Certificate caCert, X509Certificate clientCert, MqttSslProtocols sslProtocol)
 #endif
@@ -239,7 +239,12 @@ namespace uPLibrary.Networking.M2Mqtt
                 this.sslStream = new SslStream(this.socket);
 #else
                 this.netStream = new NetworkStream(this.socket);
-                this.sslStream = new SslStream(this.netStream, false, this.userCertificateValidationCallback, this.userCertificateSelectionCallback);
+                if(this.userCertificateSelectionCallback != null)
+                    // create SSL stream with user certificate selection and validation callbacks
+                    this.sslStream = new SslStream(this.netStream, false, this.userCertificateValidationCallback, this.userCertificateSelectionCallback);
+                else
+                    // create SSL stream without user certificate selection and validation callbacks
+                    this.sslStream = new SslStream(this.netStream, false, this.userCertificateValidationCallback);
 #endif
 
                 // server authentication (SSL/TLS handshake)

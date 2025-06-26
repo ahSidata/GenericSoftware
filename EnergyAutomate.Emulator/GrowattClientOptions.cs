@@ -8,12 +8,12 @@ namespace EnergyAutomate.Emulator
 {
     public class GrowattClientOptions
     {
-        public string? Host { get; set; }
-        public int Port { get; set; }
+        public string? ClientId { get; set; }
 
-        public override string ToString()
-        {
-            return $"Person(Host={Host}, Port={Port})";
-        }
+        public string? BrokerHost { get; set; }
+        public int BrokerPort { get; set; }
+
+        public string? GrowattHost { get; set; }
+        public int GrowattPort { get; set; }
     }
 }
