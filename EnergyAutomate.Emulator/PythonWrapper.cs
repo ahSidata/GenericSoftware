@@ -1,35 +1,31 @@
-﻿
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using paho.mqtt.client;
 using Python.Runtime;
 using System.Reflection;
 using System.Text;
+using System.Threading;
 
 namespace EnergyAutomate.Emulator
 {
     public class PythonWrapper
     {
-        private GrowattModbusMqttParser GrowattModbusMqttParser { get; set; }
-
+        private GrowattMqttParser GrowattModbusMqttParser { get; set; }
         private IServiceProvider ServiceProvider { get; set; }
         private ILogger<PythonWrapper> Logger => ServiceProvider.GetRequiredService<ILogger<PythonWrapper>>();
-
         public GrowattClientOptions? GrowattClientOptions { get; set; }
 
-        // Define the delegate type for callbacks from Python
         public delegate void LogCallback(string message);
-
-        public delegate void DumpCallback(string topic, byte[] payload, int qos, int retain, int state, int dup, int mid);
+        public delegate Task DumpCallback(string topic, byte[] payload, int qos, int retain, int state, int dup, int mid);
 
         private Thread? _pythonThread;
         private AutoResetEvent _stopPythonEvent = new AutoResetEvent(false);
+        private dynamic? _clientInstance;
 
         public PythonWrapper(IServiceProvider serviceProvider)
         {
             ServiceProvider = serviceProvider;
-
-            GrowattModbusMqttParser  = new GrowattModbusMqttParser(serviceProvider.GetRequiredService<ILogger<GrowattModbusMqttParser>>());
+            GrowattModbusMqttParser = new GrowattMqttParser(serviceProvider);
         }
 
         public void StartPythonClient()
@@ -40,8 +36,6 @@ namespace EnergyAutomate.Emulator
                 IsBackground = true
             };
             _pythonThread.Start();
-
-
             LogFromPython("[TRACE] Python client running in background. Press ENTER to stop...");
         }
 
@@ -59,51 +53,36 @@ namespace EnergyAutomate.Emulator
                 LogFromPython($"[TRACE] Assembly directory: {assemblyDirectory}");
 
                 LogFromPython("[TRACE] Initializing Python runtime in background thread");
-                //Python.Runtime.Runtime.PythonDLL = @"C:\Users\alexander.hailfinger\AppData\Local\Programs\Python\Python313\python313.dll";
                 PythonEngine.Initialize();
+
+                // Initialisierung und Start des Python-Clients im GIL-Kontext
                 using (Py.GIL())
                 {
                     dynamic sys = Py.Import("sys");
                     sys.path.append(assemblyDirectory);
 
-                    dynamic sysmod = Py.Import("sys");
-
-                    // Create a delegate instance
                     LogCallback logCallback = LogFromPython;
-
-                    // Create a delegate instance
                     DumpCallback dumpCallback = DumpFromPython;
 
                     LogFromPython("[TRACE] Importing Python client module");
                     dynamic clientModule = Py.Import("client");
-
-                    LogFromPython("[TRACE] Getting Client class from client module");
                     dynamic ClientClass = clientModule.Client;
 
                     LogFromPython("[TRACE] Creating instance of Client class");
-                    dynamic clientInstance = ClientClass();
-
-                    clientInstance.set_log_callback(logCallback);
-                    clientInstance.set_dump_callback(dumpCallback);
+                    _clientInstance = ClientClass();
+                    _clientInstance.set_log_callback(logCallback);
+                    _clientInstance.set_dump_callback(dumpCallback);
 
                     if (GrowattClientOptions is not null)
                     {
                         LogFromPython("[TRACE] Set options");
-                        clientInstance.set_options(GrowattClientOptions);
+                        _clientInstance.set_options(GrowattClientOptions);
                     }
 
                     LogFromPython("[TRACE] Starting Python client");
-                    clientInstance.start();
-
-                    LogFromPython("[TRACE] Python client started. Waiting for stop signal...");
-                    _stopPythonEvent.WaitOne();
-
-                    LogFromPython("[TRACE] Stopping Python client");
-                    if (clientInstance.HasAttr("stop"))
-                    {
-                        clientInstance.stop();
-                    }
+                    _clientInstance.run();
                 }
+
                 PythonEngine.Shutdown();
                 LogFromPython("[TRACE] Python runtime shutdown complete");
             }
@@ -113,30 +92,34 @@ namespace EnergyAutomate.Emulator
             }
         }
 
-        // This method will be called from Python
         public void LogFromPython(string message)
         {
-            Logger.LogInformation("{Message}", message);
-        }
-
-        // This method will be called from Python
-        public void DumpFromPython(string topic, byte[] payload, int qos, int retain, int state, int dup, int mid)
-        {
-            MQTTMessage message = new MQTTMessage
-            {
-                Topic = topic,
-                Payload = payload,
-                Qos = qos,
-                Retain = retain,
-                Timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
-                State = state,
-                Dup = dup,
-                Mid = mid
-            };
-
             try
             {
-                // Ensure the dump directory exists
+                Logger.LogInformation("{Message}", message);
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+        }
+
+        public async Task DumpFromPython(string topic, byte[] payload, int qos, int retain, int state, int dup, int mid)
+        {
+            try
+            {
+                MQTTMessage message = new MQTTMessage
+                {
+                    Topic = topic,
+                    Payload = payload,
+                    Qos = qos,
+                    Retain = retain,
+                    Timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
+                    State = state,
+                    Dup = dup,
+                    Mid = mid
+                };
+
                 string dumpDirectory = Path.Combine(AppContext.BaseDirectory, "dump");
                 if (!Directory.Exists(dumpDirectory))
                 {
@@ -144,14 +127,12 @@ namespace EnergyAutomate.Emulator
                     Logger.LogInformation("[TRACE] Created dump directory at {DumpDirectory}", dumpDirectory);
                 }
 
-                // Format date and topic for filename
                 DateTime dateTime = DateTimeOffset.FromUnixTimeSeconds((long)message.Timestamp).DateTime;
-                string datePart = dateTime.ToString("yyyyMMdd_HHmmss");
+                string datePart = dateTime.ToString("yyyyMMdd");
                 string topicPart = string.Join("_", message.Topic.Split(Path.GetInvalidFileNameChars(), StringSplitOptions.RemoveEmptyEntries));
                 string fileName = $"{datePart}_{topicPart}.txt";
                 string filePath = Path.Combine(dumpDirectory, fileName);
 
-                // Prepare message content
                 StringBuilder sb = new StringBuilder();
                 sb.AppendLine($"Timestamp: {message.Timestamp}");
                 sb.AppendLine($"DateTime: {dateTime:O}");
@@ -163,9 +144,7 @@ namespace EnergyAutomate.Emulator
                 sb.AppendLine($"State: {message.State}");
                 sb.AppendLine($"Dup: {message.Dup}");
 
-                //Parse the payload of the message
-
-                var modBusMessage = GrowattModbusMqttParser.ParseModbusMessage(message.Payload);
+                var modBusMessage = GrowattModbusMqttParser.ParseModbusMessage(message.Payload, message.Topic, true);
 
                 if (modBusMessage != null)
                 {
@@ -178,10 +157,9 @@ namespace EnergyAutomate.Emulator
                 else
                 {
                     sb.AppendLine("No Modbus message parsed from payload.");
-                } 
+                }
 
-                // Write to file
-                File.WriteAllText(filePath, sb.ToString());
+                await File.AppendAllTextAsync(filePath, sb.ToString());
             }
             catch (Exception ex)
             {

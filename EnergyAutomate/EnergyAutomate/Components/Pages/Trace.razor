@@ -5,37 +5,37 @@
 <h3>Trace Log</h3>
 <button @onclick="DownloadLogFile">Download Logs</button>
 
-@if (((CustomLoggerProvider)CustomLoggerProvider).LogMessages.Any())
+@if (((CustomLoggerProvider)CustomLoggerProvider).LogMessagesAny)
 {
     <Tabs @ref="tabsMainRef">
-        @foreach(var category in LogMessageCategories)
+        @foreach (var category in LogMessageCategories)
         {
             <Tab Title="@category.Item1" Active="@category.Item2" OnClick="(args) => OnTabClick(args)">
-            <Content>
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th>Timestamp</th>
-                            <th>Message</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                    @{
-                        if (selectedCategory == category.Item1)
-                        {
-                            @foreach (var log in ((CustomLoggerProvider)CustomLoggerProvider).LogMessages.Where(x => x.Category == @category.Item1 || x.Category!.Split(".").Last() == @category.Item1).OrderByDescending(x => x.TS).Take(500))
-                            {
-                                <tr>
-                                    <td>@log.TS</td>
-                                    <td>@log.Message</td>
-                                </tr>
+                <Content>
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Timestamp</th>
+                                <th>Message</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @{
+                                if (selectedCategory == category.Item1)
+                                {
+                                    @foreach (var log in ((CustomLoggerProvider)CustomLoggerProvider).GetLogMessages(category.Item1))
+                                    {
+                                        <tr>
+                                            <td>@log.TS</td>
+                                            <td>@log.Message</td>
+                                        </tr>
+                                    }
+                                }
                             }
-                        }
-                    }
-                </tbody>
-            </table>
-        </Content>
-    </Tab>
+                        </tbody>
+                    </table>
+                </Content>
+            </Tab>
         }
     </Tabs>
 }
@@ -63,8 +63,8 @@ else
 
     private string GetLogMessagesForAI()
     {
-        var logMessages = ((CustomLoggerProvider)CustomLoggerProvider).LogMessages
-    .Select(log => $"[{log.TS}] <{log.Category}>: {log.Message}");
+        var logMessages = ((CustomLoggerProvider)CustomLoggerProvider).GetLogMessages()
+            .Select(log => $"[{log.TS}] <{log.Category}>: {log.Message}");
 
         return string.Join("\n", logMessages);
     }
@@ -81,17 +81,14 @@ else
     {
         ((CustomLoggerProvider)CustomLoggerProvider).LogMessagesChanged += () =>
         {
-            var categories = ((CustomLoggerProvider)CustomLoggerProvider).LogMessages.Where(x => x.Category != null).Select(s => s.Category!.Contains(".") ? s.Category.Split(".").Last() : s.Category);
-            if (categories != null)
-            {
-                var groupedCategories = categories.GroupBy(x => x).Select(s => s.Key).OrderBy(o => o).ToList();
 
-                foreach (var category in groupedCategories)
+            var groupedCategories = ((CustomLoggerProvider)CustomLoggerProvider).GetLogCategories();
+
+            foreach (var category in groupedCategories)
+            {
+                if (!LogMessageCategories.Any(x => x.Item1 == category))
                 {
-                    if (!LogMessageCategories.Any(x => x.Item1 == category))
-                    {
-                        LogMessageCategories.Add(new Tuple<string,bool>(category, false));
-                    }
+                    LogMessageCategories.Add(new Tuple<string, bool>(category, false));
                 }
             }
 

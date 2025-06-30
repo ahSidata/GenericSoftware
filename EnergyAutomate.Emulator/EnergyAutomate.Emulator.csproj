@@ -12,6 +12,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
+	  <ProjectReference Include="..\EnergyAutomate.Growatt\EnergyAutomate.Growatt.csproj" />
 	  <ProjectReference Include="..\Nuget\M2Mqtt\M2Mqtt.Net.csproj" />
 	</ItemGroup>
 	

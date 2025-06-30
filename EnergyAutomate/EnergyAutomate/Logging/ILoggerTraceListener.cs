@@ -14,7 +14,7 @@ public class ILoggerTraceListener : TraceListener
 
     public override void WriteLine(string? message, string? category)
     {
-        LoggerProvider.LogMessages.Add(new CustomTraceLog
+        LoggerProvider.LogMessagesAdd(new CustomTraceLog
         {
             Category = category,
             LogLevel = LogLevel.Trace,
@@ -34,7 +34,7 @@ public class ILoggerTraceListener : TraceListener
     {
         if (!string.IsNullOrWhiteSpace(message) && !message.StartsWith("EnergyAutomate."))
         {
-            LoggerProvider.LogMessages.Add(new CustomTraceLog
+            LoggerProvider.LogMessagesAdd(new CustomTraceLog
             {
                 Category = "ApiService",
                 LogLevel = LogLevel.Trace,
