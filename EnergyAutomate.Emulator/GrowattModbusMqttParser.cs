@@ -111,8 +111,6 @@ namespace EnergyAutomate.Emulator
         /// <returns>Parsed ModbusMessage or null if parsing failed.</returns>
         public ModbusMessage? ParseModbusMessage(byte[] payload, string topic, bool isScrambled = true)
         {
-            GrowattMqttParserLogger.LogTrace("ParseModbusMessage: Start parsing payload. Scrambled: {IsScrambled}, Topic: {Topic}", isScrambled, topic);
-
             byte[] data = isScrambled ? Unscramble(payload) : payload;
 
             if (data.Length < 10)
@@ -145,15 +143,21 @@ namespace EnergyAutomate.Emulator
 
                 var message = new ModbusMessage
                 {
+                    Timestamp = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss"),
                     FunctionCode = functionCode,
                     DeviceId = deviceId,
                     Data = modbusData,
                     Raw = data
                 };
 
+                var result = GrowattNoahModbusParser.Parse(message);
+
+                // Join each key-value pair as "key=value"
+                string resultString = string.Join(", ", result.Select(kv => $"{kv.Key}={kv.Value}"));
+
                 // Log only in the Modbus category, now including the topic
-                GrowattNoahParserLogger.LogInformation(
-                    "ModbusCommand: Topic={Topic}, FunctionCode={FunctionCode}, DeviceId={DeviceId}, Register={Register}, Value={Value}, Data={Data}, Raw={Raw}",
+                GrowattMqttParserLogger.LogInformation(
+                    "Topic={Topic}, FunctionCode={FunctionCode}, DeviceId={DeviceId}, Register={Register}, Value={Value}, Data={Data}, Raw={Raw}",
                     topic,
                     functionCode,
                     deviceId,
@@ -163,7 +167,12 @@ namespace EnergyAutomate.Emulator
                     BitConverter.ToString(data)
                 );
 
-                GrowattNoahModbusParser.Parse(message);
+                GrowattNoahParserLogger.LogInformation(
+                    "Topic={Topic}, FunctionCode={FunctionCode}, Register={Register}",
+                    topic,
+                    functionCode,
+                    resultString
+                );
 
                 return message;
             }

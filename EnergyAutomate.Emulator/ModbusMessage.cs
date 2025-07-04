@@ -5,6 +5,7 @@ namespace EnergyAutomate.Emulator
     /// </summary>
     public class ModbusMessage
     {
+        public string Timestamp { get; set; } = string.Empty;
         public int FunctionCode { get; set; }
         public string DeviceId { get; set; } = string.Empty;
         public byte[] Data { get; set; } = Array.Empty<byte>();

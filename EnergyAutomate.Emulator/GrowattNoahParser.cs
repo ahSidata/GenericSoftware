@@ -1,6 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Win32;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.Metrics;
@@ -143,15 +144,13 @@ namespace EnergyAutomate.Emulator
         };
 
         public Dictionary<string, object> Parse(ModbusMessage message)
-        {
+        {      
             var result = new Dictionary<string, object>();
+            result.Add("timestamp", message.Timestamp);
 
             switch (message.FunctionCode)
             {
                 case 3: // READ_HOLDING_REGISTER
-
-                    break;
-
                 case 4: // READ_INPUT_REGISTER
 
                     int offset = 38;
@@ -170,7 +169,8 @@ namespace EnergyAutomate.Emulator
                                 ? name
                                 : $"register_{startReg + i}";
 
-                            result[key] = value;
+                            if (value != 0)
+                                result[key] = value;
                             offset += 2;
                         }
                     }
@@ -187,8 +187,8 @@ namespace EnergyAutomate.Emulator
                         string key = RegisterToFieldName.TryGetValue(reg, out var name)
                             ? name
                             : $"register_{reg}";
-
-                        result[key] = val;
+                        if (val != 0)
+                            result[key] = val;
                     }
                     break;
 
@@ -208,8 +208,8 @@ namespace EnergyAutomate.Emulator
                             string key = RegisterToFieldName.TryGetValue(startReg + i, out var name)
                                 ? name
                                 : $"register_{startReg + i}";
-
-                            result[key] = value;
+                            if (value != 0)
+                                result[key] = value;
                             vOffset += 2;
                         }
                     }
@@ -225,7 +225,78 @@ namespace EnergyAutomate.Emulator
                     break;
             }
 
+            SaveDataToFile(message, result);
+
             return result;
+        }
+
+        private void SaveDataToFile(ModbusMessage message, Dictionary<string, object> result)
+        {
+            string modbusDataFile = Path.Combine(
+                AppContext.BaseDirectory,
+                "dump",
+                $"{DateTime.UtcNow.Year}-{DateTime.UtcNow.Month}-{DateTime.UtcNow.Day}-{DateTime.UtcNow.Hour}-fc{message.FunctionCode}.modbus_data.txt"
+            );
+
+            string modbusRawFile = Path.Combine(
+                AppContext.BaseDirectory,
+                "dump",
+                $"{DateTime.UtcNow.Year}-{DateTime.UtcNow.Month}-{DateTime.UtcNow.Day}-{DateTime.UtcNow.Hour}-fc{message.FunctionCode}.modbus_raw.txt"
+            );
+
+            try
+            {
+                var directory = Path.GetDirectoryName(modbusRawFile);
+                if (directory != null && !Directory.Exists(directory))
+                {
+                    Directory.CreateDirectory(directory);
+                }
+
+                if (!File.Exists(modbusRawFile))
+                {
+                    File.AppendAllText(modbusRawFile, string.Join(",", new string[]
+                    {
+                        "timestamp",
+                        nameof(ModbusMessage.DeviceId),
+                        nameof(ModbusMessage.FunctionCode),
+                        nameof(ModbusMessage.Data),
+                        nameof(ModbusMessage.Raw)
+                    }) + Environment.NewLine);
+                }
+
+                File.AppendAllText(modbusRawFile, string.Join(",", new 
+                {
+                    message.Timestamp,
+                    message.DeviceId,
+                    message.FunctionCode,
+                    message.Data,
+                    message.Raw
+                }) + Environment.NewLine);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Fehler beim Speichern der Modbus-Daten in die Datei {File}", modbusRawFile);
+            }
+
+            try
+            {
+                var directory = Path.GetDirectoryName(modbusDataFile);
+                if (directory != null && !Directory.Exists(directory))
+                {
+                    Directory.CreateDirectory(directory);
+                }
+
+                if (!File.Exists(modbusDataFile))
+                {
+                    File.AppendAllText(modbusDataFile, string.Join(",", result.Keys) + ";" + Environment.NewLine);
+                }
+
+                File.AppendAllText(modbusDataFile, string.Join(",", result.Values) + ";" + Environment.NewLine);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Fehler beim Speichern der Modbus-Daten in die Datei {File}", modbusDataFile);
+            }
         }
     }
 }
