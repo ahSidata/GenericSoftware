@@ -1,278 +1,231 @@
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.Metrics;
 using System.IO;
 using System.Linq;
 using System.Text;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace EnergyAutomate.Emulator
 {
+
+    //| Function Code | Typical Fields / Payload Types                                      |
+    //| ------------- | ------------------------------------------------------------------- |
+    //| **3**         | Serial number, register block(schedules, config, many fields)       |
+    //| **4**         | Serial number, register block(live status/measurements)             |
+    //| **6**         | Serial number, single register address & value                      |
+    //| **16**        | Serial number, start/end register, sequence of values               |
+    //| **25**        | Serial number, ASCII (device info, config strings, plain text data) |
+
+    //READ_HOLDING_REGISTER = 3
+    //READ_INPUT_REGISTER = 4
+    //READ_SINGLE_REGISTER = 5
+    //PRESET_SINGLE_REGISTER = 6
+    //PRESET_MULTIPLE_REGISTER = 16
+
+
     public class GrowattNoahParser
     {
         private readonly IServiceProvider _serviceProvider;
         private readonly ILogger<GrowattNoahParser> _logger;
 
-        // Register-Konstanten für eine bessere Wartbarkeit
-        private static class Registers
-        {
-            // System-Register
-            public const int OutputPower = 2;
-            public const int PvTotalPower = 7;
-            public const int PriorityMode = 8;
-            public const int BatterySystemState = 10;
-            public const int ChargingDischarging = 11;
-            public const int BatteryCount = 12;
-            public const int TotalBatterySoc = 13;
-
-            // Seriennummern und Identifikation
-            public const int SerialPart1 = 21;
-            public const int SerialPart2 = 23;
-            public const int SerialPart3 = 25;
-            public const int SerialPart4 = 27;
-
-            // Batterie-Register
-            public const int Battery1Soc = 29;
-            public const int Battery2Soc = 41;
-            public const int Battery3Soc = 53;
-            public const int Battery4Soc = 65;
-
-            // Energie-Register
-            public const int PvEnergyToday = 72;
-            public const int PvEnergyMonth = 74;
-            public const int PvEnergyYear = 76;
-            public const int EnergyOutDevice = 78;
-
-            // Lade-/Entlade-Limits
-            public const int ChargeLimit = 90;
-            public const int DischargeLimit = 91;
-
-            // PV-Register und Temperaturen
-            public const int Pv1Voltage = 92;
-            public const int Pv1Current = 93;
-            public const int Temperature1 = 94;
-            public const int Pv2Voltage = 95;
-            public const int Pv2Current = 96;
-            public const int Temperature2 = 97;
-
-            // Zellen-Register
-            public const int MaxCellVoltageBat1 = 99;
-            public const int MinCellVoltageBat1 = 100;
-            public const int BatteryCycleCount = 101;
-
-            // Weitere Register
-            public const int Register102 = 102;
-            public const int OutputVoltage = 109;
-        }
-
-        // Offsets für Seriennummern
-        private static class SerialNumOffsets
-        {
-            public const int Battery1 = 18;
-            public const int Battery2 = 50;
-            public const int Battery3 = 82;
-            public const int Battery4 = 114;
-        }
-
-        private static readonly string ModbusDataFile = Path.Combine(AppContext.BaseDirectory, "dump", "modbus_data.txt");
-
-        public GrowattNoahParser(IServiceProvider serviceProvider)
+        public GrowattNoahParser(IServiceProvider serviceProvider, ILogger<GrowattNoahParser> logger)
         {
             _serviceProvider = serviceProvider;
-            _logger = serviceProvider.GetRequiredService<ILogger<GrowattNoahParser>>();
+            _logger = logger;
         }
+
+        public static readonly Dictionary<int, string> RegisterToFieldName = new Dictionary<int, string>
+        {
+            { 92, "pv1Voltage" },
+            { 93, "pv1Current" },
+            { 95, "pv2Voltage" },
+            { 96, "pv2Current" },
+            { 131, "totalBatteryPackSoc" },
+            { 132, "battery1Soc" },
+            { 133, "battery2Soc" },
+            { 134, "battery3Soc" },
+            { 135, "battery4Soc" },
+            { 141, "totalBatteryPackChargingPower" },
+            { 142, "totalBatteryPackDischargingPower" },
+            { 143, "batteryChargingPower" },
+            { 144, "batteryDischargingPower" },
+            { 145, "batteryChargingCurrent" },
+            { 146, "batteryDischargingCurrent" },
+            { 147, "batteryBusVoltage" },
+            { 148, "batteryBusCurrent" },
+            { 149, "batteryVoltage" },
+            { 150, "battery1Temp" },
+            { 151, "battery2Temp" },
+            { 152, "battery3Temp" },
+            { 153, "battery4Temp" },
+            { 160, "batteryCycles" },
+            { 161, "batterySoh" },
+            { 162, "battery1CellVoltage" },
+            { 163, "battery2CellVoltage" },
+            { 164, "battery3CellVoltage" },
+            { 165, "battery4CellVoltage" },
+            { 170, "battery1Alarm" },
+            { 171, "battery2Alarm" },
+            { 172, "battery3Alarm" },
+            { 173, "battery4Alarm" },
+            { 200, "pac" },
+            { 201, "ppv" },
+            { 202, "gridVoltage" },
+            { 203, "gridFrequency" },
+            { 204, "outputCurrent" },
+            { 210, "maxCellVoltage" },
+            { 211, "minCellVoltage" },
+            { 212, "batteryMaxTemp" },
+            { 213, "batteryMinTemp" },
+            { 220, "batteryCommStatus" },
+            { 221, "bmsStatus" },
+            { 230, "systemMode" },
+            { 231, "inverterStatus" },
+            { 240, "workTimeTotal" },
+            { 241, "workTimeThisYear" },
+            { 242, "workTimeThisMonth" },
+            { 243, "workTimeToday" },
+            { 250, "energyTotal" },
+            { 251, "energyThisYear" },
+            { 252, "energyThisMonth" },
+            { 253, "energyToday" },
+
+            // Alle Zeitfenster/Timer-Slots
+            { 254, "slot1_start_time" },
+            { 255, "slot1_end_time" },
+            { 256, "slot1_mode" },
+            { 257, "slot1_power" },
+            { 258, "slot1_enabled" },
+            { 259, "slot2_start_time" },
+            { 260, "slot2_end_time" },
+            { 261, "slot2_mode" },
+            { 262, "slot2_power" },
+            { 263, "slot2_enabled" },
+            { 264, "slot3_start_time" },
+            { 265, "slot3_end_time" },
+            { 266, "slot3_mode" },
+            { 267, "slot3_power" },
+            { 268, "slot3_enabled" },
+            { 269, "slot4_start_time" },
+            { 270, "slot4_end_time" },
+            { 271, "slot4_mode" },
+            { 272, "slot4_power" },
+            { 273, "slot4_enabled" },
+            { 274, "slot5_start_time" },
+            { 275, "slot5_end_time" },
+            { 276, "slot5_mode" },
+            { 277, "slot5_power" },
+            { 278, "slot5_enabled" },
+            { 279, "slot6_start_time" },
+            { 280, "slot6_end_time" },
+            { 281, "slot6_mode" },
+            { 282, "slot6_power" },
+            { 283, "slot6_enabled" },
+            { 284, "slot7_start_time" },
+            { 285, "slot7_end_time" },
+            { 286, "slot7_mode" },
+            { 287, "slot7_power" },
+            { 288, "slot7_enabled" },
+            { 289, "slot8_start_time" },
+            { 290, "slot8_end_time" },
+            { 291, "slot8_mode" },
+            { 292, "slot8_power" },
+            { 293, "slot8_enabled" },
+            { 294, "slot9_start_time" },
+            { 295, "slot9_end_time" },
+            { 296, "slot9_mode" },
+            { 297, "slot9_power" },
+            { 298, "slot9_enabled" }
+        };
 
         public Dictionary<string, object> Parse(ModbusMessage message)
         {
-            _logger.LogTrace("Parse: Verarbeite ModbusMessage");
-
-            if (message == null)
-            {
-                _logger.LogWarning("Parse: ModbusMessage ist null");
-                return new Dictionary<string, object>();
-            }
-
-            return ParseLastData(message.Data);
-        }
-
-        public Dictionary<string, object> ParseLastData(byte[] payload)
-        {
             var result = new Dictionary<string, object>();
 
-            _logger.LogTrace("ParseLastData: Starte Parsing von Payload mit Länge {Length}", payload?.Length ?? 0);
-
-            const int minPayloadLength = 162;
-
-            if (payload == null)
+            switch (message.FunctionCode)
             {
-                _logger.LogWarning("ParseLastData: Payload ist null");
-                return result;
-            }
+                case 3: // READ_HOLDING_REGISTER
 
-            if (payload.Length < minPayloadLength)
-            {
-                _logger.LogWarning("ParseLastData: Payload zu kurz für vollständiges Parsing (Länge {Length}, benötigt {Required}). Nur verfügbare Felder werden geparst.",
-                    payload.Length, minPayloadLength);
-            }
+                    break;
 
-            try
-            {
-                // Hilfs-Funktionen für das Parsing
-                ushort GetUInt16(int register) => ReadBigEndianUInt16(payload, register * 2);
-                float GetFloat(int register, float multiplier = 1.0f, float delta = 0.0f) => GetUInt16(register) * multiplier + delta;
-                string GetString(int offset, int length) => ReadAsciiString(payload, offset, length);
-                void Add(string key, object value) => result[key] = value;
+                case 4: // READ_INPUT_REGISTER
 
-                // System-Informationen
-                Add("outputPower", GetUInt16(Registers.OutputPower));
-                Add("pvTotalPower", GetUInt16(Registers.PvTotalPower));
-                Add("priorityMode", GetUInt16(Registers.PriorityMode));
-                Add("batterySystemState", GetUInt16(Registers.BatterySystemState));
-                Add("chargingPower", GetUInt16(Registers.ChargingDischarging) - 30000);
-                Add("batteryCount", GetUInt16(Registers.BatteryCount));
-                Add("totalBatterySoc", GetUInt16(Registers.TotalBatterySoc));
+                    int offset = 38;
+                    while (offset + 4 <= message.Data.Length)
+                    {
+                        ushort startReg = BitConverter.ToUInt16(message.Data.Skip(offset).Take(2).Reverse().ToArray(), 0);
+                        ushort endReg = BitConverter.ToUInt16(message.Data.Skip(offset + 2).Take(2).Reverse().ToArray(), 0);
+                        int regCount = endReg - startReg + 1;
+                        offset += 4;
+                        for (int i = 0; i < regCount; i++)
+                        {
+                            if (offset + 2 > message.Data.Length) break;
+                            ushort value = BitConverter.ToUInt16(message.Data.Skip(offset).Take(2).Reverse().ToArray(), 0);
 
-                // Seriennummern
-                Add("battery1SerialNum", GetString(SerialNumOffsets.Battery1, 16));
-                Add("battery2SerialNum", GetString(SerialNumOffsets.Battery2, 16));
-                Add("battery3SerialNum", GetString(SerialNumOffsets.Battery3, 16));
-                Add("battery4SerialNum", GetString(SerialNumOffsets.Battery4, 16));
+                            string key = RegisterToFieldName.TryGetValue(startReg + i, out var name)
+                                ? name
+                                : $"register_{startReg + i}";
 
-                // Batterie-SOC Werte
-                Add("battery1Soc", GetUInt16(Registers.Battery1Soc));
-                Add("battery2Soc", GetUInt16(Registers.Battery2Soc));
-                Add("battery3Soc", GetUInt16(Registers.Battery3Soc));
-                Add("battery4Soc", GetUInt16(Registers.Battery4Soc));
+                            result[key] = value;
+                            offset += 2;
+                        }
+                    }
+                    break;
 
-                // PV-Werte
-                Add("pv1Voltage", GetFloat(Registers.Pv1Voltage, 0.01f));
-                Add("pv1Current", GetFloat(Registers.Pv1Current, 0.01f));
-                Add("pv2Voltage", GetFloat(Registers.Pv2Voltage, 0.01f));
-                Add("pv2Current", GetFloat(Registers.Pv2Current, 0.01f));
+                case 6: // WRITE_SINGLE_REGISTER
 
-                // Energie-Werte
-                Add("pvEnergyToday", GetFloat(Registers.PvEnergyToday, 0.1f));
-                Add("pvEnergyMonth", GetFloat(Registers.PvEnergyMonth, 0.1f));
-                Add("pvEnergyYear", GetFloat(Registers.PvEnergyYear, 0.1f));
-                Add("energyOutDevice", GetFloat(Registers.EnergyOutDevice, 0.1f));
+                    int w6offset = 38;
+                    if (message.Data.Length >= w6offset + 4)
+                    {
+                        ushort reg = BitConverter.ToUInt16(message.Data.Skip(w6offset).Take(2).Reverse().ToArray(), 0);
+                        ushort val = BitConverter.ToUInt16(message.Data.Skip(w6offset + 2).Take(2).Reverse().ToArray(), 0);
 
-                // Ausgangswerte
-                Add("outputVoltage", GetFloat(Registers.OutputVoltage, 0.01f));
+                        string key = RegisterToFieldName.TryGetValue(reg, out var name)
+                            ? name
+                            : $"register_{reg}";
 
-                // Lade-/Entlade-Limits
-                Add("chargeLimit", GetUInt16(Registers.ChargeLimit));
-                Add("dischargeLimit", GetUInt16(Registers.DischargeLimit));
+                        result[key] = val;
+                    }
+                    break;
 
-                // Temperaturen
-                Add("temperature1", GetFloat(Registers.Temperature1, 0.01f));
-                Add("temperature2", GetFloat(Registers.Temperature2, 0.01f));
+                case 16: // WRITE_MULTIPLE_REGISTERS
+                    int w16offset = 38;
+                    if (message.Data.Length >= w16offset + 4)
+                    {
+                        ushort startReg = BitConverter.ToUInt16(message.Data.Skip(w16offset).Take(2).Reverse().ToArray(), 0);
+                        ushort endReg = BitConverter.ToUInt16(message.Data.Skip(w16offset + 2).Take(2).Reverse().ToArray(), 0);
+                        int regCount = endReg - startReg + 1;
+                        int vOffset = w16offset + 4;
+                        for (int i = 0; i < regCount; i++)
+                        {
+                            if (vOffset + 2 > message.Data.Length) break;
+                            ushort value = BitConverter.ToUInt16(message.Data.Skip(vOffset).Take(2).Reverse().ToArray(), 0);
 
-                // Zellenwerte
-                Add("maxCellVoltageBat1", GetFloat(Registers.MaxCellVoltageBat1, 0.001f));
-                Add("minCellVoltageBat1", GetFloat(Registers.MinCellVoltageBat1, 0.001f));
-                Add("batteryCycleCount", GetUInt16(Registers.BatteryCycleCount));
+                            string key = RegisterToFieldName.TryGetValue(startReg + i, out var name)
+                                ? name
+                                : $"register_{startReg + i}";
 
-                // Seriennummer-Teile
-                Add("serialPart1", GetString(Registers.SerialPart1 * 2, 8));
-                Add("serialPart2", GetString(Registers.SerialPart2 * 2, 8));
-                Add("serialPart3", GetString(Registers.SerialPart3 * 2, 8));
-                Add("serialPart4", GetString(Registers.SerialPart4 * 2, 8));
+                            result[key] = value;
+                            vOffset += 2;
+                        }
+                    }
+                    break;
 
-                // Sonstige Werte
-                Add("register102", GetUInt16(Registers.Register102));
+                case 25: // CUSTOM/ASCII/Manufacturer
+                    result["ascii_payload"] = System.Text.Encoding.ASCII.GetString(message.Data);
+                    break;
 
-                // Modi und Zustände als Text interpretieren
-                Add("priorityModeText", GetPriorityModeText(GetUInt16(Registers.PriorityMode)));
-                Add("batteryStateText", GetBatteryStateText(GetUInt16(Registers.BatterySystemState)));
-
-                _logger.LogTrace("ParseLastData: Parsing abgeschlossen. Geparste Schlüssel: {Keys}", string.Join(", ", result.Keys));
-
-                // Speichern der Daten in die Datei
-                SaveDataToFile(result);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Fehler beim Parsen der Modbus-Daten");
+                default:
+                    // Fallback: Gib Raw aus
+                    result["raw_data"] = BitConverter.ToString(message.Data);
+                    break;
             }
 
             return result;
-        }
-
-        private void SaveDataToFile(Dictionary<string, object> result)
-        {
-            try
-            {
-                var directory = Path.GetDirectoryName(ModbusDataFile);
-                if (!Directory.Exists(directory))
-                {
-                    Directory.CreateDirectory(directory);
-                }
-
-                if (!File.Exists(ModbusDataFile))
-                {
-                    File.AppendAllText(ModbusDataFile, string.Join("\t", result.Keys) + Environment.NewLine);
-                }
-
-                File.AppendAllText(ModbusDataFile, string.Join("\t", result.Values) + Environment.NewLine);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Fehler beim Speichern der Modbus-Daten in die Datei {File}", ModbusDataFile);
-            }
-        }
-
-        private static string GetPriorityModeText(ushort mode)
-        {
-            return mode switch
-            {
-                0 => "Laden-Zuerst",
-                1 => "Batterie-Zuerst",
-                2 => "Netz-Zuerst",
-                3 => "Spitzenabdeckung",
-                _ => $"Unbekannter Modus ({mode})"
-            };
-        }
-
-        private static string GetBatteryStateText(ushort state)
-        {
-            return state switch
-            {
-                0 => "Standby",
-                1 => "Laden",
-                2 => "Entladen",
-                3 => "Fehler",
-                4 => "Vollständig geladen",
-                _ => $"Unbekannter Zustand ({state})"
-            };
-        }
-
-        private static float ReadBigEndianFloat(byte[] data, int offset)
-        {
-            if (offset + 4 > data.Length) return 0;
-            var bytes = data.Skip(offset).Take(4).ToArray();
-            if (BitConverter.IsLittleEndian)
-                Array.Reverse(bytes);
-            return BitConverter.ToSingle(bytes, 0);
-        }
-
-        private static ushort ReadBigEndianUInt16(byte[] data, int offset)
-        {
-            if (offset + 2 > data.Length)
-            {
-                return 0;
-            }
-
-            // Optimierte Version, die direkt die Bytes aus dem Array liest
-            var highByte = data[offset];
-            var lowByte = data[offset + 1];
-            return (ushort)((highByte << 8) | lowByte);
-        }
-
-        private static string ReadAsciiString(byte[] data, int offset, int length)
-        {
-            if (offset + length > data.Length) return string.Empty;
-            var bytes = data.Skip(offset).Take(length).ToArray();
-            return Encoding.ASCII.GetString(bytes).Trim('\0');
         }
     }
 }
