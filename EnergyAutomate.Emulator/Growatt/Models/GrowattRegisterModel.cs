@@ -748,7 +748,7 @@ namespace EnergyAutomate.Emulator.Growatt.Models
                 Growatt = new GrowatttRegister
                 {
                     Position = new GrowattRegisterPosition { RegisterNo = 311, Offset = 0, Size = 2 },
-                    Data = new GrowattData { DataType = GrowattDataType.FLOAT, FloatOptions = new GrowattFloatOptions { Delta = 0.0, Multiplier = 1.0 } }
+                    Data = new GrowattData { DataType = GrowattDataType.INT }
                 }
             });
 

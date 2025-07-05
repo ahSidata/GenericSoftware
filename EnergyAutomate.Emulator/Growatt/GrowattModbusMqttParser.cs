@@ -134,6 +134,12 @@ namespace EnergyAutomate.Emulator.Growatt
                         resultString = string.Join(", ", result.Select(kv => $"{kv.Key}={kv.Value}"));
                     }
 
+                    if (message.Function == GrowattModbusFunction.PRESET_MULTIPLE_REGISTER)
+                    {
+                        var result = growattNoahParser.ParseRegisters(message, growattRegister.PresentRegisters);
+                        resultString = string.Join(", ", result.Select(kv => $"{kv.Key}={kv.Value}"));
+                    }
+
                     // Log including startRegister and registerCount
                     GrowattMqttParserLogger.LogInformation(
                         "Topic={Topic}, FunctionCode={FunctionCode}, DeviceId={DeviceId}Raw={RawData}",
