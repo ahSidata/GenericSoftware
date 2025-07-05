@@ -134,6 +134,12 @@ namespace EnergyAutomate.Emulator.Growatt
                         resultString = string.Join(", ", result.Select(kv => $"{kv.Key}={kv.Value}"));
                     }
 
+                    if (message.Function == GrowattModbusFunction.PRESET_SINGLE_REGISTER)
+                    {
+                        var result = growattNoahParser.ParseRegisters(message, growattRegister.PresentRegisters);
+                        resultString = string.Join(", ", result.Select(kv => $"{kv.Key}={kv.Value}"));
+                    }
+
                     if (message.Function == GrowattModbusFunction.PRESET_MULTIPLE_REGISTER)
                     {
                         var result = growattNoahParser.ParseRegisters(message, growattRegister.PresentRegisters);
@@ -164,6 +170,46 @@ namespace EnergyAutomate.Emulator.Growatt
                 GrowattMqttParserLogger.LogError(ex, "ParseModbusMessage Exception: {Message}", ex.Message);
                 return null;
             }
+        }
+
+        /// <summary>
+        /// Builds a Modbus command payload for setting multiple register values.
+        /// </summary>
+        /// <param name="deviceId">The device ID (up to 30 ASCII chars).</param>
+        /// <param name="startRegister">The starting Modbus register address to write.</param>
+        /// <param name="values">The values to write (array of 16-bit unsigned integers).</param>
+        /// <returns>Scrambled and CRC-appended payload ready for MQTT publish.</returns>
+        public byte[] BuildSetMultipleRegistersCommand(string deviceId, ushort startRegister, ushort[] values)
+        {
+            GrowattMqttParserLogger.LogTrace("BuildSetMultipleRegistersCommand: deviceId={DeviceId}, startRegister={StartRegister}, values=[{Values}]", deviceId, startRegister, string.Join(", ", values));
+
+            var valueBytes = new List<byte>();
+            foreach (var value in values)
+            {
+                var bytes = BitConverter.GetBytes(value);
+                if (BitConverter.IsLittleEndian)
+                {
+                    Array.Reverse(bytes);
+                }
+                valueBytes.AddRange(bytes);
+            }
+
+            var block = new GrowattModbusBlock
+            {
+                Start = startRegister,
+                End = (ushort)(startRegister + values.Length - 1),
+                Values = valueBytes.ToArray()
+            };
+
+            var blocks = new List<GrowattModbusBlock> { block };
+            var message = new GrowattModbusMessage(1, deviceId, GrowattModbusFunction.PRESET_MULTIPLE_REGISTER, blocks);
+            var unscrambledPayload = message.Build();
+            var scrambled = Scramble(unscrambledPayload);
+            var finalPayload = AppendCrc(scrambled);
+
+            GrowattMqttParserLogger.LogTrace("BuildSetMultipleRegistersCommand: finalPayload={FinalPayload}", BitConverter.ToString(finalPayload));
+
+            return finalPayload;
         }
 
         /// <summary>

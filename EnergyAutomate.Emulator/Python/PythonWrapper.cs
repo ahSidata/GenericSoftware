@@ -93,6 +93,20 @@ namespace EnergyAutomate.Emulator
             }
         }
 
+        public void SetSmartWatt(ushort value)
+        {
+            if (_clientInstance != null)
+            {
+                var deviceId = "0PVP50ZR16ST00CB";
+                ushort startRegister = 310;
+                ushort[] values = { 0, value, 1 }; // Entspricht 0x0000, 0x022D, 0x0001
+
+                byte[] commandPayload = GrowattModbusMqttParser.BuildSetMultipleRegistersCommand(deviceId, startRegister, values);
+
+                _clientInstance.send_msg($"s/33/{deviceId}", commandPayload, 0, 0);
+            }
+        }
+
         public void LogFromPython(string message)
         {
             try
@@ -138,7 +152,7 @@ namespace EnergyAutomate.Emulator
                 sb.AppendLine($"Timestamp: {message.Timestamp}");
                 sb.AppendLine($"DateTime: {dateTime:O}");
                 sb.AppendLine($"Topic: {message.Topic}");
-                sb.AppendLine($"Payload: {Encoding.UTF8.GetString(message.Payload)}");
+                sb.AppendLine($"Payload: {BitConverter.ToString(message.Payload)}");
                 sb.AppendLine($"Qos: {message.Qos}");
                 sb.AppendLine($"Retain: {message.Retain}");
                 sb.AppendLine($"Mid: {message.Mid}");

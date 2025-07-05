@@ -7,6 +7,7 @@ Client for the grobro mqtt side, handling messages from/to
 from http import client
 import os
 import signal
+import string
 import time
 import struct
 import logging
@@ -49,6 +50,21 @@ class Client:
         if self.log_callback:
             self.log_callback(f"[TRACE] Python received clientid: {clientId}")
         self._clientId = clientId
+
+    def send_msg(self, topic: string, payload: bytes, qos: int, retain: int):
+        try:
+            if self.dump_callback:
+                self.dump_callback(topic, payload, qos, retain)
+
+            self._clientBroker.publish(
+                topic=topic,
+                payload=payload,
+                qos=qos,
+                retain=retain                
+            )
+        except Exception as e:
+            if self.log_callback:
+                self.log_callback(f"Send message: {e}")
 
     def run(self):
         try:

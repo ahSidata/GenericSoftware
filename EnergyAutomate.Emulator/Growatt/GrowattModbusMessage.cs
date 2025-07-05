@@ -8,13 +8,21 @@ namespace EnergyAutomate.Emulator.Growatt
 
     public class GrowattModbusMessage
     {
-        public byte[] RawData { get; set; }
+        public byte[] RawData { get; set; } = []; // Initialize with an empty array
         public ushort Unknown { get; set; }
         public string DeviceId { get; set; } = string.Empty;
         public GrowattMetadata? Metadata { get; set; }
         public GrowattModbusFunction Function { get; set; }
         public List<GrowattModbusBlock> RegisterBlocks { get; set; } = new();
         private ILogger? Logger { get; set; }
+
+        public GrowattModbusMessage(ushort únknown, string deviceId, GrowattModbusFunction growattModbusFunction, List<GrowattModbusBlock> growattModbusBlocks) 
+        {
+            Unknown = únknown;
+            DeviceId = deviceId;
+            Function = growattModbusFunction;
+            RegisterBlocks = growattModbusBlocks;
+        }
 
         public GrowattModbusMessage(byte[] buffer, ILogger logger = null)
         {
