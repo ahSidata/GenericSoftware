@@ -27,7 +27,7 @@
             ApiService = null;
         }
 
-        public async void OnCompleted() 
+        public async void OnCompleted()
         {
             if (!Watchdog.RestartRequested)
             {
@@ -45,7 +45,7 @@
             }
         }
 
-        public void OnNext(RealTimeMeasurement value) 
+        public void OnNext(RealTimeMeasurement value)
         {
             ApiService?.OnNext(value);
         }

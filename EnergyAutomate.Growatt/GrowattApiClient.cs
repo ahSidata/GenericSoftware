@@ -178,7 +178,7 @@ namespace EnergyAutomate.Growatt
                     default:
                         throw new NotSupportedException($"Device query type {deviceQuery.GetType()} is not supported.");
                 }
-                
+
                 var content = deviceQuery.ToFormUrlEncodedContent();
 
                 var response = await _httpClient.PostAsync(endpoint, content);

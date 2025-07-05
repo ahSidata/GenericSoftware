@@ -1,7 +1,8 @@
-using System.Text;
+using EnergyAutomate.Emulator.Growatt.Models;
 using Microsoft.Extensions.Logging;
+using System.Text;
 
-namespace EnergyAutomate.Emulator
+namespace EnergyAutomate.Emulator.Growatt
 {
 
     public class GrowattModbusMessage
@@ -55,9 +56,9 @@ namespace EnergyAutomate.Emulator
                     logger?.LogWarning("GrowattModbusMessage.Parse: Buffer too short for header.");
                     return null;
                 }
-                ushort unknown = (ushort)((buffer[0] << 8) | buffer[1]);
-                ushort constant7 = (ushort)((buffer[2] << 8) | buffer[3]);
-                ushort msgLen = (ushort)((buffer[4] << 8) | buffer[5]);
+                ushort unknown = (ushort)(buffer[0] << 8 | buffer[1]);
+                ushort constant7 = (ushort)(buffer[2] << 8 | buffer[3]);
+                ushort msgLen = (ushort)(buffer[4] << 8 | buffer[5]);
                 byte constant1 = buffer[6];
                 byte function = buffer[7];
                 string deviceId = Encoding.ASCII.GetString(buffer, 8, 30).Trim('\0');

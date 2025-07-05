@@ -1,7 +1,7 @@
-using System.Text;
 using Microsoft.Extensions.Logging;
+using System.Text;
 
-namespace EnergyAutomate.Emulator
+namespace EnergyAutomate.Emulator.Growatt
 {
     public class GrowattModbusFunctionSingle
     {
@@ -18,14 +18,14 @@ namespace EnergyAutomate.Emulator
                 return null;
             }
 
-            ushort unknown = (ushort)((buffer[0] << 8) | buffer[1]);
-            ushort constant7 = (ushort)((buffer[2] << 8) | buffer[3]);
-            ushort msgLen = (ushort)((buffer[4] << 8) | buffer[5]);
+            ushort unknown = (ushort)(buffer[0] << 8 | buffer[1]);
+            ushort constant7 = (ushort)(buffer[2] << 8 | buffer[3]);
+            ushort msgLen = (ushort)(buffer[4] << 8 | buffer[5]);
             byte constant1 = buffer[6];
             byte function = buffer[7];
             string deviceId = Encoding.ASCII.GetString(buffer, 8, 30).Trim('\0');
-            ushort register = (ushort)((buffer[38] << 8) | buffer[39]);
-            ushort value = (ushort)((buffer[40] << 8) | buffer[41]);
+            ushort register = (ushort)(buffer[38] << 8 | buffer[39]);
+            ushort value = (ushort)(buffer[40] << 8 | buffer[41]);
 
             logger?.LogTrace("GrowattModbusFunctionSingle.Parse: deviceId={DeviceId}, function={Function}, register={Register}, value={Value}", deviceId, function, register, value);
 

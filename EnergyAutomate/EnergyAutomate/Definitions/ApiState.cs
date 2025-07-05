@@ -194,7 +194,7 @@ namespace EnergyAutomate.Definitions
 
         public Dictionary<TimeSpan, float?> GetSolarProductionPerQuareMeter()
         {
-            Dictionary<TimeSpan,float?> solarProduction = [];
+            Dictionary<TimeSpan, float?> solarProduction = [];
 
             var weatherForecast = WeatherForecastToday;
 
@@ -242,7 +242,7 @@ namespace EnergyAutomate.Definitions
                 expectedPower += expectedSolarProduction.FirstOrDefault(x => x.Key == solarNoon.AddHours(+i).TimeOfDay).Value;
                 windowEnd = windowEnd.AddHours(+1);
 
-                if (expectedPower >= chargePower) break;                
+                if (expectedPower >= chargePower) break;
                 expectedPower += expectedSolarProduction.FirstOrDefault(x => x.Key == solarNoon.AddHours(-i).TimeOfDay).Value;
                 windowStart = windowStart.AddHours(-1);
             }

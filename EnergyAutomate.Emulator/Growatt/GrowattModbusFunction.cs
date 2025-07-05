@@ -1,4 +1,4 @@
-namespace EnergyAutomate.Emulator
+namespace EnergyAutomate.Emulator.Growatt
 {
     public enum GrowattModbusFunction : byte
     {

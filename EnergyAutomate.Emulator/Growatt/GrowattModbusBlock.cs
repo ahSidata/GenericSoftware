@@ -1,6 +1,6 @@
 using Microsoft.Extensions.Logging;
 
-namespace EnergyAutomate.Emulator
+namespace EnergyAutomate.Emulator.Growatt
 {
     public class GrowattModbusBlock
     {
@@ -17,8 +17,8 @@ namespace EnergyAutomate.Emulator
                     logger?.LogWarning("GrowattModbusBlock.Parse: Buffer too short.");
                     return null;
                 }
-                ushort start = (ushort)((buffer[0] << 8) | buffer[1]);
-                ushort end = (ushort)((buffer[2] << 8) | buffer[3]);
+                ushort start = (ushort)(buffer[0] << 8 | buffer[1]);
+                ushort end = (ushort)(buffer[2] << 8 | buffer[3]);
                 int numBlocks = end - start + 1;
                 int valuesLength = numBlocks * 2;
                 if (buffer.Length < 4 + valuesLength)

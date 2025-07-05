@@ -1,13 +1,9 @@
-using System;
-using System.Diagnostics;
-using System.Text.RegularExpressions;
-
-namespace paho.mqtt.client
+namespace EnergyAutomate.Emulator.Python
 {
     /// <summary>
     /// This class describes an incoming MQTT message. It is intended to be passed to the OnMessage callback as the message parameter.
     /// </summary>
-    public class MQTTMessage
+    public class PythonMqttMessage
     {
         public double Timestamp { get; set; }
         public int State { get; set; }

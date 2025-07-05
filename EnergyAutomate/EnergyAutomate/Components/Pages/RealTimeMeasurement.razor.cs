@@ -1,10 +1,7 @@
 ﻿using BlazorBootstrap;
 using EnergyAutomate.Components.Layout;
-using EnergyAutomate.Definitions;
 using EnergyAutomate.Extentions;
 using Microsoft.AspNetCore.Components;
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
-using OpenMeteo;
 using System.Collections.Specialized;
 using System.Data;
 using System.Diagnostics;
@@ -14,7 +11,7 @@ namespace EnergyAutomate.Components.Pages
     public partial class RealTimeMeasurement : IDisposable
     {
         #region Fields
-       
+
         private readonly IEnumerable<TickMark> ApiOffsetAvgTickList = ApiService.GenerateTickTickMarks(-25, 150, 5);
         private readonly IEnumerable<TickMark> ApiSettingTimeOffsetTickList = ApiService.GenerateTickTickMarks(-12, 12, 1);
         private readonly IEnumerable<TickMark> ApiToleranceAvgTickList = ApiService.GenerateTickTickMarks(0, 300, 10);
@@ -93,7 +90,7 @@ namespace EnergyAutomate.Components.Pages
 
             List<double?>? GetDeviceData(string? deviceSn, string propertyName)
             {
-                switch(propertyName)
+                switch (propertyName)
                 {
                     case "Requested":
 
@@ -103,7 +100,7 @@ namespace EnergyAutomate.Components.Pages
                     default:
                         return new List<double?>();
                 }
-            }            
+            }
 
             deviceData = new ChartData
             {
@@ -162,7 +159,7 @@ namespace EnergyAutomate.Components.Pages
             Dictionary<int, string> ColorSet = new Dictionary<int, string>() { { 1, "rgb(0, 0, 255)" }, { 2, "rgb(0, 150, 255)" } };
 
             var index = 1;
-            foreach(var device in ApiService.GrowattAllNoahDevices())
+            foreach (var device in ApiService.GrowattAllNoahDevices())
             {
                 deviceData.Datasets.Add(new LineChartDataset()
                 {
@@ -200,7 +197,7 @@ namespace EnergyAutomate.Components.Pages
             double? avgTomorrow = dataTomorrow.Average(x => (double?)x.Total);
 
             var dataLevelPoints = dataToday.Select(x => avgToday / 10 * (double?)x.Level)
-                .Concat(dataTomorrow.Select(x => avgTomorrow /10 * (double?)x.Level)).ToList();
+                .Concat(dataTomorrow.Select(x => avgTomorrow / 10 * (double?)x.Level)).ToList();
 
             var dataAvgPoints = dataToday.Select(x => (double?)x.Total < avgToday ? (double?)x.Total : null)
                 .Concat(dataTomorrow.Select(x => (double?)x.Total < avgTomorrow ? (double?)x.Total : null)).ToList();
@@ -209,13 +206,13 @@ namespace EnergyAutomate.Components.Pages
                 .Concat(dataTomorrow.Select(x => (double?)x.Total < avgTomorrow ? (double?)x.Total : avgTomorrow)).ToList();
 
             var dataHighPrices = dataToday.Select(x => (int)(x.Level ?? 0) > 2 ? avgToday / 10 * (double?)x.Level : null)
-                .Concat(dataTomorrow.Select(x => (int)(x.Level ?? 0) > 2 ? avgTomorrow / 10 * (double?)x.Level: null)).ToList();
+                .Concat(dataTomorrow.Select(x => (int)(x.Level ?? 0) > 2 ? avgTomorrow / 10 * (double?)x.Level : null)).ToList();
             var dataLowPrices = dataToday.Select(x => (int)(x.Level ?? 0) > 0 && (int)(x.Level ?? 0) < 3 ? avgToday / 10 * (int)(x.Level ?? 0) : null)
                 .Concat(dataTomorrow.Select(x => (int)(x.Level ?? 0) > 0 && (int)(x.Level ?? 0) < 3 ? avgTomorrow / 10 * (int)(x.Level ?? 0) : null)).ToList();
 
             var nextHour = currentTime.AddHours(1);
             var dataCurrentHour = dataItems.Select(x =>
-                (x.StartsAt.Date == currentTime.Date && x.StartsAt.Hour == currentTime.Hour) || 
+                (x.StartsAt.Date == currentTime.Date && x.StartsAt.Hour == currentTime.Hour) ||
                 (x.StartsAt.Date == nextHour.Date && x.StartsAt.Hour == nextHour.Hour)
                 ? (double?)x.Total : null
                 ).ToList();
@@ -254,7 +251,7 @@ namespace EnergyAutomate.Components.Pages
                     new LineChartDataset()
                     {
                         Label = "Price",
-                        Data = dataPoints,                      
+                        Data = dataPoints,
                         Fill = true,
                         Stepped = true,
                         Order = 5
@@ -455,7 +452,7 @@ namespace EnergyAutomate.Components.Pages
             realTimeMeasurementChartOptions.Interaction.Mode = InteractionMode.Index;
             realTimeMeasurementChartOptions.Plugins.Title!.Text = $"Tibber power consumption";
             realTimeMeasurementChartOptions.Plugins.Title.Display = true;
-            realTimeMeasurementChartOptions.Plugins.Title.Font = new ChartFont { Size = 20 };          
+            realTimeMeasurementChartOptions.Plugins.Title.Font = new ChartFont { Size = 20 };
             realTimeMeasurementChartOptions.Responsive = true;
             realTimeMeasurementChartOptions.Scales.X!.Title = new ChartAxesTitle { Text = "Seconds (one minute)", Display = true };
             realTimeMeasurementChartOptions.Scales.Y!.Title = new ChartAxesTitle { Text = "Watt", Display = true };
@@ -468,7 +465,7 @@ namespace EnergyAutomate.Components.Pages
             priceChartOptions.Interaction.Mode = InteractionMode.Index;
             priceChartOptions.Plugins.Title!.Text = "Tibber price forecast";
             priceChartOptions.Plugins.Title.Display = true;
-            priceChartOptions.Plugins.Title.Font = new ChartFont { Size = 20 };            
+            priceChartOptions.Plugins.Title.Font = new ChartFont { Size = 20 };
             priceChartOptions.Responsive = true;
             priceChartOptions.Scales.X!.Title = new ChartAxesTitle { Text = "Today / Tomorrow", Display = true };
             priceChartOptions.Scales.Y!.Title = new ChartAxesTitle { Text = "Euro", Display = true };

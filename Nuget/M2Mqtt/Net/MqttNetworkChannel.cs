@@ -119,7 +119,7 @@ namespace uPLibrary.Networking.M2Mqtt
         {
 
         }
-        
+
         /// <summary>
         /// Constructor
         /// </summary>
@@ -239,7 +239,7 @@ namespace uPLibrary.Networking.M2Mqtt
                 this.sslStream = new SslStream(this.socket);
 #else
                 this.netStream = new NetworkStream(this.socket);
-                if(this.userCertificateSelectionCallback != null)
+                if (this.userCertificateSelectionCallback != null)
                     // create SSL stream with user certificate selection and validation callbacks
                     this.sslStream = new SslStream(this.netStream, false, this.userCertificateValidationCallback, this.userCertificateSelectionCallback);
                 else
@@ -264,7 +264,7 @@ namespace uPLibrary.Networking.M2Mqtt
                     clientCertificates,
                     MqttSslUtility.ToSslPlatformEnum(this.sslProtocol),
                     false);
-                
+
 #endif
             }
 #endif

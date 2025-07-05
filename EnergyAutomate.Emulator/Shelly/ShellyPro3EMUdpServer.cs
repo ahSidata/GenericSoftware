@@ -2,9 +2,8 @@ using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Text;
-using System.Threading.Tasks;
 
-namespace EnergyAutomate.Emulator;
+namespace EnergyAutomate.Emulator.Shelly;
 
 public class ShellyPro3EMUdpServer
 {

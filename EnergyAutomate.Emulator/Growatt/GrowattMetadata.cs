@@ -1,7 +1,7 @@
-using System.Text;
 using Microsoft.Extensions.Logging;
+using System.Text;
 
-namespace EnergyAutomate.Emulator
+namespace EnergyAutomate.Emulator.Growatt
 {
     public class GrowattMetadata
     {

@@ -14,7 +14,6 @@ Contributors:
    Paolo Patierno - initial API and implementation and/or initial documentation
 */
 
-using System;
 using uPLibrary.Networking.M2Mqtt.Exceptions;
 
 namespace uPLibrary.Networking.M2Mqtt.Messages
@@ -53,7 +52,7 @@ namespace uPLibrary.Networking.M2Mqtt.Messages
             // already know remaininglength is zero (MQTT specification),
             // so it isn't necessary to read other data from socket
             int remainingLength = MqttMsgBase.decodeRemainingLength(channel);
-            
+
             return msg;
         }
 

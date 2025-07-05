@@ -14,7 +14,6 @@ Contributors:
    Paolo Patierno - initial API and implementation and/or initial documentation
 */
 
-using System;
 using uPLibrary.Networking.M2Mqtt.Exceptions;
 
 namespace uPLibrary.Networking.M2Mqtt.Messages
@@ -159,7 +158,7 @@ namespace uPLibrary.Networking.M2Mqtt.Messages
                 buffer[index++] = (MQTT_MSG_CONNACK_TYPE << MSG_TYPE_OFFSET) | MQTT_MSG_CONNACK_FLAG_BITS; // [v.3.1.1]
             else
                 buffer[index++] = (byte)(MQTT_MSG_CONNACK_TYPE << MSG_TYPE_OFFSET);
-            
+
             // encode remaining length
             index = this.encodeRemainingLength(remainingLength, buffer, index);
 
@@ -169,7 +168,7 @@ namespace uPLibrary.Networking.M2Mqtt.Messages
             else
                 // topic name compression response (reserved values. not used);
                 buffer[index++] = 0x00;
-            
+
             // connect return code
             buffer[index++] = this.returnCode;
 

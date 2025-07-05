@@ -1,7 +1,6 @@
 using Microsoft.Extensions.Logging;
-using System.Collections.Generic;
 
-namespace EnergyAutomate.Emulator.Models
+namespace EnergyAutomate.Emulator.Growatt.Models
 {
     public class GrowattRegisterModel
     {
@@ -476,7 +475,7 @@ namespace EnergyAutomate.Emulator.Models
                     Data = new GrowattData { DataType = GrowattDataType.ENUM, EnumOptions = new GrowattEnumOptions { EnumType = "INT_MAP", Values = new Dictionary<string, string> { { "0", "Idle" }, { "1", "Charging" }, { "2", "Discharging" } } } }
                 }
             });
-            
+
             model.InputRegisters.Add("bat_1_soc_pct", new GrowattParameter
             {
                 Growatt = new GrowatttRegister

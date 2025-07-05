@@ -1,4 +1,4 @@
-namespace EnergyAutomate.Emulator.Models
+namespace EnergyAutomate.Emulator.Growatt.Models
 {
     public class GrowattParameter
     {

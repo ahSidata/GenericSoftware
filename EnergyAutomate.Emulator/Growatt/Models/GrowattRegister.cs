@@ -1,8 +1,4 @@
-using EnergyAutomate.Emulator.Models;
-using System;
-using System.Collections.Generic;
-
-namespace EnergyAutomate.Emulator
+namespace EnergyAutomate.Emulator.Growatt.Models
 {
 
     public class GrowatttRegister

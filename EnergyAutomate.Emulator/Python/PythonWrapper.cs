@@ -1,11 +1,11 @@
-﻿using EnergyAutomate.Emulator.Models;
+﻿using EnergyAutomate.Emulator.Growatt;
+using EnergyAutomate.Emulator.Growatt.Models;
+using EnergyAutomate.Emulator.Python;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using paho.mqtt.client;
 using Python.Runtime;
 using System.Reflection;
 using System.Text;
-using System.Threading;
 
 namespace EnergyAutomate.Emulator
 {
@@ -60,13 +60,13 @@ namespace EnergyAutomate.Emulator
                 using (Py.GIL())
                 {
                     dynamic sys = Py.Import("sys");
-                    sys.path.append(assemblyDirectory);
+                    sys.path.append(Path.Combine(assemblyDirectory, "Python"));
 
                     LogCallback logCallback = LogFromPython;
                     DumpCallback dumpCallback = DumpFromPython;
 
                     LogFromPython("[TRACE] Importing Python client module");
-                    dynamic clientModule = Py.Import("client");
+                    dynamic clientModule = Py.Import("PythonGrowattClient");
                     dynamic ClientClass = clientModule.Client;
 
                     LogFromPython("[TRACE] Creating instance of Client class");
@@ -109,7 +109,7 @@ namespace EnergyAutomate.Emulator
         {
             try
             {
-                MQTTMessage message = new MQTTMessage
+                PythonMqttMessage message = new PythonMqttMessage
                 {
                     Topic = topic,
                     Payload = payload,

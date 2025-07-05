@@ -1,8 +1,6 @@
-using System;
-using System.Collections.Generic;
 using System.Text;
 
-namespace EnergyAutomate.Emulator.Models
+namespace EnergyAutomate.Emulator.Growatt.Models
 {
     /// <summary>
     /// Represents the data type and parsing logic for a Growatt register.
@@ -46,8 +44,8 @@ namespace EnergyAutomate.Emulator.Models
             int ToInt(byte[] bytes)
             {
                 if (bytes.Length == 1) return bytes[0];
-                if (bytes.Length == 2) return (bytes[0] << 8) | bytes[1];
-                if (bytes.Length == 4) return (bytes[0] << 24) | (bytes[1] << 16) | (bytes[2] << 8) | bytes[3];
+                if (bytes.Length == 2) return bytes[0] << 8 | bytes[1];
+                if (bytes.Length == 4) return bytes[0] << 24 | bytes[1] << 16 | bytes[2] << 8 | bytes[3];
                 throw new ArgumentException("Unsupported byte length");
             }
 
@@ -69,7 +67,7 @@ namespace EnergyAutomate.Emulator.Models
                         var value = ToInt(dataRaw);
                         int h = value / 256;
                         int m = value % 256;
-                        int hhmm = (h * 100) + m;
+                        int hhmm = h * 100 + m;
                         System.Diagnostics.Trace.WriteLine($"[GrowattData.Parse] Parsed TIME_HHMM: {hhmm}");
                         return hhmm;
                     }

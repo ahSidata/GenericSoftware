@@ -1,13 +1,9 @@
-using EnergyAutomate.Emulator.Models;
+using EnergyAutomate.Emulator.Growatt.Models;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text;
-using System.Text.Json;
 
-namespace EnergyAutomate.Emulator
+namespace EnergyAutomate.Emulator.Growatt
 {
     /// <summary>
     /// Parses Growatt MQTT messages for Modbus communication and builds Modbus command payloads.
@@ -97,7 +93,7 @@ namespace EnergyAutomate.Emulator
             byte[] result = new byte[payload.Length + 2];
             Array.Copy(payload, result, payload.Length);
             // CRC is appended big-endian (network order)
-            result[result.Length - 2] = (byte)((crc >> 8) & 0xFF);
+            result[result.Length - 2] = (byte)(crc >> 8 & 0xFF);
             result[result.Length - 1] = (byte)(crc & 0xFF);
 
             return result;
@@ -223,7 +219,7 @@ namespace EnergyAutomate.Emulator
                 for (int j = 0; j < 8; j++)
                 {
                     if ((crc & 0x8000) != 0)
-                        crc = (ushort)((crc << 1) ^ polynomial);
+                        crc = (ushort)(crc << 1 ^ polynomial);
                     else
                         crc <<= 1;
                 }

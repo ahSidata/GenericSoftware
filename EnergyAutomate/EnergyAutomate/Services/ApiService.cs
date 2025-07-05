@@ -127,7 +127,7 @@ namespace EnergyAutomate.Services
         }
 
         public async Task ApiStartAsync(CancellationToken cancellationToken)
-        {       
+        {
             await ApiLoadDataFromDatabase();
         }
 

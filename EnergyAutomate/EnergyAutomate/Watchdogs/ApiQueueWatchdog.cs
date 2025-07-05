@@ -1,7 +1,5 @@
 ﻿using EnergyAutomate.Definitions;
 using Newtonsoft.Json;
-using System.Collections.ObjectModel;
-using static EnergyAutomate.Growatt.DeviceNoahHistoricalDataQuery;
 
 namespace EnergyAutomate.Watchdogs
 {
@@ -65,7 +63,7 @@ namespace EnergyAutomate.Watchdogs
             {
                 _semaphore.Release();
             }
-        }        
+        }
 
         public async Task ClearAsync()
         {

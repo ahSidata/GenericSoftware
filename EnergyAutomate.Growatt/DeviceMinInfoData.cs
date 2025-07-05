@@ -64,7 +64,7 @@ namespace EnergyAutomate.Growatt
         public double power { get; set; }
         public double eToday { get; set; }
         public double eTotal { get; set; }
-        
+
         public double energyMonth { get; set; }
         public int strNum { get; set; }
         public string? liBatteryManufacturers { get; set; }

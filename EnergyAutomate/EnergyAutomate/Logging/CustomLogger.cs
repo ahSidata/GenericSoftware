@@ -1,5 +1,4 @@
 using EnergyAutomate.Logging;
-using Microsoft.Extensions.Logging;
 
 public class CustomLogger : ILogger
 {

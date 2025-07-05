@@ -1,15 +1,8 @@
 ﻿using Microsoft.Extensions.Logging;
-using System.Buffers;
-using System.Collections.Concurrent;
-using System.Collections.ObjectModel;
-using System.Security.Cryptography.X509Certificates;
-using System.Text;
-using System.Text.Json;
 using uPLibrary.Networking.M2Mqtt;
 using uPLibrary.Networking.M2Mqtt.Messages;
-using static uPLibrary.Networking.M2Mqtt.MqttClient;
 
-namespace EnergyAutomate.Emulator
+namespace EnergyAutomate.Emulator.Growatt
 {
     public class GrowattMqttProxy
     {
@@ -27,7 +20,7 @@ namespace EnergyAutomate.Emulator
                 brokerHostName: brokerHost,
                 brokerPort: brokerPort,
                 secure: true,
-                sslProtocol: MqttSslProtocols.TLSv1_2, 
+                sslProtocol: MqttSslProtocols.TLSv1_2,
                 userCertificateValidationCallback: (sender, certificate, chain, sslPolicyErrors) =>
                 {
                     // Allow any certificate for testing purposes
@@ -53,7 +46,7 @@ namespace EnergyAutomate.Emulator
             );
 
             GrowattMqttClient.ProtocolVersion = MqttProtocolVersion.Version_3_1_1;
-            
+
 
             GrowattMqttClient.MqttMsgPublishReceived += GrowattMqttClient_MqttMsgPublishReceived;
             GrowattMqttClient.ConnectionClosed += GrowattMqttClient_ConnectionClosed;
@@ -137,14 +130,14 @@ namespace EnergyAutomate.Emulator
 
         #region Private Methods
 
-        private void BrokerMqttClient_MqttMsgPublishReceived(object sender, uPLibrary.Networking.M2Mqtt.Messages.MqttMsgPublishEventArgs e)
+        private void BrokerMqttClient_MqttMsgPublishReceived(object sender, MqttMsgPublishEventArgs e)
         {
             _logger.LogInformation($"Broker --> Growatt {ClientId}, Topic: {e.Topic}");
 
             GrowattMqttClient?.Publish(e.Topic, e.Message, e.QosLevel, e.Retain);
         }
 
-        private void GrowattMqttClient_MqttMsgPublishReceived(object sender, uPLibrary.Networking.M2Mqtt.Messages.MqttMsgPublishEventArgs e)
+        private void GrowattMqttClient_MqttMsgPublishReceived(object sender, MqttMsgPublishEventArgs e)
         {
             var topic = $"s/33/{ClientId}";
 

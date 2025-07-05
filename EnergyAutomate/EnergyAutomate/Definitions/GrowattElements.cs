@@ -66,7 +66,7 @@
 
         public static IEnumerable<GrowattElement> GrowattDefaultElements()
         {
-            return new List<GrowattElement> { Adjustment1, Adjustment2, Adjustment3,  Calculation1, Calculation2, Distribution1, Distribution2 };
+            return new List<GrowattElement> { Adjustment1, Adjustment2, Adjustment3, Calculation1, Calculation2, Distribution1, Distribution2 };
         }
 
         #endregion Public Methods

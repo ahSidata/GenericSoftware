@@ -1,11 +1,8 @@
-using System;
-using System.Text.Json;
-using System.Collections.Generic;
-using System.Text.Json.Serialization;
 using System.Globalization;
-using System.Security.Cryptography;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
-namespace EnergyAutomate.Emulator;
+namespace EnergyAutomate.Emulator.Shelly;
 
 public class ShellyPro3EMDevice
 {
@@ -38,8 +35,9 @@ public class ShellyPro3EMDevice
 
     int count = 0;
 
-    public ShellyEmResponse GetEmStatus(int id, string mac) {
-        switch(count)
+    public ShellyEmResponse GetEmStatus(int id, string mac)
+    {
+        switch (count)
         {
             case 0:
                 count++;
@@ -94,7 +92,7 @@ public class ShellyEmResponse
         var voltage = 220.0f;
         var current = MathF.Round(act_power / voltage, 3);
 
-        Result = new ShellyEmResponse.ParamsData
+        Result = new ParamsData
         {
             Id = 0,
             A_Act_Power = MathF.Round(act_power, 1),
@@ -128,7 +126,7 @@ public class ShellyEmResponse
             //Total_Current = MathF.Round(current * 3, 1),
 
             //Total_Aprt_Power = MathF.Round(act_power * 3, 1)
-        };        
+        };
     }
 
     [JsonPropertyName("id")]
@@ -246,7 +244,7 @@ public class ShellyEmResponse
         public override void Write(Utf8JsonWriter writer, float value, JsonSerializerOptions options)
         {
             // Format mit einer Nachkommastelle, auch wenn es eine 0 ist
-            writer.WriteRawValue(value.ToString("0.000", System.Globalization.CultureInfo.InvariantCulture));
+            writer.WriteRawValue(value.ToString("0.000", CultureInfo.InvariantCulture));
         }
     }
 
@@ -260,7 +258,7 @@ public class ShellyEmResponse
         public override void Write(Utf8JsonWriter writer, float value, JsonSerializerOptions options)
         {
             // Format mit einer Nachkommastelle, auch wenn es eine 0 ist
-            writer.WriteRawValue(value.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture));
+            writer.WriteRawValue(value.ToString("0.0", CultureInfo.InvariantCulture));
         }
     }
 
@@ -276,7 +274,7 @@ public class ShellyEm1Response
         var voltage = 220.0f;
         var current = MathF.Round(act_power / voltage, 3);
 
-        Result = new ShellyEm1Response.ParamsData
+        Result = new ParamsData
         {
             Id = 0,
             Current = MathF.Round(current, 3),
@@ -345,7 +343,7 @@ public class ShellyEm1Response
         public override void Write(Utf8JsonWriter writer, float value, JsonSerializerOptions options)
         {
             // Format mit einer Nachkommastelle, auch wenn es eine 0 ist
-            writer.WriteRawValue(value.ToString("0.000", System.Globalization.CultureInfo.InvariantCulture));
+            writer.WriteRawValue(value.ToString("0.000", CultureInfo.InvariantCulture));
         }
     }
 
@@ -359,7 +357,7 @@ public class ShellyEm1Response
         public override void Write(Utf8JsonWriter writer, float value, JsonSerializerOptions options)
         {
             // Format mit einer Nachkommastelle, auch wenn es eine 0 ist
-            writer.WriteRawValue(value.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture));
+            writer.WriteRawValue(value.ToString("0.0", CultureInfo.InvariantCulture));
         }
     }
 

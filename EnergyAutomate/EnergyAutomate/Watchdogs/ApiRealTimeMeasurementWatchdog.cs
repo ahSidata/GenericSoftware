@@ -49,9 +49,9 @@ namespace EnergyAutomate.Watchdogs
                 {
                     GC.Collect();
                     GC.WaitForPendingFinalizers();
-                    Trace.WriteLine("StopRealTimeMeasurementListener finished ...", "Tibber");  
+                    Trace.WriteLine("StopRealTimeMeasurementListener finished ...", "Tibber");
                 }
-     
+
                 _ = StartListener();
 
                 RestartRequested = false;

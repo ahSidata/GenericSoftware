@@ -8,6 +8,7 @@ global using EnergyAutomate.Watchdogs;
 using CoordinateSharp;
 using EnergyAutomate.Definitions;
 using EnergyAutomate.Emulator;
+using EnergyAutomate.Emulator.Growatt;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -93,7 +94,7 @@ public class Program
         });
         builder.Services.AddTransient(sp => new GrowattApiClient("https://openapi.growatt.com", builder.Configuration["ApiSettings:GrowattApiToken"] ?? string.Empty));
         builder.Services.AddTransient(sp => new TibberApiClient(builder.Configuration["ApiSettings:TibberApiToken"] ?? string.Empty, new ProductInfoHeaderValue("EnergyAutomate", "1.0")));
-        builder.Services.AddTransient(sp => new SmlParser(builder.Configuration["ApiSettings:TibberBridgeHost"] ?? string.Empty,builder.Configuration["ApiSettings:TibberBridgePassword"] ?? string.Empty));
+        builder.Services.AddTransient(sp => new SmlParser(builder.Configuration["ApiSettings:TibberBridgeHost"] ?? string.Empty, builder.Configuration["ApiSettings:TibberBridgePassword"] ?? string.Empty));
 
         builder.Services.AddSingleton<ApiService>();
         builder.Services.AddSingleton<GrowattNoahParser>();

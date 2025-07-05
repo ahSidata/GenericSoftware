@@ -1,17 +1,7 @@
-using EnergyAutomate.Emulator.Models;
-using Microsoft.Extensions.DependencyInjection;
+using EnergyAutomate.Emulator.Growatt.Models;
 using Microsoft.Extensions.Logging;
-using Microsoft.Win32;
-using Newtonsoft.Json.Linq;
-using System;
-using System.Collections.Generic;
-using System.Diagnostics.Metrics;
-using System.IO;
-using System.Linq;
-using System.Text;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
-namespace EnergyAutomate.Emulator
+namespace EnergyAutomate.Emulator.Growatt
 {
 
     //| Function Code | Typical Fields / Payload Types                                      |
@@ -49,7 +39,7 @@ namespace EnergyAutomate.Emulator
         public Dictionary<string, object> ParseRegisters(GrowattModbusMessage modbusMessage, Dictionary<string, GrowattParameter> keyValuePairs)
         {
             var result = new Dictionary<string, object>();
-          
+
             foreach (var kvp in keyValuePairs)
             {
                 string name = kvp.Key;

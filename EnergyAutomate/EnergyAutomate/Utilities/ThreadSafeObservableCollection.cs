@@ -86,7 +86,7 @@ public class ThreadSafeObservableCollection<T> : ObservableCollection<T>
             {
                 foreach (var callback in _callbacks)
                 {
-                    callback.Value.Invoke();                                           
+                    callback.Value.Invoke();
                 }
             }
         }

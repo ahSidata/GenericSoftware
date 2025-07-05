@@ -1,13 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using MQTTnet.Diagnostics.Logger;
-using Python.Runtime;
-using System.Net;
-using System.Net.Security;
-using System.Net.Sockets;
-using System.Runtime.ConstrainedExecution;
-using System.Security.Cryptography.X509Certificates;
-using System.Threading.Tasks;
 
 namespace EnergyAutomate.Emulator.Cli
 {

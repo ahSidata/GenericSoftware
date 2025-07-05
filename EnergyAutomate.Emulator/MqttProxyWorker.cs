@@ -1,4 +1,5 @@
-﻿using EnergyAutomate.Emulator.Models;
+﻿using EnergyAutomate.Emulator.Growatt;
+using EnergyAutomate.Emulator.Growatt.Models;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -19,12 +20,13 @@ namespace EnergyAutomate.Emulator
             ServiceProvider = serviceProvider;
             _pythonWrapper = new PythonWrapper(ServiceProvider);
 
-            _pythonWrapper.GrowattClientOptions = new GrowattClientOptions() {
+            _pythonWrapper.GrowattClientOptions = new GrowattClientOptions()
+            {
                 ClientId = "0PVP50ZR16ST00CB",
                 BrokerHost = "ah.azure.sidata.com",
-                BrokerPort= 7006,
-                GrowattHost= "mqtt.growatt.com",
-                GrowattPort=7006
+                BrokerPort = 7006,
+                GrowattHost = "mqtt.growatt.com",
+                GrowattPort = 7006
             };
 
             _growattMqttProxy = new GrowattMqttProxy(

@@ -17,10 +17,7 @@
 	</ItemGroup>
 	
 	<ItemGroup>
-	  <None Update="client.py">
-	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-	  </None>
-	  <None Update="Register\growatt_noah_registers.json">
+	  <None Update="Python\PythonGrowattClient.py">
 	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
 	  </None>
 	</ItemGroup>

@@ -54,11 +54,11 @@ namespace EnergyAutomate.Components.Pages
 
                 for (int i = 0; i < charge_window.Count; i++)
                 {
-                    if 
+                    if
                     (
                         !(
                         hourlyIndex[i].Hour > ApiService.CurrentState.BatteryChargeStart.Hour ||
-                        hourlyIndex[i].Hour < ApiService.CurrentState.BatteryChargeEnd.Hour 
+                        hourlyIndex[i].Hour < ApiService.CurrentState.BatteryChargeEnd.Hour
                         )
                     )
                     {
@@ -88,7 +88,7 @@ namespace EnergyAutomate.Components.Pages
                         BorderWidth = 2,
                         PointRadius = new List<double>() { 0 },
                         Stepped = true,
-                        Fill = true,                        
+                        Fill = true,
                         Order = 2
                     },
                     new LineChartDataset()
@@ -140,7 +140,7 @@ namespace EnergyAutomate.Components.Pages
                         Label = "cloudcover_high",
                         Data = cloudcover_high,
                         BackgroundColor = "rgba(0, 0, 155, 0.5)",
-                        BorderColor = "rgb(0, 0, 155)",                        
+                        BorderColor = "rgb(0, 0, 155)",
                         BorderWidth = 2,
                         PointRadius = new List<double>() { 2 },
                         Stepped = true,
@@ -173,7 +173,7 @@ namespace EnergyAutomate.Components.Pages
             cloudcoverChartOptions.Scales.Y!.Title = new ChartAxesTitle { Text = "Percent", Display = true };
             cloudcoverChartOptions.MaintainAspectRatio = false;
             await cloudcoverChart.InitializeAsync(chartData: cloudcoverData, chartOptions: cloudcoverChartOptions);
-            
+
             isWeatherChartInitialized = true;
         }
 
