@@ -8,7 +8,7 @@ namespace EnergyAutomate.Emulator.Growatt
         public ushort End { get; set; }
         public byte[] Values { get; set; } = Array.Empty<byte>();
 
-        public static GrowattModbusBlock? Parse(byte[] buffer, ILogger logger = null)
+        public static GrowattModbusBlock? Parse(byte[] buffer, ILogger? logger = null)
         {
             try
             {
@@ -33,7 +33,7 @@ namespace EnergyAutomate.Emulator.Growatt
                     logger?.LogWarning("GrowattModbusBlock.Parse: Values length mismatch.");
                     return null;
                 }
-                logger?.LogTrace("GrowattModbusBlock.Parse: start={Start}, end={End}, valuesLength={ValuesLength}", start, end, valuesLength);
+
                 return new GrowattModbusBlock { Start = start, End = end, Values = values };
             }
             catch (Exception ex)

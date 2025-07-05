@@ -14,9 +14,7 @@ namespace EnergyAutomate.Emulator.Growatt
 
         private ILogger<GrowattMqttParser> GrowattMqttParserLogger => _serviceProvider.GetRequiredService<ILogger<GrowattMqttParser>>();
 
-        private ILogger<GrowattNoahParser> GrowattNoahParserLogger => _serviceProvider.GetRequiredService<ILogger<GrowattNoahParser>>();
-
-        private GrowattNoahParser GrowattNoahModbusParser => _serviceProvider.GetRequiredService<GrowattNoahParser>();
+        private ILogger<GrowattModbusMessage> GrowattModbusMessageLogger => _serviceProvider.GetRequiredService<ILogger<GrowattModbusMessage>>();
 
         public GrowattMqttParser(IServiceProvider serviceProvider)
         {
@@ -114,9 +112,7 @@ namespace EnergyAutomate.Emulator.Growatt
 
                 byte[] data = Unscramble(payload);
 
-                var message = new GrowattModbusMessage(data);
-
-                var growattNoahParser = _serviceProvider.GetRequiredService<GrowattNoahParser>();
+                var message = new GrowattModbusMessage(GrowattMqttParserLogger, topic, data);
 
                 if (message != null)
                 {
@@ -124,42 +120,42 @@ namespace EnergyAutomate.Emulator.Growatt
 
                     if (message.Function == GrowattModbusFunction.READ_HOLDING_REGISTER)
                     {
-                        var result = growattNoahParser.ParseRegisters(message, growattRegister.HoldingRegisters);
+                        var result = ParseRegisters(message, growattRegister.HoldingRegisters);
                         resultString = string.Join(", ", result.Select(kv => $"{kv.Key}={kv.Value}"));
                     }
 
                     if (message.Function == GrowattModbusFunction.READ_INPUT_REGISTER)
                     {
-                        var result = growattNoahParser.ParseRegisters(message, growattRegister.InputRegisters);
+                        var result = ParseRegisters(message, growattRegister.InputRegisters);
                         resultString = string.Join(", ", result.Select(kv => $"{kv.Key}={kv.Value}"));
                     }
 
                     if (message.Function == GrowattModbusFunction.PRESET_SINGLE_REGISTER)
                     {
-                        var result = growattNoahParser.ParseRegisters(message, growattRegister.PresentRegisters);
-                        resultString = string.Join(", ", result.Select(kv => $"{kv.Key}={kv.Value}"));
+                       resultString = $"Register {message.Register} = {message.Value}";
                     }
 
                     if (message.Function == GrowattModbusFunction.PRESET_MULTIPLE_REGISTER)
                     {
-                        var result = growattNoahParser.ParseRegisters(message, growattRegister.PresentRegisters);
+                        var result = ParseRegisters(message, growattRegister.PresentRegisters);
                         resultString = string.Join(", ", result.Select(kv => $"{kv.Key}={kv.Value}"));
                     }
 
                     // Log including startRegister and registerCount
                     GrowattMqttParserLogger.LogInformation(
-                        "Topic={Topic}, FunctionCode={FunctionCode}, DeviceId={DeviceId}Raw={RawData}",
+                        "Topic={Topic}, FunctionCode={FunctionCode}, DeviceId={DeviceId}, Raw={RawData}",
                         topic,
                         message.Function.ToString(),
-                        message.DeviceId + Environment.NewLine,
+                        message.DeviceId,
                         BitConverter.ToString(data)
                     );
 
-                    GrowattNoahParserLogger.LogInformation(
-                        "Topic={Topic}, FunctionCode={FunctionCode}, Register={Register}",
+                    GrowattModbusMessageLogger.LogInformation(
+                        "Topic={Topic}, FunctionCode={FunctionCode}, Register={Register}, Raw={RawData}",
                         topic,
                         message.Function.ToString(),
-                        resultString
+                        resultString,
+                        BitConverter.ToString(data)
                     );
                 }
 
@@ -201,9 +197,12 @@ namespace EnergyAutomate.Emulator.Growatt
                 Values = valueBytes.ToArray()
             };
 
-            var blocks = new List<GrowattModbusBlock> { block };
-            var message = new GrowattModbusMessage(1, deviceId, GrowattModbusFunction.PRESET_MULTIPLE_REGISTER, blocks);
-            var unscrambledPayload = message.Build();
+            var message = new GrowattModbusMessage(GrowattMqttParserLogger);
+            message.Unknown = 1;
+            message.DeviceId = deviceId;
+            message.Function = GrowattModbusFunction.PRESET_MULTIPLE_REGISTER;
+
+            var unscrambledPayload = message.BuildMultiple(block);
             var scrambled = Scramble(unscrambledPayload);
             var finalPayload = AppendCrc(scrambled);
 
@@ -277,6 +276,40 @@ namespace EnergyAutomate.Emulator.Growatt
                 }
             }
             return crc;
+        }
+
+        public Dictionary<string, object> ParseRegisters(GrowattModbusMessage modbusMessage, Dictionary<string, GrowattParameter> keyValuePairs)
+        {
+            var result = new Dictionary<string, object>();
+
+            foreach (var kvp in keyValuePairs)
+            {
+                string name = kvp.Key;
+                var register = kvp.Value;
+
+                // Assuming GrowattRegisterModel has a property or method to get the position
+                var position = register.Growatt.Position; // Replace with actual method/property
+
+                // Get raw data for the register
+                var dataRaw = modbusMessage.GetData(position);
+
+                if (dataRaw == null)
+                {
+                    continue;
+                }
+
+                // Assuming GrowattRegisterModel has a method to parse data
+                var value = register.Growatt.Data.Parse(dataRaw); // Replace with actual method
+
+                if (value == null)
+                {
+                    continue;
+                }
+
+                result[name] = value;
+            }
+
+            return result;
         }
     }
 }

@@ -10,7 +10,7 @@ namespace EnergyAutomate.Emulator.Growatt
 
         public int Size() => 37;
 
-        public static GrowattMetadata? Parse(byte[] buffer, ILogger logger = null)
+        public static GrowattMetadata? Parse(byte[] buffer, ILogger? logger = null)
         {
             if (buffer.Length < 37)
             {
@@ -35,7 +35,6 @@ namespace EnergyAutomate.Emulator.Growatt
             {
                 logger?.LogTrace(ex, "GrowattMetadata.Parse: Invalid timestamp data.");
             }
-            logger?.LogTrace("GrowattMetadata.Parse: deviceSn={DeviceSn}, timestamp={Timestamp}", deviceSn, timestamp);
             return new GrowattMetadata { DeviceSn = deviceSn, Timestamp = timestamp };
         }
 
