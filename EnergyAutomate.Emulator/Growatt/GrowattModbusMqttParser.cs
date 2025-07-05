@@ -114,7 +114,7 @@ namespace EnergyAutomate.Emulator.Growatt
 
                 byte[] data = Unscramble(payload);
 
-                var message = GrowattModbusMessage.Parse(data);
+                var message = new GrowattModbusMessage(data);
 
                 var growattNoahParser = _serviceProvider.GetRequiredService<GrowattNoahParser>();
 

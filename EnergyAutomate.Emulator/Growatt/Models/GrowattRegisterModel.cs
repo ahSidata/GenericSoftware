@@ -7,6 +7,8 @@ namespace EnergyAutomate.Emulator.Growatt.Models
         public Dictionary<string, GrowattParameter> HoldingRegisters { get; set; } = new();
         public Dictionary<string, GrowattParameter> InputRegisters { get; set; } = new();
 
+        public Dictionary<string, GrowattParameter> PresentRegisters { get; set; } = new();
+
         public static GrowattRegisterModel SeedDefaults(ILogger logger = null)
         {
             var model = new GrowattRegisterModel();
@@ -733,6 +735,19 @@ namespace EnergyAutomate.Emulator.Growatt.Models
                 Growatt = new GrowatttRegister
                 {
                     Position = new GrowattRegisterPosition { RegisterNo = 102, Offset = 0, Size = 2 },
+                    Data = new GrowattData { DataType = GrowattDataType.FLOAT, FloatOptions = new GrowattFloatOptions { Delta = 0.0, Multiplier = 1.0 } }
+                }
+            });
+
+            #endregion
+
+            #region PresentRegisters
+
+            model.PresentRegisters.Add("smart_watt", new GrowattParameter
+            {
+                Growatt = new GrowatttRegister
+                {
+                    Position = new GrowattRegisterPosition { RegisterNo = 311, Offset = 0, Size = 2 },
                     Data = new GrowattData { DataType = GrowattDataType.FLOAT, FloatOptions = new GrowattFloatOptions { Delta = 0.0, Multiplier = 1.0 } }
                 }
             });

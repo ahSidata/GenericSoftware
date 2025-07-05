@@ -150,6 +150,7 @@ namespace EnergyAutomate.Emulator
                 if (modBusMessage != null)
                 {
                     sb.AppendLine("Parsed Modbus Message:");
+                    sb.AppendLine($"RawDate: {BitConverter.ToString(modBusMessage.RawData)}");
                     sb.AppendLine($"Function Code: {modBusMessage.Function.ToString()}");
                     sb.AppendLine($"Device ID: {modBusMessage.DeviceId}");
                     sb.AppendLine("RegisterBlocks:");
