@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using EnergyAutomate.Emulator.Models;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using paho.mqtt.client;
 using Python.Runtime;
@@ -144,15 +145,18 @@ namespace EnergyAutomate.Emulator
                 sb.AppendLine($"State: {message.State}");
                 sb.AppendLine($"Dup: {message.Dup}");
 
-                var modBusMessage = GrowattModbusMqttParser.ParseModbusMessage(message.Payload, message.Topic, true);
+                var modBusMessage = GrowattModbusMqttParser.ParseModbusMessage(message.Payload, message.Topic);
 
                 if (modBusMessage != null)
                 {
                     sb.AppendLine("Parsed Modbus Message:");
-                    sb.AppendLine($"  Function Code: {modBusMessage.FunctionCode}");
-                    sb.AppendLine($"  Data: {BitConverter.ToString(modBusMessage.Data)}");
-                    sb.AppendLine($"  Address: {modBusMessage.DeviceId}");
-                    sb.AppendLine($"  Raw: {BitConverter.ToString(modBusMessage.Raw)}");
+                    sb.AppendLine($"Function Code: {modBusMessage.Function.ToString()}");
+                    sb.AppendLine($"Device ID: {modBusMessage.DeviceId}");
+                    sb.AppendLine("RegisterBlocks:");
+                    foreach (var kvp in modBusMessage.RegisterBlocks)
+                    {
+                        sb.AppendLine($"Start {kvp.Start}: End {kvp.End} : Values {BitConverter.ToString(kvp.Values)}");
+                    }
                 }
                 else
                 {

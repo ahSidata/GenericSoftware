@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace EnergyAutomate.Emulator
+namespace EnergyAutomate.Emulator.Models
 {
     public class GrowattClientOptions
     {

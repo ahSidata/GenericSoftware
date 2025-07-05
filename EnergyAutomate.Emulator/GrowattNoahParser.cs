@@ -1,3 +1,4 @@
+using EnergyAutomate.Emulator.Models;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Win32;
@@ -39,264 +40,44 @@ namespace EnergyAutomate.Emulator
             _logger = logger;
         }
 
-        public static readonly Dictionary<int, string> RegisterToFieldName = new Dictionary<int, string>
+        /// <summary>
+        /// Parses all holding registers from a Modbus message using the known register definitions.
+        /// </summary>
+        /// <param name="modbusMessage">The Modbus message containing the data.</param>
+        /// <param name="holdingRegisters">Dictionary of register definitions.</param>
+        /// <returns>Dictionary with register names and parsed values.</returns>
+        public Dictionary<string, object> ParseRegisters(GrowattModbusMessage modbusMessage, Dictionary<string, GrowattParameter> keyValuePairs)
         {
-            { 92, "pv1Voltage" },
-            { 93, "pv1Current" },
-            { 95, "pv2Voltage" },
-            { 96, "pv2Current" },
-            { 131, "totalBatteryPackSoc" },
-            { 132, "battery1Soc" },
-            { 133, "battery2Soc" },
-            { 134, "battery3Soc" },
-            { 135, "battery4Soc" },
-            { 141, "totalBatteryPackChargingPower" },
-            { 142, "totalBatteryPackDischargingPower" },
-            { 143, "batteryChargingPower" },
-            { 144, "batteryDischargingPower" },
-            { 145, "batteryChargingCurrent" },
-            { 146, "batteryDischargingCurrent" },
-            { 147, "batteryBusVoltage" },
-            { 148, "batteryBusCurrent" },
-            { 149, "batteryVoltage" },
-            { 150, "battery1Temp" },
-            { 151, "battery2Temp" },
-            { 152, "battery3Temp" },
-            { 153, "battery4Temp" },
-            { 160, "batteryCycles" },
-            { 161, "batterySoh" },
-            { 162, "battery1CellVoltage" },
-            { 163, "battery2CellVoltage" },
-            { 164, "battery3CellVoltage" },
-            { 165, "battery4CellVoltage" },
-            { 170, "battery1Alarm" },
-            { 171, "battery2Alarm" },
-            { 172, "battery3Alarm" },
-            { 173, "battery4Alarm" },
-            { 200, "pac" },
-            { 201, "ppv" },
-            { 202, "gridVoltage" },
-            { 203, "gridFrequency" },
-            { 204, "outputCurrent" },
-            { 210, "maxCellVoltage" },
-            { 211, "minCellVoltage" },
-            { 212, "batteryMaxTemp" },
-            { 213, "batteryMinTemp" },
-            { 220, "batteryCommStatus" },
-            { 221, "bmsStatus" },
-            { 230, "systemMode" },
-            { 231, "inverterStatus" },
-            { 240, "workTimeTotal" },
-            { 241, "workTimeThisYear" },
-            { 242, "workTimeThisMonth" },
-            { 243, "workTimeToday" },
-            { 250, "energyTotal" },
-            { 251, "energyThisYear" },
-            { 252, "energyThisMonth" },
-            { 253, "energyToday" },
-
-            // Alle Zeitfenster/Timer-Slots
-            { 254, "slot1_start_time" },
-            { 255, "slot1_end_time" },
-            { 256, "slot1_mode" },
-            { 257, "slot1_power" },
-            { 258, "slot1_enabled" },
-            { 259, "slot2_start_time" },
-            { 260, "slot2_end_time" },
-            { 261, "slot2_mode" },
-            { 262, "slot2_power" },
-            { 263, "slot2_enabled" },
-            { 264, "slot3_start_time" },
-            { 265, "slot3_end_time" },
-            { 266, "slot3_mode" },
-            { 267, "slot3_power" },
-            { 268, "slot3_enabled" },
-            { 269, "slot4_start_time" },
-            { 270, "slot4_end_time" },
-            { 271, "slot4_mode" },
-            { 272, "slot4_power" },
-            { 273, "slot4_enabled" },
-            { 274, "slot5_start_time" },
-            { 275, "slot5_end_time" },
-            { 276, "slot5_mode" },
-            { 277, "slot5_power" },
-            { 278, "slot5_enabled" },
-            { 279, "slot6_start_time" },
-            { 280, "slot6_end_time" },
-            { 281, "slot6_mode" },
-            { 282, "slot6_power" },
-            { 283, "slot6_enabled" },
-            { 284, "slot7_start_time" },
-            { 285, "slot7_end_time" },
-            { 286, "slot7_mode" },
-            { 287, "slot7_power" },
-            { 288, "slot7_enabled" },
-            { 289, "slot8_start_time" },
-            { 290, "slot8_end_time" },
-            { 291, "slot8_mode" },
-            { 292, "slot8_power" },
-            { 293, "slot8_enabled" },
-            { 294, "slot9_start_time" },
-            { 295, "slot9_end_time" },
-            { 296, "slot9_mode" },
-            { 297, "slot9_power" },
-            { 298, "slot9_enabled" }
-        };
-
-        public Dictionary<string, object> Parse(ModbusMessage message)
-        {      
             var result = new Dictionary<string, object>();
-            result.Add("timestamp", message.Timestamp);
-
-            switch (message.FunctionCode)
+          
+            foreach (var kvp in keyValuePairs)
             {
-                case 3: // READ_HOLDING_REGISTER
-                case 4: // READ_INPUT_REGISTER
+                string name = kvp.Key;
+                var register = kvp.Value;
 
-                    int offset = 38;
-                    while (offset + 4 <= message.Data.Length)
-                    {
-                        ushort startReg = BitConverter.ToUInt16(message.Data.Skip(offset).Take(2).Reverse().ToArray(), 0);
-                        ushort endReg = BitConverter.ToUInt16(message.Data.Skip(offset + 2).Take(2).Reverse().ToArray(), 0);
-                        int regCount = endReg - startReg + 1;
-                        offset += 4;
-                        for (int i = 0; i < regCount; i++)
-                        {
-                            if (offset + 2 > message.Data.Length) break;
-                            ushort value = BitConverter.ToUInt16(message.Data.Skip(offset).Take(2).Reverse().ToArray(), 0);
+                // Assuming GrowattRegisterModel has a property or method to get the position
+                var position = register.Growatt.Position; // Replace with actual method/property
 
-                            string key = RegisterToFieldName.TryGetValue(startReg + i, out var name)
-                                ? name
-                                : $"register_{startReg + i}";
+                // Get raw data for the register
+                var dataRaw = modbusMessage.GetData(position);
 
-                            if (value != 0)
-                                result[key] = value;
-                            offset += 2;
-                        }
-                    }
-                    break;
+                if (dataRaw == null)
+                {
+                    continue;
+                }
 
-                case 6: // WRITE_SINGLE_REGISTER
+                // Assuming GrowattRegisterModel has a method to parse data
+                var value = register.Growatt.Data.Parse(dataRaw); // Replace with actual method
 
-                    int w6offset = 38;
-                    if (message.Data.Length >= w6offset + 4)
-                    {
-                        ushort reg = BitConverter.ToUInt16(message.Data.Skip(w6offset).Take(2).Reverse().ToArray(), 0);
-                        ushort val = BitConverter.ToUInt16(message.Data.Skip(w6offset + 2).Take(2).Reverse().ToArray(), 0);
+                if (value == null)
+                {
+                    continue;
+                }
 
-                        string key = RegisterToFieldName.TryGetValue(reg, out var name)
-                            ? name
-                            : $"register_{reg}";
-                        if (val != 0)
-                            result[key] = val;
-                    }
-                    break;
-
-                case 16: // WRITE_MULTIPLE_REGISTERS
-                    int w16offset = 38;
-                    if (message.Data.Length >= w16offset + 4)
-                    {
-                        ushort startReg = BitConverter.ToUInt16(message.Data.Skip(w16offset).Take(2).Reverse().ToArray(), 0);
-                        ushort endReg = BitConverter.ToUInt16(message.Data.Skip(w16offset + 2).Take(2).Reverse().ToArray(), 0);
-                        int regCount = endReg - startReg + 1;
-                        int vOffset = w16offset + 4;
-                        for (int i = 0; i < regCount; i++)
-                        {
-                            if (vOffset + 2 > message.Data.Length) break;
-                            ushort value = BitConverter.ToUInt16(message.Data.Skip(vOffset).Take(2).Reverse().ToArray(), 0);
-
-                            string key = RegisterToFieldName.TryGetValue(startReg + i, out var name)
-                                ? name
-                                : $"register_{startReg + i}";
-                            if (value != 0)
-                                result[key] = value;
-                            vOffset += 2;
-                        }
-                    }
-                    break;
-
-                case 25: // CUSTOM/ASCII/Manufacturer
-                    result["ascii_payload"] = System.Text.Encoding.ASCII.GetString(message.Data);
-                    break;
-
-                default:
-                    // Fallback: Gib Raw aus
-                    result["raw_data"] = BitConverter.ToString(message.Data);
-                    break;
+                result[name] = value;
             }
-
-            SaveDataToFile(message, result);
 
             return result;
-        }
-
-        private void SaveDataToFile(ModbusMessage message, Dictionary<string, object> result)
-        {
-            string modbusDataFile = Path.Combine(
-                AppContext.BaseDirectory,
-                "dump",
-                $"{DateTime.UtcNow.Year}-{DateTime.UtcNow.Month}-{DateTime.UtcNow.Day}-{DateTime.UtcNow.Hour}-fc{message.FunctionCode}.modbus_data.txt"
-            );
-
-            string modbusRawFile = Path.Combine(
-                AppContext.BaseDirectory,
-                "dump",
-                $"{DateTime.UtcNow.Year}-{DateTime.UtcNow.Month}-{DateTime.UtcNow.Day}-{DateTime.UtcNow.Hour}-fc{message.FunctionCode}.modbus_raw.txt"
-            );
-
-            try
-            {
-                var directory = Path.GetDirectoryName(modbusRawFile);
-                if (directory != null && !Directory.Exists(directory))
-                {
-                    Directory.CreateDirectory(directory);
-                }
-
-                if (!File.Exists(modbusRawFile))
-                {
-                    File.AppendAllText(modbusRawFile, string.Join(",", new string[]
-                    {
-                        "timestamp",
-                        nameof(ModbusMessage.DeviceId),
-                        nameof(ModbusMessage.FunctionCode),
-                        nameof(ModbusMessage.Data),
-                        nameof(ModbusMessage.Raw)
-                    }) + Environment.NewLine);
-                }
-
-                File.AppendAllText(modbusRawFile, string.Join(",", new 
-                {
-                    message.Timestamp,
-                    message.DeviceId,
-                    message.FunctionCode,
-                    message.Data,
-                    message.Raw
-                }) + Environment.NewLine);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Fehler beim Speichern der Modbus-Daten in die Datei {File}", modbusRawFile);
-            }
-
-            try
-            {
-                var directory = Path.GetDirectoryName(modbusDataFile);
-                if (directory != null && !Directory.Exists(directory))
-                {
-                    Directory.CreateDirectory(directory);
-                }
-
-                if (!File.Exists(modbusDataFile))
-                {
-                    File.AppendAllText(modbusDataFile, string.Join(",", result.Keys) + ";" + Environment.NewLine);
-                }
-
-                File.AppendAllText(modbusDataFile, string.Join(",", result.Values) + ";" + Environment.NewLine);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Fehler beim Speichern der Modbus-Daten in die Datei {File}", modbusDataFile);
-            }
         }
     }
 }

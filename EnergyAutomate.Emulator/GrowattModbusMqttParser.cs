@@ -1,3 +1,4 @@
+using EnergyAutomate.Emulator.Models;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System;
@@ -109,70 +110,50 @@ namespace EnergyAutomate.Emulator
         /// <param name="topic">The MQTT topic.</param>
         /// <param name="isScrambled">Set to true if the payload is scrambled.</param>
         /// <returns>Parsed ModbusMessage or null if parsing failed.</returns>
-        public ModbusMessage? ParseModbusMessage(byte[] payload, string topic, bool isScrambled = true)
+        public GrowattModbusMessage? ParseModbusMessage(byte[] payload, string topic)
         {
-            byte[] data = isScrambled ? Unscramble(payload) : payload;
-
-            if (data.Length < 10)
-            {
-                GrowattMqttParserLogger.LogWarning("ParseModbusMessage: Payload too short for Modbus message.");
-                return null;
-            }
-
             try
             {
-                // Example: Extract function code and device id (positions may vary by protocol)
-                int functionCode = data[7];
-                string deviceId = Encoding.ASCII.GetString(data, 8, 12).Trim('\0');
+                string resultString = string.Empty;
 
-                // Try to extract register address and value if possible
-                ushort? registerAddress = null;
-                ushort? value = null;
-                if (data.Length >= 24)
+                byte[] data = Unscramble(payload);
+
+                var message = GrowattModbusMessage.Parse(data);
+
+                var growattNoahParser = _serviceProvider.GetRequiredService<GrowattNoahParser>();
+
+                if (message != null)
                 {
-                    // Register address: bytes 20-21, Value: bytes 22-23 (big-endian)
-                    registerAddress = (ushort)((data[20] << 8) | data[21]);
-                    value = (ushort)((data[22] << 8) | data[23]);
+                    var growattRegister = GrowattRegisterModel.SeedDefaults();
+
+                    if (message.Function == GrowattModbusFunction.READ_HOLDING_REGISTER)
+                    {
+                        var result = growattNoahParser.ParseRegisters(message, growattRegister.HoldingRegisters);
+                        resultString = string.Join(", ", result.Select(kv => $"{kv.Key}={kv.Value}"));
+                    }
+
+                    if (message.Function == GrowattModbusFunction.READ_INPUT_REGISTER)
+                    {
+                        var result = growattNoahParser.ParseRegisters(message, growattRegister.InputRegisters);
+                        resultString = string.Join(", ", result.Select(kv => $"{kv.Key}={kv.Value}"));
+                    }
+
+                    // Log including startRegister and registerCount
+                    GrowattMqttParserLogger.LogInformation(
+                        "Topic={Topic}, FunctionCode={FunctionCode}, DeviceId={DeviceId}Raw={RawData}",
+                        topic,
+                        message.Function.ToString(),
+                        message.DeviceId + Environment.NewLine,
+                        BitConverter.ToString(data)
+                    );
+
+                    GrowattNoahParserLogger.LogInformation(
+                        "Topic={Topic}, FunctionCode={FunctionCode}, Register={Register}",
+                        topic,
+                        message.Function.ToString(),
+                        resultString
+                    );
                 }
-
-                // Example: Extract data section (positions/protocol may need adjustment)
-                int dataStart = 20;
-                int dataLength = data.Length - dataStart;
-                byte[] modbusData = new byte[dataLength];
-                Array.Copy(data, dataStart, modbusData, 0, dataLength);
-
-                var message = new ModbusMessage
-                {
-                    Timestamp = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss"),
-                    FunctionCode = functionCode,
-                    DeviceId = deviceId,
-                    Data = modbusData,
-                    Raw = data
-                };
-
-                var result = GrowattNoahModbusParser.Parse(message);
-
-                // Join each key-value pair as "key=value"
-                string resultString = string.Join(", ", result.Select(kv => $"{kv.Key}={kv.Value}"));
-
-                // Log only in the Modbus category, now including the topic
-                GrowattMqttParserLogger.LogInformation(
-                    "Topic={Topic}, FunctionCode={FunctionCode}, DeviceId={DeviceId}, Register={Register}, Value={Value}, Data={Data}, Raw={Raw}",
-                    topic,
-                    functionCode,
-                    deviceId,
-                    registerAddress.HasValue ? registerAddress.Value.ToString("X4") : "n/a",
-                    value.HasValue ? value.Value.ToString() : "n/a",
-                    BitConverter.ToString(modbusData),
-                    BitConverter.ToString(data)
-                );
-
-                GrowattNoahParserLogger.LogInformation(
-                    "Topic={Topic}, FunctionCode={FunctionCode}, Register={Register}",
-                    topic,
-                    functionCode,
-                    resultString
-                );
 
                 return message;
             }

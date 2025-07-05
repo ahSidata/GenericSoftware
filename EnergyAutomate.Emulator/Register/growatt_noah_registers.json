@@ -1,0 +1,1080 @@
+{
+  "holding_registers": {
+    "slot1_start_time": {
+        "growatt": {
+            "position": {
+                "register_no": 254,
+                "offset": 0,
+                "size": 2
+            },
+            "data": {
+                "data_type": "TIME_HHMM"
+            }
+        }
+    },
+    "slot1_end_time": {
+        "growatt": {
+            "position": {
+                "register_no": 255,
+                "offset": 0,
+                "size": 2
+            },
+            "data": {
+                "data_type": "TIME_HHMM"
+            }
+        }
+    },
+    "slot1_mode": {
+        "growatt": {
+            "position": {
+                "register_no": 256,
+                "offset": 0,
+                "size": 2
+            },
+            "data": {
+                "data_type": "INT"
+            }
+        }
+    },
+    "slot1_power": {
+        "growatt": {
+            "position": {
+                "register_no": 257,
+                "offset": 0,
+                "size": 2
+            },
+            "data": {
+                "data_type": "INT"
+            }
+        }
+    },
+    "slot1_enabled": {
+        "growatt": {
+            "position": {
+                "register_no": 258,
+                "offset": 0,
+                "size": 2
+            },
+            "data": {
+                "data_type": "INT"
+            }
+        }
+    },
+    "slot2_start_time": {
+        "growatt": {
+            "position": {
+                "register_no": 259,
+                "offset": 0,
+                "size": 2
+            },
+            "data": {
+                "data_type": "TIME_HHMM"
+            }
+        }
+    },
+    "slot2_end_time": {
+        "growatt": {
+            "position": {
+                "register_no": 260,
+                "offset": 0,
+                "size": 2
+            },
+            "data": {
+                "data_type": "TIME_HHMM"
+            }
+        }
+    },
+    "slot2_mode": {
+        "growatt": {
+            "position": {
+                "register_no": 261,
+                "offset": 0,
+                "size": 2
+            },
+            "data": {
+                "data_type": "INT"
+            }
+        }
+    },
+    "slot2_power": {
+        "growatt": {
+            "position": {
+                "register_no": 262,
+                "offset": 0,
+                "size": 2
+            },
+            "data": {
+                "data_type": "INT"
+            }
+        }
+    },
+    "slot2_enabled": {
+        "growatt": {
+            "position": {
+                "register_no": 263,
+                "offset": 0,
+                "size": 2
+            },
+            "data": {
+                "data_type": "INT"
+            }
+        }
+    },
+    "slot3_start_time": {
+        "growatt": {
+            "position": {
+                "register_no": 264,
+                "offset": 0,
+                "size": 2
+            },
+            "data": {
+                "data_type": "TIME_HHMM"
+            }
+        }
+    },
+    "slot3_end_time": {
+        "growatt": {
+            "position": {
+                "register_no": 265,
+                "offset": 0,
+                "size": 2
+            },
+            "data": {
+                "data_type": "TIME_HHMM"
+            }
+        }
+    },
+    "slot3_mode": {
+        "growatt": {
+            "position": {
+                "register_no": 266,
+                "offset": 0,
+                "size": 2
+            },
+            "data": {
+                "data_type": "INT"
+            }
+        }
+    },
+    "slot3_power": {
+        "growatt": {
+            "position": {
+                "register_no": 267,
+                "offset": 0,
+                "size": 2
+            },
+            "data": {
+                "data_type": "INT"
+            }
+        }
+    },
+    "slot3_enabled": {
+        "growatt": {
+            "position": {
+                "register_no": 268,
+                "offset": 0,
+                "size": 2
+            },
+            "data": {
+                "data_type": "INT"
+            }
+        }
+    },
+    "slot4_start_time": {
+        "growatt": {
+            "position": {
+                "register_no": 269,
+                "offset": 0,
+                "size": 2
+            },
+            "data": {
+                "data_type": "TIME_HHMM"
+            }
+        }
+    },
+    "slot4_end_time": {
+        "growatt": {
+            "position": {
+                "register_no": 270,
+                "offset": 0,
+                "size": 2
+            },
+            "data": {
+                "data_type": "TIME_HHMM"
+            }
+        }
+    },
+    "slot4_mode": {
+        "growatt": {
+            "position": {
+                "register_no": 271,
+                "offset": 0,
+                "size": 2
+            },
+            "data": {
+                "data_type": "INT"
+            }
+        }
+    },
+    "slot4_power": {
+        "growatt": {
+            "position": {
+                "register_no": 272,
+                "offset": 0,
+                "size": 2
+            },
+            "data": {
+                "data_type": "INT"
+            }
+        }
+    },
+    "slot4_enabled": {
+        "growatt": {
+            "position": {
+                "register_no": 273,
+                "offset": 0,
+                "size": 2
+            },
+            "data": {
+                "data_type": "INT"
+            }
+        }
+    },
+    "slot5_start_time": {
+        "growatt": {
+            "position": {
+                "register_no": 274,
+                "offset": 0,
+                "size": 2
+            },
+            "data": {
+                "data_type": "TIME_HHMM"
+            }
+        }
+    },
+    "slot5_end_time": {
+        "growatt": {
+            "position": {
+                "register_no": 275,
+                "offset": 0,
+                "size": 2
+            },
+            "data": {
+                "data_type": "TIME_HHMM"
+            }
+        }
+    },
+    "slot5_mode": {
+        "growatt": {
+            "position": {
+                "register_no": 276,
+                "offset": 0,
+                "size": 2
+            },
+            "data": {
+                "data_type": "INT"
+            }
+        }
+    },
+    "slot5_power": {
+        "growatt": {
+            "position": {
+                "register_no": 277,
+                "offset": 0,
+                "size": 2
+            },
+            "data": {
+                "data_type": "INT"
+            }
+        }
+    },
+    "slot5_enabled": {
+        "growatt": {
+            "position": {
+                "register_no": 278,
+                "offset": 0,
+                "size": 2
+            },
+            "data": {
+                "data_type": "INT"
+            }
+        }
+    },
+    "slot6_start_time": {
+        "growatt": {
+            "position": {
+                "register_no": 279,
+                "offset": 0,
+                "size": 2
+            },
+            "data": {
+                "data_type": "TIME_HHMM"
+            }
+        }
+    },
+    "slot6_end_time": {
+        "growatt": {
+            "position": {
+                "register_no": 280,
+                "offset": 0,
+                "size": 2
+            },
+            "data": {
+                "data_type": "TIME_HHMM"
+            }
+        }
+    },
+    "slot6_mode": {
+        "growatt": {
+            "position": {
+                "register_no": 281,
+                "offset": 0,
+                "size": 2
+            },
+            "data": {
+                "data_type": "INT"
+            }
+        }
+    },
+    "slot6_power": {
+        "growatt": {
+            "position": {
+                "register_no": 282,
+                "offset": 0,
+                "size": 2
+            },
+            "data": {
+                "data_type": "INT"
+            }
+        }
+    },
+    "slot6_enabled": {
+        "growatt": {
+            "position": {
+                "register_no": 283,
+                "offset": 0,
+                "size": 2
+            },
+            "data": {
+                "data_type": "INT"
+            }
+        }
+    },
+    "slot7_start_time": {
+        "growatt": {
+            "position": {
+                "register_no": 284,
+                "offset": 0,
+                "size": 2
+            },
+            "data": {
+                "data_type": "TIME_HHMM"
+            }
+        }
+    },
+    "slot7_end_time": {
+        "growatt": {
+            "position": {
+                "register_no": 285,
+                "offset": 0,
+                "size": 2
+            },
+            "data": {
+                "data_type": "TIME_HHMM"
+            }
+        }
+    },
+    "slot7_mode": {
+        "growatt": {
+            "position": {
+                "register_no": 286,
+                "offset": 0,
+                "size": 2
+            },
+            "data": {
+                "data_type": "INT"
+            }
+        }
+    },
+    "slot7_power": {
+        "growatt": {
+            "position": {
+                "register_no": 287,
+                "offset": 0,
+                "size": 2
+            },
+            "data": {
+                "data_type": "INT"
+            }
+        }
+    },
+    "slot7_enabled": {
+        "growatt": {
+            "position": {
+                "register_no": 288,
+                "offset": 0,
+                "size": 2
+            },
+            "data": {
+                "data_type": "INT"
+            }
+        }
+    },
+    "slot8_start_time": {
+        "growatt": {
+            "position": {
+                "register_no": 289,
+                "offset": 0,
+                "size": 2
+            },
+            "data": {
+                "data_type": "TIME_HHMM"
+            }
+        }
+    },
+    "slot8_end_time": {
+        "growatt": {
+            "position": {
+                "register_no": 290,
+                "offset": 0,
+                "size": 2
+            },
+            "data": {
+                "data_type": "TIME_HHMM"
+            }
+        }
+    },
+    "slot8_mode": {
+        "growatt": {
+            "position": {
+                "register_no": 291,
+                "offset": 0,
+                "size": 2
+            },
+            "data": {
+                "data_type": "INT"
+            }
+        }
+    },
+    "slot8_power": {
+        "growatt": {
+            "position": {
+                "register_no": 292,
+                "offset": 0,
+                "size": 2
+            },
+            "data": {
+                "data_type": "INT"
+            }
+        }
+    },
+    "slot8_enabled": {
+        "growatt": {
+            "position": {
+                "register_no": 293,
+                "offset": 0,
+                "size": 2
+            },
+            "data": {
+                "data_type": "INT"
+            }
+        }
+    },
+    "slot9_start_time": {
+        "growatt": {
+            "position": {
+                "register_no": 294,
+                "offset": 0,
+                "size": 2
+            },
+            "data": {
+                "data_type": "TIME_HHMM"
+            }
+        }
+    },
+    "slot9_end_time": {
+        "growatt": {
+            "position": {
+                "register_no": 295,
+                "offset": 0,
+                "size": 2
+            },
+            "data": {
+                "data_type": "TIME_HHMM"
+            }
+        }
+    },
+    "slot9_mode": {
+        "growatt": {
+            "position": {
+                "register_no": 296,
+                "offset": 0,
+                "size": 2
+            },
+            "data": {
+                "data_type": "INT"
+            }
+        }
+    },
+    "slot9_power": {
+        "growatt": {
+            "position": {
+                "register_no": 297,
+                "offset": 0,
+                "size": 2
+            },
+            "data": {
+                "data_type": "INT"
+            }
+        }
+    },
+    "slot9_enabled": {
+        "growatt": {
+            "position": {
+                "register_no": 298,
+                "offset": 0,
+                "size": 2
+            },
+            "data": {
+                "data_type": "INT"
+            }
+        }
+    },
+    "default_power": {
+      "growatt": {
+        "position": {
+          "register_no": 252
+        },
+        "data": {
+          "data_type": "INT"
+        }
+      }
+    },
+    "discharge_limit": {
+      "growatt": {
+        "position": {
+          "register_no": 251
+        },
+        "data": {
+          "data_type": "INT"
+        }
+      }
+    },
+    "charge_limit": {
+      "growatt": {
+        "position": {
+          "register_no": 250
+        },
+        "data": {
+          "data_type": "INT"
+        }
+      }
+    }
+  },
+  "input_registers": {
+    "bat_2_soc_pct": {
+      "growatt": {
+        "position": {
+          "register_no": 41,
+          "offset": 0,
+          "size": 2
+        },
+        "data": {
+          "data_type": "FLOAT",
+          "float_options": {
+            "delta": 0.0,
+            "multiplier": 1.0
+          }
+        }
+      }
+    },
+    "bat_3_soc_pct": {
+      "growatt": {
+        "position": {
+          "register_no": 53,
+          "offset": 0,
+          "size": 2
+        },
+        "data": {
+          "data_type": "FLOAT",
+          "float_options": {
+            "delta": 0.0,
+            "multiplier": 1.0
+          }
+        }
+      }
+    },
+    "bat_4_soc_pct": {
+      "growatt": {
+        "position": {
+          "register_no": 65,
+          "offset": 0,
+          "size": 2
+        },
+        "data": {
+          "data_type": "FLOAT",
+          "float_options": {
+            "delta": 0.0,
+            "multiplier": 1.0
+          }
+        }
+      }
+    },
+    "priority_mode": {
+      "growatt": {
+        "position": {
+          "register_no": 8,
+          "offset": 0,
+          "size": 2
+        },
+        "data": {
+          "data_type": "ENUM",
+          "enum_options": {
+            "enum_type": "INT_MAP",
+            "values": {
+              "0": "Load First",
+              "1": "Battery First",
+              "2": "Grid First"
+            }
+          }
+        }
+      }
+    },
+    "bat_sysstate": {
+      "growatt": {
+        "position": {
+          "register_no": 10,
+          "offset": 0,
+          "size": 2
+        },
+        "data": {
+          "data_type": "ENUM",
+          "enum_options": {
+            "enum_type": "INT_MAP",
+            "values": {
+              "0": "Idle",
+              "1": "Charging",
+              "2": "Discharging"
+            }
+          }
+        }
+      }
+    },
+    "tot_bat_soc_pct": {
+      "growatt": {
+        "position": {
+          "register_no": 13,
+          "offset": 0,
+          "size": 2
+        },
+        "data": {
+          "data_type": "FLOAT",
+          "float_options": {
+            "delta": 0.0,
+            "multiplier": 1.0
+          }
+        }
+      }
+    },
+    "Vpv1": {
+      "growatt": {
+        "position": {
+          "register_no": 92,
+          "offset": 0,
+          "size": 2
+        },
+        "data": {
+          "data_type": "FLOAT",
+          "float_options": {
+            "delta": 0.0,
+            "multiplier": 0.01
+          }
+        }
+      }
+    },
+    "Vpv2": {
+      "growatt": {
+        "position": {
+          "register_no": 95,
+          "offset": 0,
+          "size": 2
+        },
+        "data": {
+          "data_type": "FLOAT",
+          "float_options": {
+            "delta": 0.0,
+            "multiplier": 0.01
+          }
+        }
+      }
+    },
+    "out_power": {
+      "growatt": {
+        "position": {
+          "register_no": 2,
+          "offset": 0,
+          "size": 2
+        },
+        "data": {
+          "data_type": "FLOAT",
+          "float_options": {
+            "delta": 0.0,
+            "multiplier": 1.0
+          }
+        }
+      }
+    },
+    "out_voltage": {
+      "growatt": {
+          "position": {
+              "register_no": 109,
+              "offset": 0,
+              "size": 2
+          },
+          "data": {
+              "data_type": "FLOAT",
+              "float_options": {
+                  "delta": 0.0,
+                  "multiplier": 0.01
+              }
+          }
+      }
+    },
+    "temp2": {
+      "growatt": {
+          "position": {
+              "register_no": 97,
+              "offset": 0,
+              "size": 2
+          },
+          "data": {
+              "data_type": "FLOAT",
+              "float_options": {
+                  "delta": 0.0,
+                  "multiplier": 0.01
+              }
+          }
+      }
+    },
+    "maxcvbat1": {
+      "growatt": {
+          "position": {
+              "register_no": 99,
+              "offset": 0,
+              "size": 2
+          },
+          "data": {
+              "data_type": "FLOAT",
+              "float_options": {
+                  "delta": 0.0,
+                  "multiplier": 0.001
+              }
+          }
+      }
+    },
+    "mincvbat1": {
+      "growatt": {
+          "position": {
+              "register_no": 100,
+              "offset": 0,
+              "size": 2
+          },
+          "data": {
+              "data_type": "FLOAT",
+              "float_options": {
+                  "delta": 0.0,
+                  "multiplier": 0.001
+              }
+          }
+      }
+    },
+    "pv_tot_power": {
+      "growatt": {
+          "position": {
+              "register_no": 7,
+              "offset": 0,
+              "size": 2
+          },
+          "data": {
+              "data_type": "FLOAT",
+              "float_options": {
+                  "delta": 0.0,
+                  "multiplier": 1.0
+              }
+          }
+      }
+    },
+    "charging_discharging": {
+      "growatt": {
+          "position": {
+              "register_no": 11,
+              "offset": 0,
+              "size": 2
+          },
+          "data": {
+              "data_type": "FLOAT",
+              "float_options": {
+                  "delta": -30000.0,
+                  "multiplier": 1.0
+              }
+          }
+      }
+    },
+    "pv_eng_today": {
+      "growatt": {
+          "position": {
+              "register_no": 72,
+              "offset": 0,
+              "size": 2
+          },
+          "data": {
+              "data_type": "FLOAT",
+              "float_options": {
+                  "delta": 0.0,
+                  "multiplier": 0.1
+              }
+          }
+      }
+    },
+    "pv_eng_month": {
+      "growatt": {
+          "position": {
+              "register_no": 74,
+              "offset": 0,
+              "size": 2
+          },
+          "data": {
+              "data_type": "FLOAT",
+              "float_options": {
+                  "delta": 0.0,
+                  "multiplier": 0.1
+              }
+          }
+      }
+    },
+    "ser_part_1": {
+      "growatt": {
+          "position": {
+              "register_no": 21,
+              "offset": 0,
+              "size": 4
+          },
+          "data": {
+              "data_type": "STRING"
+          }
+      }
+    },
+    "pv_eng_year": {
+      "growatt": {
+          "position": {
+              "register_no": 76,
+              "offset": 0,
+              "size": 2
+          },
+          "data": {
+              "data_type": "FLOAT",
+              "float_options": {
+                  "delta": 0.0,
+                  "multiplier": 0.1
+              }
+          }
+      }
+    },
+    "eng_out_device": {
+      "growatt": {
+          "position": {
+              "register_no": 78,
+              "offset": 0,
+              "size": 2
+          },
+          "data": {
+              "data_type": "FLOAT",
+              "float_options": {
+                  "delta": 0.0,
+                  "multiplier": 0.1
+              }
+          }
+      }
+    },
+    "ser_part_3": {
+      "growatt": {
+          "position": {
+              "register_no": 25,
+              "offset": 0,
+              "size": 4
+          },
+          "data": {
+              "data_type": "STRING"
+          }
+      }
+    },
+    "ser_part_2": {
+      "growatt": {
+          "position": {
+              "register_no": 23,
+              "offset": 0,
+              "size": 4
+          },
+          "data": {
+              "data_type": "STRING"
+          }
+      }
+    },
+    "ser_part_4": {
+      "growatt": {
+          "position": {
+              "register_no": 27,
+              "offset": 0,
+              "size": 4
+          },
+          "data": {
+              "data_type": "STRING"
+          }
+      }
+    },
+    "bat_1_soc_pct": {
+      "growatt": {
+          "position": {
+              "register_no": 29,
+              "offset": 0,
+              "size": 2
+          },
+          "data": {
+              "data_type": "FLOAT",
+              "float_options": {
+                  "delta": 0.0,
+                  "multiplier": 1.0
+              }
+          }
+      }
+    },
+    "discharge_limit": {
+      "growatt": {
+          "position": {
+              "register_no": 91,
+              "offset": 0,
+              "size": 2
+          },
+          "data": {
+              "data_type": "FLOAT",
+              "float_options": {
+                  "delta": 0.0,
+                  "multiplier": 1.0
+              }
+          }
+      }
+    },
+    "charge_limit": {
+      "growatt": {
+          "position": {
+              "register_no": 90,
+              "offset": 0,
+              "size": 2
+          },
+          "data": {
+              "data_type": "FLOAT",
+              "float_options": {
+                  "delta": 0.0,
+                  "multiplier": 1.0
+              }
+          }
+      }
+    },
+    "temp1": {
+      "growatt": {
+          "position": {
+              "register_no": 94,
+              "offset": 0,
+              "size": 2
+          },
+          "data": {
+              "data_type": "FLOAT",
+              "float_options": {
+                  "delta": 0.0,
+                  "multiplier": 0.01
+              }
+          }
+      }
+    },
+    "Ipv1": {
+      "growatt": {
+          "position": {
+              "register_no": 93,
+              "offset": 0,
+              "size": 2
+          },
+          "data": {
+              "data_type": "FLOAT",
+              "float_options": {
+                  "delta": 0.0,
+                  "multiplier": 0.01
+              }
+          }
+      }
+    },
+    "Ipv2": {
+      "growatt": {
+          "position": {
+              "register_no": 96,
+              "offset": 0,
+              "size": 2
+          },
+          "data": {
+              "data_type": "FLOAT",
+              "float_options": {
+                  "delta": 0.0,
+                  "multiplier": 0.01
+              }
+          }
+      }
+    },
+    "bat_cnt": {
+      "growatt": {
+          "position": {
+              "register_no": 12,
+              "offset": 0,
+              "size": 2
+          },
+          "data": {
+              "data_type": "FLOAT",
+              "float_options": {
+                  "delta": 0.0,
+                  "multiplier": 1.0
+              }
+          }
+      }
+    },
+    "bat_cyclecnt": {
+      "growatt": {
+          "position": {
+              "register_no": 101,
+              "offset": 0,
+              "size": 2
+          },
+          "data": {
+              "data_type": "FLOAT",
+              "float_options": {
+                  "delta": 0.0,
+                  "multiplier": 1.0
+              }
+          }
+      }
+    },
+    "register_102": {
+      "growatt": {
+          "position": {
+              "register_no": 102,
+              "offset": 0,
+              "size": 2
+          },
+          "data": {
+              "data_type": "FLOAT",
+              "float_options": {
+                  "delta": 0.0,
+                  "multiplier": 1.0
+              }
+          }
+      }
+    }
+  }
+}
