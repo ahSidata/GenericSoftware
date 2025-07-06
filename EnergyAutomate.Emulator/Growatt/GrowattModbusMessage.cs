@@ -7,7 +7,6 @@ using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace EnergyAutomate.Emulator.Growatt
 {
-
     public class GrowattModbusMessage
     {
         public byte[] RawData { get; set; } = []; // Initialize with an empty array
@@ -21,6 +20,10 @@ namespace EnergyAutomate.Emulator.Growatt
         public GrowattMetadata? Metadata { get; set; }
 
         public GrowattModbusFunction Function { get; set; }
+
+        public ushort Crc { get; set; }
+
+        public bool IsCrcValid { get; private set; }
 
         public int MsgLenRead
         {
@@ -117,6 +120,14 @@ namespace EnergyAutomate.Emulator.Growatt
 
             Function = (GrowattModbusFunction)function;
 
+            // Extract CRC if it exists (last 2 bytes)
+            if (RawData.Length >= 2)
+            {
+                Crc = (ushort)((RawData[RawData.Length - 2] << 8) | RawData[RawData.Length - 1]);
+                IsCrcValid = ValidateCrc();
+                Logger?.LogTrace("GrowattModbusMessage.Parse: Topic={Topic}, CRC={Crc:X4}, IsValid={IsValid}", Topic, Crc, IsCrcValid);
+            }
+
             switch (Function)
             {
                 case GrowattModbusFunction.READ_INPUT_REGISTER:
@@ -197,7 +208,17 @@ namespace EnergyAutomate.Emulator.Growatt
             result[38] = (byte)(growattModbusBlock.Start >> 8); result[39] = (byte)(growattModbusBlock.Start & 0xFF);
             result[40] = (byte)(growattModbusBlock.End >> 8); result[41] = (byte)(growattModbusBlock.End & 0xFF);
             Array.Copy(growattModbusBlock.Values, 0, result, 42, growattModbusBlock.Values.Length);
-            return result;
+            
+            // Add CRC
+            ushort crc = CalculateCrc(result, 0, result.Length);
+            byte[] withCrc = new byte[result.Length + 2];
+            Array.Copy(result, withCrc, result.Length);
+            withCrc[result.Length] = (byte)(crc >> 8);
+            withCrc[result.Length + 1] = (byte)(crc & 0xFF);
+            
+            Logger?.LogTrace("GrowattModbusMessage.BuildMultiple: Built message with CRC={Crc:X4}", crc);
+            
+            return withCrc;
         }
 
         #endregion Multiple
@@ -234,9 +255,69 @@ namespace EnergyAutomate.Emulator.Growatt
             result[38] = (byte)(Register >> 8); result[39] = (byte)(Register & 0xFF);
             result[40] = (byte)(Value >> 8); result[41] = (byte)(Value & 0xFF);
 
-            return result;
+            // Add CRC
+            ushort crc = CalculateCrc(result, 0, result.Length);
+            byte[] withCrc = new byte[result.Length + 2];
+            Array.Copy(result, withCrc, result.Length);
+            withCrc[result.Length] = (byte)(crc >> 8);
+            withCrc[result.Length + 1] = (byte)(crc & 0xFF);
+            
+            Logger?.LogTrace("GrowattModbusMessage.BuildSingle: Built message with CRC={Crc:X4}", crc);
+            
+            return withCrc;
         }
 
         #endregion Single
+
+        #region CRC
+
+        /// <summary>
+        /// Calculates the Modbus CRC16 for the given data range
+        /// </summary>
+        /// <param name="data">Data buffer</param>
+        /// <param name="offset">Start offset</param>
+        /// <param name="length">Length of data to calculate CRC for</param>
+        /// <returns>16-bit CRC value</returns>
+        public static ushort CalculateCrc(byte[] data, int offset, int length)
+        {
+            ushort crc = 0xFFFF;
+            
+            for (int i = offset; i < offset + length; i++)
+            {
+                crc ^= data[i];
+                for (int j = 0; j < 8; j++)
+                {
+                    bool lsb = (crc & 0x0001) != 0;
+                    crc >>= 1;
+                    if (lsb)
+                    {
+                        crc ^= 0xA001; // Modbus CRC polynomial
+                    }
+                }
+            }
+            
+            return crc;
+        }
+
+        /// <summary>
+        /// Validates the CRC of the current message
+        /// </summary>
+        /// <returns>True if the CRC is valid, false otherwise</returns>
+        private bool ValidateCrc()
+        {
+            if (RawData.Length < 2)
+                return false;
+                
+            // Calculate CRC for all data except the last 2 bytes (which contain the CRC)
+            ushort calculatedCrc = CalculateCrc(RawData, 0, RawData.Length - 2);
+            ushort messageCrc = (ushort)((RawData[RawData.Length - 2] << 8) | RawData[RawData.Length - 1]);
+            
+            Logger?.LogTrace("GrowattModbusMessage.ValidateCrc: Calculated CRC={CalculatedCrc:X4}, Message CRC={MessageCrc:X4}", 
+                calculatedCrc, messageCrc);
+            
+            return calculatedCrc == messageCrc;
+        }
+
+        #endregion CRC
     }
 }
