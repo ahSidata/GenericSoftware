@@ -147,7 +147,7 @@ namespace EnergyAutomate.Emulator
             if (_clientInstance != null)
             {
                 var deviceId = "0PVP50ZR16ST00CB";
-                ushort startRegister = 311;
+                ushort startRegister = 310;
                 ushort[] values = { 0, value, 1 }; 
 
                 byte[] commandPayload = GrowattModbusMqttParser.BuildSetMultipleRegistersCommand(deviceId, startRegister, values);
@@ -162,9 +162,8 @@ namespace EnergyAutomate.Emulator
             {
                 var deviceId = "0PVP50ZR16ST00CB";
                 ushort startRegister = 252;
-                ushort[] values = { 0, value, 1 };
 
-                byte[] commandPayload = GrowattModbusMqttParser.BuildSetMultipleRegistersCommand(deviceId, startRegister, values);
+                byte[] commandPayload = GrowattModbusMqttParser.BuildSetRegisterCommand(deviceId, startRegister, value);
 
                 _clientInstance.send_msg($"s/33/{deviceId}", commandPayload, 0, 0);
             }
