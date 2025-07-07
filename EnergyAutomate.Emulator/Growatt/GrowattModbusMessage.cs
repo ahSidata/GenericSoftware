@@ -76,7 +76,7 @@ namespace EnergyAutomate.Emulator.Growatt
 
             string datePart = DateTime.UtcNow.ToString("yyyyMMdd");
             string topicPart = string.Join("_", Topic.Split(Path.GetInvalidFileNameChars(), StringSplitOptions.RemoveEmptyEntries));
-            string fileName = $"{datePart}_{topicPart}_Messages.txt";
+            string fileName = $"{datePart}_{topicPart}_{(int)DataHeaderFunction}_Messages.txt";
             string filePath = Path.Combine(dumpDirectory, fileName);
 
             string fileNameDataRaw = $"{datePart}_DataRaw.txt";
