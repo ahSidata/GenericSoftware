@@ -479,12 +479,84 @@ namespace EnergyAutomate.Emulator.Growatt.Models
                 }
             });
 
+            model.InputRegisters.Add("bat_1_ser_part_1", new GrowattParameter
+            {
+                Growatt = new GrowatttRegister
+                {
+                    Position = new GrowattRegisterPosition { RegisterNo = 21, Offset = 0, Size = 4 },
+                    Data = new GrowattData { DataType = GrowattDataType.STRING }
+                }
+            });
+
+            model.InputRegisters.Add("bat_1_ser_part_2", new GrowattParameter
+            {
+                Growatt = new GrowatttRegister
+                {
+                    Position = new GrowattRegisterPosition { RegisterNo = 23, Offset = 0, Size = 4 },
+                    Data = new GrowattData { DataType = GrowattDataType.STRING }
+                }
+            });
+
+            model.InputRegisters.Add("bat_1_ser_part_3", new GrowattParameter
+            {
+                Growatt = new GrowatttRegister
+                {
+                    Position = new GrowattRegisterPosition { RegisterNo = 25, Offset = 0, Size = 4 },
+                    Data = new GrowattData { DataType = GrowattDataType.STRING }
+                }
+            });
+
+            model.InputRegisters.Add("bat_1_ser_part_4", new GrowattParameter
+            {
+                Growatt = new GrowatttRegister
+                {
+                    Position = new GrowattRegisterPosition { RegisterNo = 27, Offset = 0, Size = 4 },
+                    Data = new GrowattData { DataType = GrowattDataType.STRING }
+                }
+            });
+
             model.InputRegisters.Add("bat_1_soc_pct", new GrowattParameter
             {
                 Growatt = new GrowatttRegister
                 {
                     Position = new GrowattRegisterPosition { RegisterNo = 29, Offset = 0, Size = 2 },
                     Data = new GrowattData { DataType = GrowattDataType.FLOAT, FloatOptions = new GrowattFloatOptions { Delta = 0.0, Multiplier = 1.0 } }
+                }
+            });
+
+            model.InputRegisters.Add("bat_2_ser_part_1", new GrowattParameter
+            {
+                Growatt = new GrowatttRegister
+                {
+                    Position = new GrowattRegisterPosition { RegisterNo = 33, Offset = 0, Size = 4 },
+                    Data = new GrowattData { DataType = GrowattDataType.STRING }
+                }
+            });
+
+            model.InputRegisters.Add("bat_2_ser_part_2", new GrowattParameter
+            {
+                Growatt = new GrowatttRegister
+                {
+                    Position = new GrowattRegisterPosition { RegisterNo = 35, Offset = 0, Size = 4 },
+                    Data = new GrowattData { DataType = GrowattDataType.STRING }
+                }
+            });
+
+            model.InputRegisters.Add("bat_2_ser_part_3", new GrowattParameter
+            {
+                Growatt = new GrowatttRegister
+                {
+                    Position = new GrowattRegisterPosition { RegisterNo = 37, Offset = 0, Size = 4 },
+                    Data = new GrowattData { DataType = GrowattDataType.STRING }
+                }
+            });
+
+            model.InputRegisters.Add("bat_2_ser_part_4", new GrowattParameter
+            {
+                Growatt = new GrowatttRegister
+                {
+                    Position = new GrowattRegisterPosition { RegisterNo = 39, Offset = 0, Size = 4 },
+                    Data = new GrowattData { DataType = GrowattDataType.STRING }
                 }
             });
 
@@ -497,12 +569,84 @@ namespace EnergyAutomate.Emulator.Growatt.Models
                 }
             });
 
+            model.InputRegisters.Add("bat_3_ser_part_1", new GrowattParameter
+            {
+                Growatt = new GrowatttRegister
+                {
+                    Position = new GrowattRegisterPosition { RegisterNo = 45, Offset = 0, Size = 4 },
+                    Data = new GrowattData { DataType = GrowattDataType.STRING }
+                }
+            });
+
+            model.InputRegisters.Add("bat_3_ser_part_2", new GrowattParameter
+            {
+                Growatt = new GrowatttRegister
+                {
+                    Position = new GrowattRegisterPosition { RegisterNo = 47, Offset = 0, Size = 4 },
+                    Data = new GrowattData { DataType = GrowattDataType.STRING }
+                }
+            });
+
+            model.InputRegisters.Add("bat_3_ser_part_3", new GrowattParameter
+            {
+                Growatt = new GrowatttRegister
+                {
+                    Position = new GrowattRegisterPosition { RegisterNo = 49, Offset = 0, Size = 4 },
+                    Data = new GrowattData { DataType = GrowattDataType.STRING }
+                }
+            });
+
+            model.InputRegisters.Add("bat_3_ser_part_4", new GrowattParameter
+            {
+                Growatt = new GrowatttRegister
+                {
+                    Position = new GrowattRegisterPosition { RegisterNo = 51, Offset = 0, Size = 4 },
+                    Data = new GrowattData { DataType = GrowattDataType.STRING }
+                }
+            });
+
             model.InputRegisters.Add("bat_3_soc_pct", new GrowattParameter
             {
                 Growatt = new GrowatttRegister
                 {
                     Position = new GrowattRegisterPosition { RegisterNo = 53, Offset = 0, Size = 2 },
                     Data = new GrowattData { DataType = GrowattDataType.FLOAT, FloatOptions = new GrowattFloatOptions { Delta = 0.0, Multiplier = 1.0 } }
+                }
+            });
+
+            model.InputRegisters.Add("bat_4_ser_part_1", new GrowattParameter
+            {
+                Growatt = new GrowatttRegister
+                {
+                    Position = new GrowattRegisterPosition { RegisterNo = 57, Offset = 0, Size = 4 },
+                    Data = new GrowattData { DataType = GrowattDataType.STRING }
+                }
+            });
+
+            model.InputRegisters.Add("bat_4_ser_part_2", new GrowattParameter
+            {
+                Growatt = new GrowatttRegister
+                {
+                    Position = new GrowattRegisterPosition { RegisterNo = 59, Offset = 0, Size = 4 },
+                    Data = new GrowattData { DataType = GrowattDataType.STRING }
+                }
+            });
+
+            model.InputRegisters.Add("bat_4_ser_part_3", new GrowattParameter
+            {
+                Growatt = new GrowatttRegister
+                {
+                    Position = new GrowattRegisterPosition { RegisterNo = 61, Offset = 0, Size = 4 },
+                    Data = new GrowattData { DataType = GrowattDataType.STRING }
+                }
+            });
+
+            model.InputRegisters.Add("bat_4_ser_part_4", new GrowattParameter
+            {
+                Growatt = new GrowatttRegister
+                {
+                    Position = new GrowattRegisterPosition { RegisterNo = 63, Offset = 0, Size = 4 },
+                    Data = new GrowattData { DataType = GrowattDataType.STRING }
                 }
             });
 
@@ -683,42 +827,6 @@ namespace EnergyAutomate.Emulator.Growatt.Models
                 {
                     Position = new GrowattRegisterPosition { RegisterNo = 97, Offset = 0, Size = 2 },
                     Data = new GrowattData { DataType = GrowattDataType.FLOAT, FloatOptions = new GrowattFloatOptions { Delta = 0.0, Multiplier = 0.01 } }
-                }
-            });
-
-            model.InputRegisters.Add("ser_part_1", new GrowattParameter
-            {
-                Growatt = new GrowatttRegister
-                {
-                    Position = new GrowattRegisterPosition { RegisterNo = 21, Offset = 0, Size = 4 },
-                    Data = new GrowattData { DataType = GrowattDataType.STRING }
-                }
-            });
-
-            model.InputRegisters.Add("ser_part_3", new GrowattParameter
-            {
-                Growatt = new GrowatttRegister
-                {
-                    Position = new GrowattRegisterPosition { RegisterNo = 25, Offset = 0, Size = 4 },
-                    Data = new GrowattData { DataType = GrowattDataType.STRING }
-                }
-            });
-
-            model.InputRegisters.Add("ser_part_2", new GrowattParameter
-            {
-                Growatt = new GrowatttRegister
-                {
-                    Position = new GrowattRegisterPosition { RegisterNo = 23, Offset = 0, Size = 4 },
-                    Data = new GrowattData { DataType = GrowattDataType.STRING }
-                }
-            });
-
-            model.InputRegisters.Add("ser_part_4", new GrowattParameter
-            {
-                Growatt = new GrowatttRegister
-                {
-                    Position = new GrowattRegisterPosition { RegisterNo = 27, Offset = 0, Size = 4 },
-                    Data = new GrowattData { DataType = GrowattDataType.STRING }
                 }
             });
 

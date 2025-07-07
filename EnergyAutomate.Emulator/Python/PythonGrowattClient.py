@@ -79,6 +79,8 @@ class Client:
 
     def send_msg(self, topic: string, payload: bytes, qos: int, retain: int):
         try:
+            if self.log_callback:
+                self.log_callback(f"Sending message: {e}")
             if self.dump_callback:
                 self.dump_callback(topic, payload, qos, retain)
 
@@ -109,16 +111,16 @@ class Client:
             monitor_thread.daemon = True
             monitor_thread.start()
 
-            # self._running = True
-            # while self._running:
-            #     time.sleep(0.1)
+            self._running = True
+            while self._running:
+                time.sleep(0.1)
 
-            # self._clientBroker.disconnect()
-            # if self._growattConnectionActive:
-            #     self._clientGrowatt.disconnect()
+            self._clientBroker.disconnect()
+            if self._growattConnectionActive:
+                self._clientGrowatt.disconnect()
 
-            # if self.log_callback:
-            #     self.log_callback("Python client finished!")
+            if self.log_callback:
+                self.log_callback("Python client finished!")
 
         except Exception as e:
             if self.log_callback:

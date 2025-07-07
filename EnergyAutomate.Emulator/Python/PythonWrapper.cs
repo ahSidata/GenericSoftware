@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Python.Runtime;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace EnergyAutomate.Emulator
@@ -20,13 +21,61 @@ namespace EnergyAutomate.Emulator
         public delegate Task DumpCallback(string topic, byte[] payload, int qos, int retain, int state, int dup, int mid);
 
         private Thread? _pythonThread;
-        private AutoResetEvent _stopPythonEvent = new AutoResetEvent(false);
         private dynamic? _clientInstance;
 
         public PythonWrapper(IServiceProvider serviceProvider)
         {
             ServiceProvider = serviceProvider;
             GrowattModbusMqttParser = new GrowattMqttParser(serviceProvider);
+            RegisterSignalHandlers();
+        }
+
+        private void RegisterSignalHandlers()
+        {
+            // Handle SIGTERM (Standard Docker Stop Signal)
+            AppDomain.CurrentDomain.ProcessExit += (sender, e) =>
+            {
+                Logger.LogInformation("[TRACE] Process exit signal received");
+                StopPythonClient();
+            };
+
+            // Handle SIGINT (Ctrl+C)
+            Console.CancelKeyPress += (sender, e) =>
+            {
+                Logger.LogInformation("[TRACE] Cancel key pressed (SIGINT)");
+                e.Cancel = true; // Verhindere sofortigen Prozessabbruch
+                StopPythonClient();
+            };
+
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ||
+                RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            {
+                try
+                {
+                    // In .NET 9, wir können PosixSignalRegistration direkt verwenden
+                    // SIGTERM
+                    PosixSignalRegistration.Create(PosixSignal.SIGTERM, (context) =>
+                    {
+                        Logger.LogInformation("[TRACE] SIGTERM signal received");
+                        StopPythonClient();
+                        context.Cancel = true;
+                    });
+
+                    // SIGQUIT
+                    PosixSignalRegistration.Create(PosixSignal.SIGQUIT, (context) =>
+                    {
+                        Logger.LogInformation("[TRACE] SIGQUIT signal received");
+                        StopPythonClient();
+                        context.Cancel = true;
+                    });
+
+                    Logger.LogInformation("[TRACE] POSIX signal handlers registered successfully");
+                }
+                catch (Exception ex)
+                {
+                    Logger.LogError("[TRACE] Failed to register POSIX signal handlers: {Exception}", ex);
+                }
+            }
         }
 
         public void StartPythonClient()
@@ -42,8 +91,8 @@ namespace EnergyAutomate.Emulator
 
         public void StopPythonClient()
         {
-            _stopPythonEvent.Set();
-            _pythonThread?.Join();
+            LogFromPython("[TRACE] Stoping Python client");
+            _clientInstance?.stop();
         }
 
         private void RunPythonClient()
@@ -82,15 +131,6 @@ namespace EnergyAutomate.Emulator
 
                     LogFromPython("[TRACE] Starting Python client");
                     _clientInstance.start();
-
-                    Console.WriteLine("[TRACE] Python client started. Waiting for stop signal...");
-                    _stopPythonEvent.WaitOne();
-
-                    Console.WriteLine("[TRACE] Stopping Python client");
-                    if (_clientInstance.HasAttr("stop"))
-                    {
-                        _clientInstance.stop();
-                    }
                 }
 
                 PythonEngine.Shutdown();

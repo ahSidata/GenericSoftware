@@ -79,6 +79,9 @@ namespace EnergyAutomate.Emulator.Growatt
             string fileName = $"{datePart}_{topicPart}_Messages.txt";
             string filePath = Path.Combine(dumpDirectory, fileName);
 
+            string fileNameDataRaw = $"{datePart}_DataRaw.txt";
+            string filePathDataRaw = Path.Combine(dumpDirectory, fileName);
+
             StringBuilder sb = new StringBuilder();
             sb.Append($"HeaderBytes: {BitConverter.ToString(DataHeader)} ");
             sb.Append($"Function: {(int)DataHeaderFunction} ");
@@ -88,6 +91,11 @@ namespace EnergyAutomate.Emulator.Growatt
             sb.AppendLine($"RegisterStrings: {RegisterStrings} ");
 
             File.AppendAllText(filePath, sb.ToString());
+
+            StringBuilder sbDataRaw = new StringBuilder();
+            sbDataRaw.AppendLine($"Topic: {Topic}, DataRaw: {BitConverter.ToString(DataRaw)} ");
+
+            File.AppendAllText(filePathDataRaw, sbDataRaw.ToString());
         }
 
         public ushort Register { get; set; }
