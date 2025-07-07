@@ -81,7 +81,16 @@ namespace EnergyAutomate.Emulator
                     }
 
                     LogFromPython("[TRACE] Starting Python client");
-                    _clientInstance.run();
+                    _clientInstance.start();
+
+                    Console.WriteLine("[TRACE] Python client started. Waiting for stop signal...");
+                    _stopPythonEvent.WaitOne();
+
+                    Console.WriteLine("[TRACE] Stopping Python client");
+                    if (_clientInstance.HasAttr("stop"))
+                    {
+                        _clientInstance.stop();
+                    }
                 }
 
                 PythonEngine.Shutdown();
@@ -164,8 +173,8 @@ namespace EnergyAutomate.Emulator
                 if (modBusMessage != null)
                 {
                     sb.AppendLine("Parsed Modbus Message:");
-                    sb.AppendLine($"RawDate: {BitConverter.ToString(modBusMessage.RawData)}");
-                    sb.AppendLine($"Function Code: {modBusMessage.Function.ToString()}");
+                    sb.AppendLine($"RawDate: {BitConverter.ToString(modBusMessage.DataRaw)}");
+                    sb.AppendLine($"Function Code: {modBusMessage.DataHeaderFunction.ToString()}");
                     sb.AppendLine($"Device ID: {modBusMessage.DeviceId}");
                     sb.AppendLine("RegisterBlocks:");
                     foreach (var kvp in modBusMessage.RegisterBlocks)

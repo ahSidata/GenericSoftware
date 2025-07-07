@@ -5,6 +5,7 @@ namespace EnergyAutomate.Emulator.Growatt.Models
     public class GrowattRegisterModel
     {
         public Dictionary<string, GrowattParameter> HoldingRegisters { get; set; } = new();
+
         public Dictionary<string, GrowattParameter> InputRegisters { get; set; } = new();
 
         public Dictionary<string, GrowattParameter> PresentRegisters { get; set; } = new();
@@ -748,6 +749,15 @@ namespace EnergyAutomate.Emulator.Growatt.Models
                 Growatt = new GrowatttRegister
                 {
                     Position = new GrowattRegisterPosition { RegisterNo = 311, Offset = 0, Size = 2 },
+                    Data = new GrowattData { DataType = GrowattDataType.INT }
+                }
+            });
+
+            model.PresentRegisters.Add("default_watt", new GrowattParameter
+            {
+                Growatt = new GrowatttRegister
+                {
+                    Position = new GrowattRegisterPosition { RegisterNo = 252, Offset = 0, Size = 2 },
                     Data = new GrowattData { DataType = GrowattDataType.INT }
                 }
             });
