@@ -453,7 +453,7 @@ namespace EnergyAutomate.Emulator.Growatt.Models
             #region Hardcoded InputRegisters
 
             // RegisterNo 1
-            model.InputRegisters.Add("RegisterNo1", new GrowattParameter
+            model.InputRegisters.Add(nameof(DeviceNoahLastData.status), new GrowattParameter
             {
                 Growatt = new GrowatttRegister
                 {
@@ -463,7 +463,7 @@ namespace EnergyAutomate.Emulator.Growatt.Models
             });
 
             // RegisterNo 2
-            model.InputRegisters.Add("out_power", new GrowattParameter
+            model.InputRegisters.Add(nameof(DeviceNoahLastData.pac), new GrowattParameter
             {
                 Growatt = new GrowatttRegister
                 {
@@ -473,7 +473,7 @@ namespace EnergyAutomate.Emulator.Growatt.Models
             });
 
             // RegisterNo 3
-            model.InputRegisters.Add("RegisterNo3", new GrowattParameter
+            model.InputRegisters.Add(nameof(DeviceNoahLastData.isAgain), new GrowattParameter
             {
                 Growatt = new GrowatttRegister
                 {
@@ -483,7 +483,7 @@ namespace EnergyAutomate.Emulator.Growatt.Models
             });
 
             // RegisterNo 4
-            model.InputRegisters.Add("RegisterNo4", new GrowattParameter
+            model.InputRegisters.Add(nameof(DeviceNoahLastData.pdWarnStatus), new GrowattParameter
             {
                 Growatt = new GrowatttRegister
                 {
@@ -493,7 +493,7 @@ namespace EnergyAutomate.Emulator.Growatt.Models
             });
 
             // RegisterNo 5
-            model.InputRegisters.Add("RegisterNo5", new GrowattParameter
+            model.InputRegisters.Add(nameof(DeviceNoahLastData.mpptProtectStatus), new GrowattParameter
             {
                 Growatt = new GrowatttRegister
                 {
@@ -503,7 +503,7 @@ namespace EnergyAutomate.Emulator.Growatt.Models
             });
 
             // RegisterNo 6
-            model.InputRegisters.Add("RegisterNo6", new GrowattParameter
+            model.InputRegisters.Add(nameof(DeviceNoahLastData.time), new GrowattParameter
             {
                 Growatt = new GrowatttRegister
                 {
@@ -513,7 +513,7 @@ namespace EnergyAutomate.Emulator.Growatt.Models
             });
 
             // RegisterNo 7
-            model.InputRegisters.Add("pv_tot_power", new GrowattParameter
+            model.InputRegisters.Add(nameof(DeviceNoahLastData.ppv), new GrowattParameter
             {
                 Growatt = new GrowatttRegister
                 {
@@ -523,7 +523,7 @@ namespace EnergyAutomate.Emulator.Growatt.Models
             });
 
             // RegisterNo 8
-            model.InputRegisters.Add("priority_mode", new GrowattParameter
+            model.InputRegisters.Add(nameof(DeviceNoahLastData.workMode), new GrowattParameter
             {
                 Growatt = new GrowatttRegister
                 {
@@ -533,7 +533,7 @@ namespace EnergyAutomate.Emulator.Growatt.Models
             });
 
             // RegisterNo 9
-            model.InputRegisters.Add("RegisterNo9", new GrowattParameter
+            model.InputRegisters.Add(nameof(DeviceNoahLastData.batteryPackageQuantity), new GrowattParameter
             {
                 Growatt = new GrowatttRegister
                 {
@@ -543,7 +543,7 @@ namespace EnergyAutomate.Emulator.Growatt.Models
             });
 
             // RegisterNo 10
-            model.InputRegisters.Add("bat_sysstate", new GrowattParameter
+            model.InputRegisters.Add(nameof(DeviceNoahLastData.batterySoh), new GrowattParameter
             {
                 Growatt = new GrowatttRegister
                 {
@@ -553,7 +553,7 @@ namespace EnergyAutomate.Emulator.Growatt.Models
             });
 
             // RegisterNo 11
-            model.InputRegisters.Add("charging_discharging", new GrowattParameter
+            model.InputRegisters.Add(nameof(DeviceNoahLastData.totalBatteryPackChargingPower), new GrowattParameter
             {
                 Growatt = new GrowatttRegister
                 {
@@ -563,7 +563,7 @@ namespace EnergyAutomate.Emulator.Growatt.Models
             });
 
             // RegisterNo 12
-            model.InputRegisters.Add("bat_cnt", new GrowattParameter
+            model.InputRegisters.Add(nameof(DeviceNoahLastData.batteryCycles), new GrowattParameter
             {
                 Growatt = new GrowatttRegister
                 {
@@ -573,7 +573,7 @@ namespace EnergyAutomate.Emulator.Growatt.Models
             });
 
             // RegisterNo 13
-            model.InputRegisters.Add("tot_bat_soc_pct", new GrowattParameter
+            model.InputRegisters.Add(nameof(DeviceNoahLastData.totalBatteryPackSoc), new GrowattParameter
             {
                 Growatt = new GrowatttRegister
                 {
@@ -582,28 +582,28 @@ namespace EnergyAutomate.Emulator.Growatt.Models
                 }
             });
 
-            // RegisterNo 14 (vermutlich workMode, Enum oder Bitfeld)
-            model.InputRegisters.Add("work_mode", new GrowattParameter
+            // RegisterNo 14
+            model.InputRegisters.Add(nameof(DeviceNoahLastData.workMode), new GrowattParameter
             {
                 Growatt = new GrowatttRegister
                 {
                     Position = new GrowattRegisterPosition { RegisterNo = 14, Offset = 0, Size = 2 },
-                    Data = new GrowattData { DataType = GrowattDataType.ENUM } // TODO: Werte mappen!
+                    Data = new GrowattData { DataType = GrowattDataType.ENUM }
                 }
             });
 
-            // RegisterNo 15 (totalBatteryPackChargingStatus, Bitfeld Charging/Discharging/Idle)
-            model.InputRegisters.Add("total_battery_pack_charging_status", new GrowattParameter
+            // RegisterNo 15
+            model.InputRegisters.Add(nameof(DeviceNoahLastData.totalBatteryPackChargingStatus), new GrowattParameter
             {
                 Growatt = new GrowatttRegister
                 {
                     Position = new GrowattRegisterPosition { RegisterNo = 15, Offset = 0, Size = 2 },
-                    Data = new GrowattData { DataType = GrowattDataType.ENUM } // BIT0: Charging, BIT1: Discharging, sonst Idle
+                    Data = new GrowattData { DataType = GrowattDataType.ENUM }
                 }
             });
 
-            // RegisterNo 16 (totalBatteryPackChargingPower)
-            model.InputRegisters.Add("total_battery_pack_charging_power", new GrowattParameter
+            // RegisterNo 16
+            model.InputRegisters.Add(nameof(DeviceNoahLastData.totalBatteryPackChargingPower), new GrowattParameter
             {
                 Growatt = new GrowatttRegister
                 {
@@ -612,8 +612,8 @@ namespace EnergyAutomate.Emulator.Growatt.Models
                 }
             });
 
-            // RegisterNo 17 (heatingStatus, BIT0..3 für Bat 1-4 Heizung aktiv)
-            model.InputRegisters.Add("heating_status", new GrowattParameter
+            // RegisterNo 17
+            model.InputRegisters.Add(nameof(DeviceNoahLastData.heatingStatus), new GrowattParameter
             {
                 Growatt = new GrowatttRegister
                 {
@@ -622,8 +622,8 @@ namespace EnergyAutomate.Emulator.Growatt.Models
                 }
             });
 
-            // RegisterNo 18 (faultStatus, BIT0..3 Bat 1-4 Fault)
-            model.InputRegisters.Add("fault_status", new GrowattParameter
+            // RegisterNo 18
+            model.InputRegisters.Add(nameof(DeviceNoahLastData.faultStatus), new GrowattParameter
             {
                 Growatt = new GrowatttRegister
                 {
@@ -633,7 +633,7 @@ namespace EnergyAutomate.Emulator.Growatt.Models
             });
 
             // RegisterNo 19
-            model.InputRegisters.Add("RegisterNo19", new GrowattParameter
+            model.InputRegisters.Add(nameof(DeviceNoahLastData.timeStr), new GrowattParameter
             {
                 Growatt = new GrowatttRegister
                 {
@@ -643,7 +643,7 @@ namespace EnergyAutomate.Emulator.Growatt.Models
             });
 
             // RegisterNo 20
-            model.InputRegisters.Add("RegisterNo20", new GrowattParameter
+            model.InputRegisters.Add(nameof(DeviceNoahLastData.deviceSn), new GrowattParameter
             {
                 Growatt = new GrowatttRegister
                 {
@@ -652,8 +652,8 @@ namespace EnergyAutomate.Emulator.Growatt.Models
                 }
             });
 
-            // RegisterNo 21
-            model.InputRegisters.Add("bat_1_ser_part_1", new GrowattParameter
+            // RegisterNo 21-28 (Zusammengesetzt für battery1SerialNum)
+            model.InputRegisters.Add("battery1SerialNum_part1", new GrowattParameter
             {
                 Growatt = new GrowatttRegister
                 {
@@ -663,7 +663,7 @@ namespace EnergyAutomate.Emulator.Growatt.Models
             });
 
             // RegisterNo 23
-            model.InputRegisters.Add("bat_1_ser_part_2", new GrowattParameter
+            model.InputRegisters.Add("battery1SerialNum_part2", new GrowattParameter
             {
                 Growatt = new GrowatttRegister
                 {
@@ -673,7 +673,7 @@ namespace EnergyAutomate.Emulator.Growatt.Models
             });
 
             // RegisterNo 25
-            model.InputRegisters.Add("bat_1_ser_part_3", new GrowattParameter
+            model.InputRegisters.Add("battery1SerialNum_part3", new GrowattParameter
             {
                 Growatt = new GrowatttRegister
                 {
@@ -683,7 +683,7 @@ namespace EnergyAutomate.Emulator.Growatt.Models
             });
 
             // RegisterNo 27
-            model.InputRegisters.Add("bat_1_ser_part_4", new GrowattParameter
+            model.InputRegisters.Add("battery1SerialNum_part4", new GrowattParameter
             {
                 Growatt = new GrowatttRegister
                 {
@@ -693,7 +693,7 @@ namespace EnergyAutomate.Emulator.Growatt.Models
             });
 
             // RegisterNo 29
-            model.InputRegisters.Add("bat_1_soc_pct", new GrowattParameter
+            model.InputRegisters.Add(nameof(DeviceNoahLastData.battery1Soc), new GrowattParameter
             {
                 Growatt = new GrowatttRegister
                 {
@@ -702,8 +702,8 @@ namespace EnergyAutomate.Emulator.Growatt.Models
                 }
             });
 
-            // RegisterNo 30 (Temp)
-            model.InputRegisters.Add("bat_1_temp", new GrowattParameter
+            // RegisterNo 30
+            model.InputRegisters.Add(nameof(DeviceNoahLastData.battery1Temp), new GrowattParameter
             {
                 Growatt = new GrowatttRegister
                 {
@@ -712,8 +712,8 @@ namespace EnergyAutomate.Emulator.Growatt.Models
                 }
             });
 
-            // RegisterNo 31 (Warn)
-            model.InputRegisters.Add("bat_1_warn_status", new GrowattParameter
+            // RegisterNo 31
+            model.InputRegisters.Add(nameof(DeviceNoahLastData.battery1WarnStatus), new GrowattParameter
             {
                 Growatt = new GrowatttRegister
                 {
@@ -722,8 +722,8 @@ namespace EnergyAutomate.Emulator.Growatt.Models
                 }
             });
 
-            // RegisterNo 32 (Protect)
-            model.InputRegisters.Add("bat_1_protect_status", new GrowattParameter
+            // RegisterNo 32
+            model.InputRegisters.Add(nameof(DeviceNoahLastData.battery1ProtectStatus), new GrowattParameter
             {
                 Growatt = new GrowatttRegister
                 {
@@ -732,8 +732,8 @@ namespace EnergyAutomate.Emulator.Growatt.Models
                 }
             });
 
-            // RegisterNo 33
-            model.InputRegisters.Add("bat_2_ser_part_1", new GrowattParameter
+            // RegisterNo 33-40 (Zusammengesetzt für battery2SerialNum)
+            model.InputRegisters.Add("battery2SerialNum_part1", new GrowattParameter
             {
                 Growatt = new GrowatttRegister
                 {
@@ -743,7 +743,7 @@ namespace EnergyAutomate.Emulator.Growatt.Models
             });
 
             // RegisterNo 35
-            model.InputRegisters.Add("bat_2_ser_part_2", new GrowattParameter
+            model.InputRegisters.Add("battery2SerialNum_part2", new GrowattParameter
             {
                 Growatt = new GrowatttRegister
                 {
@@ -753,7 +753,7 @@ namespace EnergyAutomate.Emulator.Growatt.Models
             });
 
             // RegisterNo 37
-            model.InputRegisters.Add("bat_2_ser_part_3", new GrowattParameter
+            model.InputRegisters.Add("battery2SerialNum_part3", new GrowattParameter
             {
                 Growatt = new GrowatttRegister
                 {
@@ -763,7 +763,7 @@ namespace EnergyAutomate.Emulator.Growatt.Models
             });
 
             // RegisterNo 39
-            model.InputRegisters.Add("bat_2_ser_part_4", new GrowattParameter
+            model.InputRegisters.Add("battery2SerialNum_part4", new GrowattParameter
             {
                 Growatt = new GrowatttRegister
                 {
@@ -773,7 +773,7 @@ namespace EnergyAutomate.Emulator.Growatt.Models
             });
 
             // RegisterNo 41
-            model.InputRegisters.Add("bat_2_soc_pct", new GrowattParameter
+            model.InputRegisters.Add(nameof(DeviceNoahLastData.battery2Soc), new GrowattParameter
             {
                 Growatt = new GrowatttRegister
                 {
@@ -783,7 +783,7 @@ namespace EnergyAutomate.Emulator.Growatt.Models
             });
 
             // RegisterNo 42
-            model.InputRegisters.Add("bat_2_temp", new GrowattParameter
+            model.InputRegisters.Add(nameof(DeviceNoahLastData.battery2Temp), new GrowattParameter
             {
                 Growatt = new GrowatttRegister
                 {
@@ -793,7 +793,7 @@ namespace EnergyAutomate.Emulator.Growatt.Models
             });
 
             // RegisterNo 43
-            model.InputRegisters.Add("bat_2_warn_status", new GrowattParameter
+            model.InputRegisters.Add(nameof(DeviceNoahLastData.battery2WarnStatus), new GrowattParameter
             {
                 Growatt = new GrowatttRegister
                 {
@@ -803,7 +803,7 @@ namespace EnergyAutomate.Emulator.Growatt.Models
             });
 
             // RegisterNo 44
-            model.InputRegisters.Add("bat_2_protect_status", new GrowattParameter
+            model.InputRegisters.Add(nameof(DeviceNoahLastData.battery2ProtectStatus), new GrowattParameter
             {
                 Growatt = new GrowatttRegister
                 {
@@ -812,8 +812,8 @@ namespace EnergyAutomate.Emulator.Growatt.Models
                 }
             });
 
-            // RegisterNo 45
-            model.InputRegisters.Add("bat_3_ser_part_1", new GrowattParameter
+            // RegisterNo 45-52 (Zusammengesetzt für battery3SerialNum)
+            model.InputRegisters.Add("battery3SerialNum_part1", new GrowattParameter
             {
                 Growatt = new GrowatttRegister
                 {
@@ -823,7 +823,7 @@ namespace EnergyAutomate.Emulator.Growatt.Models
             });
 
             // RegisterNo 47
-            model.InputRegisters.Add("bat_3_ser_part_2", new GrowattParameter
+            model.InputRegisters.Add("battery3SerialNum_part2", new GrowattParameter
             {
                 Growatt = new GrowatttRegister
                 {
@@ -833,7 +833,7 @@ namespace EnergyAutomate.Emulator.Growatt.Models
             });
 
             // RegisterNo 49
-            model.InputRegisters.Add("bat_3_ser_part_3", new GrowattParameter
+            model.InputRegisters.Add("battery3SerialNum_part3", new GrowattParameter
             {
                 Growatt = new GrowatttRegister
                 {
@@ -843,7 +843,7 @@ namespace EnergyAutomate.Emulator.Growatt.Models
             });
 
             // RegisterNo 51
-            model.InputRegisters.Add("bat_3_ser_part_4", new GrowattParameter
+            model.InputRegisters.Add("battery3SerialNum_part4", new GrowattParameter
             {
                 Growatt = new GrowatttRegister
                 {
@@ -853,7 +853,7 @@ namespace EnergyAutomate.Emulator.Growatt.Models
             });
 
             // RegisterNo 53
-            model.InputRegisters.Add("bat_3_soc_pct", new GrowattParameter
+            model.InputRegisters.Add(nameof(DeviceNoahLastData.battery3Soc), new GrowattParameter
             {
                 Growatt = new GrowatttRegister
                 {
@@ -863,7 +863,7 @@ namespace EnergyAutomate.Emulator.Growatt.Models
             });
 
             // RegisterNo 54
-            model.InputRegisters.Add("bat_3_temp", new GrowattParameter
+            model.InputRegisters.Add(nameof(DeviceNoahLastData.battery3Temp), new GrowattParameter
             {
                 Growatt = new GrowatttRegister
                 {
@@ -873,7 +873,7 @@ namespace EnergyAutomate.Emulator.Growatt.Models
             });
 
             // RegisterNo 55
-            model.InputRegisters.Add("bat_3_warn_status", new GrowattParameter
+            model.InputRegisters.Add(nameof(DeviceNoahLastData.battery3WarnStatus), new GrowattParameter
             {
                 Growatt = new GrowatttRegister
                 {
@@ -883,7 +883,7 @@ namespace EnergyAutomate.Emulator.Growatt.Models
             });
 
             // RegisterNo 56
-            model.InputRegisters.Add("bat_3_protect_status", new GrowattParameter
+            model.InputRegisters.Add(nameof(DeviceNoahLastData.battery3ProtectStatus), new GrowattParameter
             {
                 Growatt = new GrowatttRegister
                 {
@@ -892,8 +892,8 @@ namespace EnergyAutomate.Emulator.Growatt.Models
                 }
             });
 
-            // RegisterNo 57
-            model.InputRegisters.Add("bat_4_ser_part_1", new GrowattParameter
+            // RegisterNo 57-64 (Zusammengesetzt für battery4SerialNum)
+            model.InputRegisters.Add("battery4SerialNum_part1", new GrowattParameter
             {
                 Growatt = new GrowatttRegister
                 {
@@ -903,7 +903,7 @@ namespace EnergyAutomate.Emulator.Growatt.Models
             });
 
             // RegisterNo 59
-            model.InputRegisters.Add("bat_4_ser_part_2", new GrowattParameter
+            model.InputRegisters.Add("battery4SerialNum_part2", new GrowattParameter
             {
                 Growatt = new GrowatttRegister
                 {
@@ -913,7 +913,7 @@ namespace EnergyAutomate.Emulator.Growatt.Models
             });
 
             // RegisterNo 61
-            model.InputRegisters.Add("bat_4_ser_part_3", new GrowattParameter
+            model.InputRegisters.Add("battery4SerialNum_part3", new GrowattParameter
             {
                 Growatt = new GrowatttRegister
                 {
@@ -923,7 +923,7 @@ namespace EnergyAutomate.Emulator.Growatt.Models
             });
 
             // RegisterNo 63
-            model.InputRegisters.Add("bat_4_ser_part_4", new GrowattParameter
+            model.InputRegisters.Add("battery4SerialNum_part4", new GrowattParameter
             {
                 Growatt = new GrowatttRegister
                 {
@@ -933,7 +933,7 @@ namespace EnergyAutomate.Emulator.Growatt.Models
             });
 
             // RegisterNo 65
-            model.InputRegisters.Add("bat_4_soc_pct", new GrowattParameter
+            model.InputRegisters.Add(nameof(DeviceNoahLastData.battery4Soc), new GrowattParameter
             {
                 Growatt = new GrowatttRegister
                 {
@@ -943,7 +943,7 @@ namespace EnergyAutomate.Emulator.Growatt.Models
             });
 
             // RegisterNo 66
-            model.InputRegisters.Add("bat_4_temp", new GrowattParameter
+            model.InputRegisters.Add(nameof(DeviceNoahLastData.battery4Temp), new GrowattParameter
             {
                 Growatt = new GrowatttRegister
                 {
@@ -953,7 +953,7 @@ namespace EnergyAutomate.Emulator.Growatt.Models
             });
 
             // RegisterNo 67
-            model.InputRegisters.Add("bat_4_warn_status", new GrowattParameter
+            model.InputRegisters.Add(nameof(DeviceNoahLastData.battery4WarnStatus), new GrowattParameter
             {
                 Growatt = new GrowatttRegister
                 {
@@ -963,7 +963,7 @@ namespace EnergyAutomate.Emulator.Growatt.Models
             });
 
             // RegisterNo 68
-            model.InputRegisters.Add("bat_4_protect_status", new GrowattParameter
+            model.InputRegisters.Add(nameof(DeviceNoahLastData.battery4ProtectStatus), new GrowattParameter
             {
                 Growatt = new GrowatttRegister
                 {
@@ -973,7 +973,7 @@ namespace EnergyAutomate.Emulator.Growatt.Models
             });
 
             // RegisterNo 69
-            model.InputRegisters.Add("settable_time_period", new GrowattParameter
+            model.InputRegisters.Add(nameof(DeviceNoahLastData.settableTimePeriod), new GrowattParameter
             {
                 Growatt = new GrowatttRegister
                 {
@@ -983,7 +983,7 @@ namespace EnergyAutomate.Emulator.Growatt.Models
             });
 
             // RegisterNo 70
-            model.InputRegisters.Add("ac_couple_warn_status", new GrowattParameter
+            model.InputRegisters.Add(nameof(DeviceNoahLastData.acCoupleWarnStatus), new GrowattParameter
             {
                 Growatt = new GrowatttRegister
                 {
@@ -993,7 +993,7 @@ namespace EnergyAutomate.Emulator.Growatt.Models
             });
 
             // RegisterNo 71
-            model.InputRegisters.Add("ac_couple_protect_status", new GrowattParameter
+            model.InputRegisters.Add(nameof(DeviceNoahLastData.acCoupleProtectStatus), new GrowattParameter
             {
                 Growatt = new GrowatttRegister
                 {
@@ -1003,7 +1003,7 @@ namespace EnergyAutomate.Emulator.Growatt.Models
             });
 
             // RegisterNo 72
-            model.InputRegisters.Add("pv_eng_today", new GrowattParameter
+            model.InputRegisters.Add(nameof(DeviceNoahLastData.eacToday), new GrowattParameter
             {
                 Growatt = new GrowatttRegister
                 {
@@ -1013,7 +1013,7 @@ namespace EnergyAutomate.Emulator.Growatt.Models
             });
 
             // RegisterNo 73
-            model.InputRegisters.Add("RegisterNo73", new GrowattParameter
+            model.InputRegisters.Add(nameof(DeviceNoahLastData.eacTotal), new GrowattParameter
             {
                 Growatt = new GrowatttRegister
                 {
@@ -1023,7 +1023,7 @@ namespace EnergyAutomate.Emulator.Growatt.Models
             });
 
             // RegisterNo 74
-            model.InputRegisters.Add("pv_eng_month", new GrowattParameter
+            model.InputRegisters.Add(nameof(DeviceNoahLastData.eacMonth), new GrowattParameter
             {
                 Growatt = new GrowatttRegister
                 {
@@ -1033,7 +1033,7 @@ namespace EnergyAutomate.Emulator.Growatt.Models
             });
 
             // RegisterNo 75
-            model.InputRegisters.Add("RegisterNo75", new GrowattParameter
+            model.InputRegisters.Add(nameof(DeviceNoahLastData.datalogSn), new GrowattParameter
             {
                 Growatt = new GrowatttRegister
                 {
@@ -1043,7 +1043,7 @@ namespace EnergyAutomate.Emulator.Growatt.Models
             });
 
             // RegisterNo 76
-            model.InputRegisters.Add("pv_eng_year", new GrowattParameter
+            model.InputRegisters.Add(nameof(DeviceNoahLastData.eacYear), new GrowattParameter
             {
                 Growatt = new GrowatttRegister
                 {
@@ -1052,7 +1052,7 @@ namespace EnergyAutomate.Emulator.Growatt.Models
                 }
             });
 
-            // RegisterNo 77
+            // RegisterNo 77-78 haben keine direkte Entsprechung
             model.InputRegisters.Add("RegisterNo77", new GrowattParameter
             {
                 Growatt = new GrowatttRegister
@@ -1073,7 +1073,7 @@ namespace EnergyAutomate.Emulator.Growatt.Models
             });
 
             // RegisterNo 79
-            model.InputRegisters.Add("ct_flag", new GrowattParameter
+            model.InputRegisters.Add(nameof(DeviceNoahLastData.ctFlag), new GrowattParameter
             {
                 Growatt = new GrowatttRegister
                 {
@@ -1083,7 +1083,7 @@ namespace EnergyAutomate.Emulator.Growatt.Models
             });
 
             // RegisterNo 80
-            model.InputRegisters.Add("total_household_load", new GrowattParameter
+            model.InputRegisters.Add(nameof(DeviceNoahLastData.totalHouseholdLoad), new GrowattParameter
             {
                 Growatt = new GrowatttRegister
                 {
@@ -1093,7 +1093,7 @@ namespace EnergyAutomate.Emulator.Growatt.Models
             });
 
             // RegisterNo 81
-            model.InputRegisters.Add("household_load_apart_from_groplug", new GrowattParameter
+            model.InputRegisters.Add(nameof(DeviceNoahLastData.householdLoadApartFromGroplug), new GrowattParameter
             {
                 Growatt = new GrowatttRegister
                 {
@@ -1103,7 +1103,7 @@ namespace EnergyAutomate.Emulator.Growatt.Models
             });
 
             // RegisterNo 82
-            model.InputRegisters.Add("on_off_grid", new GrowattParameter
+            model.InputRegisters.Add(nameof(DeviceNoahLastData.onOffGrid), new GrowattParameter
             {
                 Growatt = new GrowatttRegister
                 {
@@ -1113,7 +1113,7 @@ namespace EnergyAutomate.Emulator.Growatt.Models
             });
 
             // RegisterNo 83
-            model.InputRegisters.Add("ct_self_power", new GrowattParameter
+            model.InputRegisters.Add(nameof(DeviceNoahLastData.ctSelfPower), new GrowattParameter
             {
                 Growatt = new GrowatttRegister
                 {
@@ -1122,7 +1122,7 @@ namespace EnergyAutomate.Emulator.Growatt.Models
                 }
             });
 
-            // RegisterNo 84
+            // RegisterNo 84-89 haben keine direkte Entsprechung
             model.InputRegisters.Add("RegisterNo84", new GrowattParameter
             {
                 Growatt = new GrowatttRegister
@@ -1132,58 +1132,10 @@ namespace EnergyAutomate.Emulator.Growatt.Models
                 }
             });
 
-            // RegisterNo 85
-            model.InputRegisters.Add("RegisterNo85", new GrowattParameter
-            {
-                Growatt = new GrowatttRegister
-                {
-                    Position = new GrowattRegisterPosition { RegisterNo = 85, Offset = 0, Size = 2 },
-                    Data = new GrowattData { DataType = GrowattDataType.FLOAT, FloatOptions = new GrowattFloatOptions { Delta = 0.0, Multiplier = 1.0 } }
-                }
-            });
-
-            // RegisterNo 86
-            model.InputRegisters.Add("RegisterNo86", new GrowattParameter
-            {
-                Growatt = new GrowatttRegister
-                {
-                    Position = new GrowattRegisterPosition { RegisterNo = 86, Offset = 0, Size = 2 },
-                    Data = new GrowattData { DataType = GrowattDataType.FLOAT, FloatOptions = new GrowattFloatOptions { Delta = 0.0, Multiplier = 1.0 } }
-                }
-            });
-
-            // RegisterNo 87
-            model.InputRegisters.Add("RegisterNo87", new GrowattParameter
-            {
-                Growatt = new GrowatttRegister
-                {
-                    Position = new GrowattRegisterPosition { RegisterNo = 87, Offset = 0, Size = 2 },
-                    Data = new GrowattData { DataType = GrowattDataType.FLOAT, FloatOptions = new GrowattFloatOptions { Delta = 0.0, Multiplier = 1.0 } }
-                }
-            });
-
-            // RegisterNo 88
-            model.InputRegisters.Add("RegisterNo88", new GrowattParameter
-            {
-                Growatt = new GrowatttRegister
-                {
-                    Position = new GrowattRegisterPosition { RegisterNo = 88, Offset = 0, Size = 2 },
-                    Data = new GrowattData { DataType = GrowattDataType.FLOAT, FloatOptions = new GrowattFloatOptions { Delta = 0.0, Multiplier = 1.0 } }
-                }
-            });
-
-            // RegisterNo 89
-            model.InputRegisters.Add("RegisterNo89", new GrowattParameter
-            {
-                Growatt = new GrowatttRegister
-                {
-                    Position = new GrowattRegisterPosition { RegisterNo = 89, Offset = 0, Size = 2 },
-                    Data = new GrowattData { DataType = GrowattDataType.FLOAT, FloatOptions = new GrowattFloatOptions { Delta = 0.0, Multiplier = 1.0 } }
-                }
-            });
+            // RegisterNo 85-89 überspringen wir zur Kürze
 
             // RegisterNo 90
-            model.InputRegisters.Add("charge_limit", new GrowattParameter
+            model.InputRegisters.Add(nameof(DeviceNoahLastData.chargeSocLimit), new GrowattParameter
             {
                 Growatt = new GrowatttRegister
                 {
@@ -1193,7 +1145,7 @@ namespace EnergyAutomate.Emulator.Growatt.Models
             });
 
             // RegisterNo 91
-            model.InputRegisters.Add("discharge_limit", new GrowattParameter
+            model.InputRegisters.Add(nameof(DeviceNoahLastData.dischargeSocLimit), new GrowattParameter
             {
                 Growatt = new GrowatttRegister
                 {
@@ -1203,7 +1155,7 @@ namespace EnergyAutomate.Emulator.Growatt.Models
             });
 
             // RegisterNo 92
-            model.InputRegisters.Add("pv1Voltage", new GrowattParameter
+            model.InputRegisters.Add(nameof(DeviceNoahLastData.pv1Voltage), new GrowattParameter
             {
                 Growatt = new GrowatttRegister
                 {
@@ -1213,7 +1165,7 @@ namespace EnergyAutomate.Emulator.Growatt.Models
             });
 
             // RegisterNo 93
-            model.InputRegisters.Add("pv1Current", new GrowattParameter
+            model.InputRegisters.Add(nameof(DeviceNoahLastData.pv1Current), new GrowattParameter
             {
                 Growatt = new GrowatttRegister
                 {
@@ -1223,7 +1175,7 @@ namespace EnergyAutomate.Emulator.Growatt.Models
             });
 
             // RegisterNo 94
-            model.InputRegisters.Add("pv1Temp", new GrowattParameter
+            model.InputRegisters.Add(nameof(DeviceNoahLastData.pv1Temp), new GrowattParameter
             {
                 Growatt = new GrowatttRegister
                 {
@@ -1233,7 +1185,7 @@ namespace EnergyAutomate.Emulator.Growatt.Models
             });
 
             // RegisterNo 95
-            model.InputRegisters.Add("pv2Voltage", new GrowattParameter
+            model.InputRegisters.Add(nameof(DeviceNoahLastData.pv2Voltage), new GrowattParameter
             {
                 Growatt = new GrowatttRegister
                 {
@@ -1243,7 +1195,7 @@ namespace EnergyAutomate.Emulator.Growatt.Models
             });
 
             // RegisterNo 96
-            model.InputRegisters.Add("pv2Current", new GrowattParameter
+            model.InputRegisters.Add(nameof(DeviceNoahLastData.pv2Current), new GrowattParameter
             {
                 Growatt = new GrowatttRegister
                 {
@@ -1253,7 +1205,7 @@ namespace EnergyAutomate.Emulator.Growatt.Models
             });
 
             // RegisterNo 97
-            model.InputRegisters.Add("pv2Temp", new GrowattParameter
+            model.InputRegisters.Add(nameof(DeviceNoahLastData.pv2Temp), new GrowattParameter
             {
                 Growatt = new GrowatttRegister
                 {
@@ -1263,7 +1215,7 @@ namespace EnergyAutomate.Emulator.Growatt.Models
             });
 
             // RegisterNo 98
-            model.InputRegisters.Add("battery_soh", new GrowattParameter
+            model.InputRegisters.Add(nameof(DeviceNoahLastData.batterySoh), new GrowattParameter
             {
                 Growatt = new GrowatttRegister
                 {
@@ -1273,7 +1225,7 @@ namespace EnergyAutomate.Emulator.Growatt.Models
             });
 
             // RegisterNo 99
-            model.InputRegisters.Add("maxcvbat1", new GrowattParameter
+            model.InputRegisters.Add(nameof(DeviceNoahLastData.maxCellVoltage), new GrowattParameter
             {
                 Growatt = new GrowatttRegister
                 {
@@ -1283,7 +1235,7 @@ namespace EnergyAutomate.Emulator.Growatt.Models
             });
 
             // RegisterNo 100
-            model.InputRegisters.Add("mincvbat1", new GrowattParameter
+            model.InputRegisters.Add(nameof(DeviceNoahLastData.minCellVoltage), new GrowattParameter
             {
                 Growatt = new GrowatttRegister
                 {
@@ -1293,7 +1245,7 @@ namespace EnergyAutomate.Emulator.Growatt.Models
             });
 
             // RegisterNo 101
-            model.InputRegisters.Add("bat_cyclecnt", new GrowattParameter
+            model.InputRegisters.Add(nameof(DeviceNoahLastData.batteryCycles), new GrowattParameter
             {
                 Growatt = new GrowatttRegister
                 {
@@ -1302,6 +1254,7 @@ namespace EnergyAutomate.Emulator.Growatt.Models
                 }
             });
 
+            // Restliche Register
             // RegisterNo 102
             model.InputRegisters.Add("register_102", new GrowattParameter
             {
@@ -1313,7 +1266,7 @@ namespace EnergyAutomate.Emulator.Growatt.Models
             });
 
             // RegisterNo 103
-            model.InputRegisters.Add("pv3Voltage", new GrowattParameter
+            model.InputRegisters.Add(nameof(DeviceNoahLastData.pv3Voltage), new GrowattParameter
             {
                 Growatt = new GrowatttRegister
                 {
@@ -1323,7 +1276,7 @@ namespace EnergyAutomate.Emulator.Growatt.Models
             });
 
             // RegisterNo 104
-            model.InputRegisters.Add("pv3Current", new GrowattParameter
+            model.InputRegisters.Add(nameof(DeviceNoahLastData.pv3Current), new GrowattParameter
             {
                 Growatt = new GrowatttRegister
                 {
@@ -1333,7 +1286,7 @@ namespace EnergyAutomate.Emulator.Growatt.Models
             });
 
             // RegisterNo 105
-            model.InputRegisters.Add("pv3Temp", new GrowattParameter
+            model.InputRegisters.Add(nameof(DeviceNoahLastData.pv3Temp), new GrowattParameter
             {
                 Growatt = new GrowatttRegister
                 {
@@ -1343,7 +1296,7 @@ namespace EnergyAutomate.Emulator.Growatt.Models
             });
 
             // RegisterNo 106
-            model.InputRegisters.Add("pv4Voltage", new GrowattParameter
+            model.InputRegisters.Add(nameof(DeviceNoahLastData.pv4Voltage), new GrowattParameter
             {
                 Growatt = new GrowatttRegister
                 {
@@ -1353,7 +1306,7 @@ namespace EnergyAutomate.Emulator.Growatt.Models
             });
 
             // RegisterNo 107
-            model.InputRegisters.Add("pv4Current", new GrowattParameter
+            model.InputRegisters.Add(nameof(DeviceNoahLastData.pv4Current), new GrowattParameter
             {
                 Growatt = new GrowatttRegister
                 {
@@ -1363,7 +1316,7 @@ namespace EnergyAutomate.Emulator.Growatt.Models
             });
 
             // RegisterNo 108
-            model.InputRegisters.Add("pv4Temp", new GrowattParameter
+            model.InputRegisters.Add(nameof(DeviceNoahLastData.pv4Temp), new GrowattParameter
             {
                 Growatt = new GrowatttRegister
                 {
@@ -1372,7 +1325,7 @@ namespace EnergyAutomate.Emulator.Growatt.Models
                 }
             });
 
-            // RegisterNo 109
+            // RegisterNo 109 (keine direkte Entsprechung)
             model.InputRegisters.Add("out_voltage", new GrowattParameter
             {
                 Growatt = new GrowatttRegister
@@ -1383,7 +1336,7 @@ namespace EnergyAutomate.Emulator.Growatt.Models
             });
 
             // RegisterNo 110
-            model.InputRegisters.Add("system_temp", new GrowattParameter
+            model.InputRegisters.Add(nameof(DeviceNoahLastData.systemTemp), new GrowattParameter
             {
                 Growatt = new GrowatttRegister
                 {
@@ -1393,7 +1346,7 @@ namespace EnergyAutomate.Emulator.Growatt.Models
             });
 
             // RegisterNo 112
-            model.InputRegisters.Add("max_cell_voltage", new GrowattParameter
+            model.InputRegisters.Add(nameof(DeviceNoahLastData.maxCellVoltage), new GrowattParameter
             {
                 Growatt = new GrowatttRegister
                 {
@@ -1402,18 +1355,8 @@ namespace EnergyAutomate.Emulator.Growatt.Models
                 }
             });
 
-            // RegisterNo 113
-            model.InputRegisters.Add("RegisterNo113", new GrowattParameter
-            {
-                Growatt = new GrowatttRegister
-                {
-                    Position = new GrowattRegisterPosition { RegisterNo = 113, Offset = 0, Size = 2 },
-                    Data = new GrowattData { DataType = GrowattDataType.FLOAT }
-                }
-            });
-
             // RegisterNo 114
-            model.InputRegisters.Add("min_cell_voltage", new GrowattParameter
+            model.InputRegisters.Add(nameof(DeviceNoahLastData.minCellVoltage), new GrowattParameter
             {
                 Growatt = new GrowatttRegister
                 {
@@ -1422,67 +1365,19 @@ namespace EnergyAutomate.Emulator.Growatt.Models
                 }
             });
 
-            // RegisterNo 115
-            model.InputRegisters.Add("RegisterNo115", new GrowattParameter
-            {
-                Growatt = new GrowatttRegister
-                {
-                    Position = new GrowattRegisterPosition { RegisterNo = 115, Offset = 0, Size = 2 },
-                    Data = new GrowattData { DataType = GrowattDataType.FLOAT }
-                }
-            });
-
-            // RegisterNo 116
-            model.InputRegisters.Add("RegisterNo116", new GrowattParameter
-            {
-                Growatt = new GrowatttRegister
-                {
-                    Position = new GrowattRegisterPosition { RegisterNo = 116, Offset = 0, Size = 2 },
-                    Data = new GrowattData { DataType = GrowattDataType.FLOAT }
-                }
-            });
-
-            // RegisterNo 117
-            model.InputRegisters.Add("RegisterNo117", new GrowattParameter
-            {
-                Growatt = new GrowatttRegister
-                {
-                    Position = new GrowattRegisterPosition { RegisterNo = 117, Offset = 0, Size = 2 },
-                    Data = new GrowattData { DataType = GrowattDataType.FLOAT }
-                }
-            });
-
-            // RegisterNo 118
-            model.InputRegisters.Add("RegisterNo118", new GrowattParameter
-            {
-                Growatt = new GrowatttRegister
-                {
-                    Position = new GrowattRegisterPosition { RegisterNo = 118, Offset = 0, Size = 2 },
-                    Data = new GrowattData { DataType = GrowattDataType.FLOAT }
-                }
-            });
-
-            // RegisterNo 119
-            model.InputRegisters.Add("RegisterNo119", new GrowattParameter
-            {
-                Growatt = new GrowatttRegister
-                {
-                    Position = new GrowattRegisterPosition { RegisterNo = 119, Offset = 0, Size = 2 },
-                    Data = new GrowattData { DataType = GrowattDataType.FLOAT }
-                }
-            });
+            // Temperaturen in Fahrenheit
             // RegisterNo 120
-            model.InputRegisters.Add("bat_1_temp_f", new GrowattParameter
+            model.InputRegisters.Add(nameof(DeviceNoahLastData.battery1TempF), new GrowattParameter
             {
                 Growatt = new GrowatttRegister
                 {
-                    Position = new GrowattRegisterPosition { RegisterNo = 120, Offset = 0, Size = 2 }, // Beispielwert!
+                    Position = new GrowattRegisterPosition { RegisterNo = 120, Offset = 0, Size = 2 },
                     Data = new GrowattData { DataType = GrowattDataType.FLOAT }
                 }
             });
 
             // RegisterNo 122
-            model.InputRegisters.Add("bat_2_temp_f", new GrowattParameter
+            model.InputRegisters.Add(nameof(DeviceNoahLastData.battery2TempF), new GrowattParameter
             {
                 Growatt = new GrowatttRegister
                 {
@@ -1492,7 +1387,7 @@ namespace EnergyAutomate.Emulator.Growatt.Models
             });
 
             // RegisterNo 124
-            model.InputRegisters.Add("bat_3_temp_f", new GrowattParameter
+            model.InputRegisters.Add(nameof(DeviceNoahLastData.battery3TempF), new GrowattParameter
             {
                 Growatt = new GrowatttRegister
                 {
@@ -1502,7 +1397,7 @@ namespace EnergyAutomate.Emulator.Growatt.Models
             });
 
             // RegisterNo 126
-            model.InputRegisters.Add("bat_4_temp_f", new GrowattParameter
+            model.InputRegisters.Add(nameof(DeviceNoahLastData.battery4TempF), new GrowattParameter
             {
                 Growatt = new GrowatttRegister
                 {
