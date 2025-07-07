@@ -242,7 +242,7 @@ namespace EnergyAutomate.Emulator.Growatt
             var result = ParseRegisters(GrowattRegister.PresentRegisters);
 
             if(result.Any())
-                RegisterStrings = string.Join(", ", result.Select(kv => $"{kv.Key}={kv.Value}"));
+                RegisterStrings = $"ValueCount={result.Count}" + string.Join(", ", result.Select(kv => $"{kv.Key}={kv.Value}"));
             else
                 RegisterStrings = string.Join(", ", RegisterBlocks.Select(x => $"Start:{x.Start},End:{x.End},Values:{BitConverter.ToString(x.Values)}"));
         }
@@ -299,13 +299,13 @@ namespace EnergyAutomate.Emulator.Growatt
                 if (DataHeaderFunction == GrowattModbusFunction.READ_HOLDING_REGISTER)
                 {
                     var result = ParseRegisters(GrowattRegister.HoldingRegisters);
-                    RegisterStrings = string.Join(", ", result.Select(kv => $"{kv.Key}={kv.Value}"));
+                    RegisterStrings = $"ValueCount={result.Count}" + string.Join(", ", result.Select(kv => $"{kv.Key}={kv.Value}"));
                 }
 
                 if (DataHeaderFunction == GrowattModbusFunction.READ_INPUT_REGISTER)
                 {
                     var result = ParseRegisters(GrowattRegister.InputRegisters);
-                    RegisterStrings = string.Join(", ", result.Select(kv => $"{kv.Key}={kv.Value}"));
+                    RegisterStrings = $"ValueCount={result.Count}" + string.Join(", ", result.Select(kv => $"{kv.Key}={kv.Value}"));
                 }
             }
             catch (Exception ex)

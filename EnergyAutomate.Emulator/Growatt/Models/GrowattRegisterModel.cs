@@ -452,6 +452,57 @@ namespace EnergyAutomate.Emulator.Growatt.Models
 
             #region Hardcoded InputRegisters
 
+            /// RegisterNo 2
+            model.InputRegisters.Add("out_power", new GrowattParameter
+            {
+                Growatt = new GrowatttRegister
+                {
+                    Position = new GrowattRegisterPosition { RegisterNo = 2, Offset = 0, Size = 2 },
+                    Data = new GrowattData { DataType = GrowattDataType.FLOAT, FloatOptions = new GrowattFloatOptions { Delta = 0.0, Multiplier = 1.0 } }
+                }
+            });
+
+            /// RegisterNo 7
+            model.InputRegisters.Add("pv_tot_power", new GrowattParameter
+            {
+                Growatt = new GrowatttRegister
+                {
+                    Position = new GrowattRegisterPosition { RegisterNo = 7, Offset = 0, Size = 2 },
+                    Data = new GrowattData { DataType = GrowattDataType.FLOAT, FloatOptions = new GrowattFloatOptions { Delta = 0.0, Multiplier = 1.0 } }
+                }
+            });
+
+            /// RegisterNo 8
+            model.InputRegisters.Add("priority_mode", new GrowattParameter
+            {
+                Growatt = new GrowatttRegister
+                {
+                    Position = new GrowattRegisterPosition { RegisterNo = 8, Offset = 0, Size = 2 },
+                    Data = new GrowattData { DataType = GrowattDataType.ENUM, EnumOptions = new GrowattEnumOptions { EnumType = "INT_MAP", Values = new Dictionary<string, string> { { "0", "Load First" }, { "1", "Battery First" }, { "2", "Grid First" } } } }
+                }
+            });
+
+            /// RegisterNo 10
+            model.InputRegisters.Add("bat_sysstate", new GrowattParameter
+            {
+                Growatt = new GrowatttRegister
+                {
+                    Position = new GrowattRegisterPosition { RegisterNo = 10, Offset = 0, Size = 2 },
+                    Data = new GrowattData { DataType = GrowattDataType.ENUM, EnumOptions = new GrowattEnumOptions { EnumType = "INT_MAP", Values = new Dictionary<string, string> { { "0", "Idle" }, { "1", "Charging" }, { "2", "Discharging" } } } }
+                }
+            });
+
+            /// RegisterNo 11
+            model.InputRegisters.Add("charging_discharging", new GrowattParameter
+            {
+                Growatt = new GrowatttRegister
+                {
+                    Position = new GrowattRegisterPosition { RegisterNo = 11, Offset = 0, Size = 2 },
+                    Data = new GrowattData { DataType = GrowattDataType.FLOAT, FloatOptions = new GrowattFloatOptions { Delta = -30000.0, Multiplier = 1.0 } }
+                }
+            });
+
+            /// RegisterNo 12
             model.InputRegisters.Add("bat_cnt", new GrowattParameter
             {
                 Growatt = new GrowatttRegister
@@ -461,21 +512,13 @@ namespace EnergyAutomate.Emulator.Growatt.Models
                 }
             });
 
-            model.InputRegisters.Add("bat_cyclecnt", new GrowattParameter
+            /// RegisterNo 13
+            model.InputRegisters.Add("tot_bat_soc_pct", new GrowattParameter
             {
                 Growatt = new GrowatttRegister
                 {
-                    Position = new GrowattRegisterPosition { RegisterNo = 101, Offset = 0, Size = 2 },
+                    Position = new GrowattRegisterPosition { RegisterNo = 13, Offset = 0, Size = 2 },
                     Data = new GrowattData { DataType = GrowattDataType.FLOAT, FloatOptions = new GrowattFloatOptions { Delta = 0.0, Multiplier = 1.0 } }
-                }
-            });
-
-            model.InputRegisters.Add("bat_sysstate", new GrowattParameter
-            {
-                Growatt = new GrowatttRegister
-                {
-                    Position = new GrowattRegisterPosition { RegisterNo = 10, Offset = 0, Size = 2 },
-                    Data = new GrowattData { DataType = GrowattDataType.ENUM, EnumOptions = new GrowattEnumOptions { EnumType = "INT_MAP", Values = new Dictionary<string, string> { { "0", "Idle" }, { "1", "Charging" }, { "2", "Discharging" } } } }
                 }
             });
 
@@ -659,6 +702,121 @@ namespace EnergyAutomate.Emulator.Growatt.Models
                 }
             });
 
+            /// RegisterNo 72
+            model.InputRegisters.Add("pv_eng_today", new GrowattParameter
+            {
+                Growatt = new GrowatttRegister
+                {
+                    Position = new GrowattRegisterPosition { RegisterNo = 72, Offset = 0, Size = 2 },
+                    Data = new GrowattData { DataType = GrowattDataType.FLOAT, FloatOptions = new GrowattFloatOptions { Delta = 0.0, Multiplier = 0.1 } }
+                }
+            });
+
+            /// RegisterNo 74
+            model.InputRegisters.Add("pv_eng_month", new GrowattParameter
+            {
+                Growatt = new GrowatttRegister
+                {
+                    Position = new GrowattRegisterPosition { RegisterNo = 74, Offset = 0, Size = 2 },
+                    Data = new GrowattData { DataType = GrowattDataType.FLOAT, FloatOptions = new GrowattFloatOptions { Delta = 0.0, Multiplier = 0.1 } }
+                }
+            });
+
+            /// RegisterNo 76
+            model.InputRegisters.Add("pv_eng_year", new GrowattParameter
+            {
+                Growatt = new GrowatttRegister
+                {
+                    Position = new GrowattRegisterPosition { RegisterNo = 76, Offset = 0, Size = 2 },
+                    Data = new GrowattData { DataType = GrowattDataType.FLOAT, FloatOptions = new GrowattFloatOptions { Delta = 0.0, Multiplier = 0.1 } }
+                }
+            });
+
+            /// RegisterNo 78
+            model.InputRegisters.Add("eng_out_device", new GrowattParameter
+            {
+                Growatt = new GrowatttRegister
+                {
+                    Position = new GrowattRegisterPosition { RegisterNo = 78, Offset = 0, Size = 2 },
+                    Data = new GrowattData { DataType = GrowattDataType.FLOAT, FloatOptions = new GrowattFloatOptions { Delta = 0.0, Multiplier = 0.1 } }
+                }
+            });
+
+            /// RegisterNo 90
+            model.InputRegisters.Add("charge_limit", new GrowattParameter
+            {
+                Growatt = new GrowatttRegister
+                {
+                    Position = new GrowattRegisterPosition { RegisterNo = 90, Offset = 0, Size = 2 },
+                    Data = new GrowattData { DataType = GrowattDataType.FLOAT, FloatOptions = new GrowattFloatOptions { Delta = 0.0, Multiplier = 1.0 } }
+                }
+            });
+
+            /// RegisterNo 91
+            model.InputRegisters.Add("discharge_limit", new GrowattParameter
+            {
+                Growatt = new GrowatttRegister
+                {
+                    Position = new GrowattRegisterPosition { RegisterNo = 91, Offset = 0, Size = 2 },
+                    Data = new GrowattData { DataType = GrowattDataType.FLOAT, FloatOptions = new GrowattFloatOptions { Delta = 0.0, Multiplier = 1.0 } }
+                }
+            });
+
+            /// RegisterNo 92
+            model.InputRegisters.Add("pv1Voltage", new GrowattParameter
+            {
+                Growatt = new GrowatttRegister
+                {
+                    Position = new GrowattRegisterPosition { RegisterNo = 92, Offset = 0, Size = 2 },
+                    Data = new GrowattData { DataType = GrowattDataType.FLOAT, FloatOptions = new GrowattFloatOptions { Delta = 0.0, Multiplier = 0.01 } }
+                }
+            });
+            
+            model.InputRegisters.Add("pv1Current", new GrowattParameter
+            {
+                Growatt = new GrowatttRegister
+                {
+                    Position = new GrowattRegisterPosition { RegisterNo = 93, Offset = 0, Size = 2 },
+                    Data = new GrowattData { DataType = GrowattDataType.FLOAT, FloatOptions = new GrowattFloatOptions { Delta = 0.0, Multiplier = 0.01 } }
+                }
+            });
+
+            model.InputRegisters.Add("pv1Temp", new GrowattParameter
+            {
+                Growatt = new GrowatttRegister
+                {
+                    Position = new GrowattRegisterPosition { RegisterNo = 94, Offset = 0, Size = 2 },
+                    Data = new GrowattData { DataType = GrowattDataType.FLOAT, FloatOptions = new GrowattFloatOptions { Delta = 0.0, Multiplier = 0.01 } }
+                }
+            });
+
+            model.InputRegisters.Add("pv2Voltage", new GrowattParameter
+            {
+                Growatt = new GrowatttRegister
+                {
+                    Position = new GrowattRegisterPosition { RegisterNo = 95, Offset = 0, Size = 2 },
+                    Data = new GrowattData { DataType = GrowattDataType.FLOAT, FloatOptions = new GrowattFloatOptions { Delta = 0.0, Multiplier = 0.01 } }
+                }
+            });
+
+            model.InputRegisters.Add("pv2Current", new GrowattParameter
+            {
+                Growatt = new GrowatttRegister
+                {
+                    Position = new GrowattRegisterPosition { RegisterNo = 96, Offset = 0, Size = 2 },
+                    Data = new GrowattData { DataType = GrowattDataType.FLOAT, FloatOptions = new GrowattFloatOptions { Delta = 0.0, Multiplier = 0.01 } }
+                }
+            });
+
+            model.InputRegisters.Add("pv2Temp", new GrowattParameter
+            {
+                Growatt = new GrowatttRegister
+                {
+                    Position = new GrowattRegisterPosition { RegisterNo = 97, Offset = 0, Size = 2 },
+                    Data = new GrowattData { DataType = GrowattDataType.FLOAT, FloatOptions = new GrowattFloatOptions { Delta = 0.0, Multiplier = 0.01 } }
+                }
+            });
+
             model.InputRegisters.Add("maxcvbat1", new GrowattParameter
             {
                 Growatt = new GrowatttRegister
@@ -677,174 +835,87 @@ namespace EnergyAutomate.Emulator.Growatt.Models
                 }
             });
 
-            model.InputRegisters.Add("tot_bat_soc_pct", new GrowattParameter
+            model.InputRegisters.Add("bat_cyclecnt", new GrowattParameter
             {
                 Growatt = new GrowatttRegister
                 {
-                    Position = new GrowattRegisterPosition { RegisterNo = 13, Offset = 0, Size = 2 },
+                    Position = new GrowattRegisterPosition { RegisterNo = 101, Offset = 0, Size = 2 },
                     Data = new GrowattData { DataType = GrowattDataType.FLOAT, FloatOptions = new GrowattFloatOptions { Delta = 0.0, Multiplier = 1.0 } }
                 }
             });
 
-            model.InputRegisters.Add("Ipv1", new GrowattParameter
-            {
-                Growatt = new GrowatttRegister
-                {
-                    Position = new GrowattRegisterPosition { RegisterNo = 93, Offset = 0, Size = 2 },
-                    Data = new GrowattData { DataType = GrowattDataType.FLOAT, FloatOptions = new GrowattFloatOptions { Delta = 0.0, Multiplier = 0.01 } }
-                }
-            });
-
-            model.InputRegisters.Add("Ipv2", new GrowattParameter
-            {
-                Growatt = new GrowatttRegister
-                {
-                    Position = new GrowattRegisterPosition { RegisterNo = 96, Offset = 0, Size = 2 },
-                    Data = new GrowattData { DataType = GrowattDataType.FLOAT, FloatOptions = new GrowattFloatOptions { Delta = 0.0, Multiplier = 0.01 } }
-                }
-            });
-
-            model.InputRegisters.Add("Vpv1", new GrowattParameter
-            {
-                Growatt = new GrowatttRegister
-                {
-                    Position = new GrowattRegisterPosition { RegisterNo = 92, Offset = 0, Size = 2 },
-                    Data = new GrowattData { DataType = GrowattDataType.FLOAT, FloatOptions = new GrowattFloatOptions { Delta = 0.0, Multiplier = 0.01 } }
-                }
-            });
-
-            model.InputRegisters.Add("Vpv2", new GrowattParameter
-            {
-                Growatt = new GrowatttRegister
-                {
-                    Position = new GrowattRegisterPosition { RegisterNo = 95, Offset = 0, Size = 2 },
-                    Data = new GrowattData { DataType = GrowattDataType.FLOAT, FloatOptions = new GrowattFloatOptions { Delta = 0.0, Multiplier = 0.01 } }
-                }
-            });
-
-            model.InputRegisters.Add("out_power", new GrowattParameter
-            {
-                Growatt = new GrowatttRegister
-                {
-                    Position = new GrowattRegisterPosition { RegisterNo = 2, Offset = 0, Size = 2 },
-                    Data = new GrowattData { DataType = GrowattDataType.FLOAT, FloatOptions = new GrowattFloatOptions { Delta = 0.0, Multiplier = 1.0 } }
-                }
-            });
-
-            model.InputRegisters.Add("out_voltage", new GrowattParameter
-            {
-                Growatt = new GrowatttRegister
-                {
-                    Position = new GrowattRegisterPosition { RegisterNo = 109, Offset = 0, Size = 2 },
-                    Data = new GrowattData { DataType = GrowattDataType.FLOAT, FloatOptions = new GrowattFloatOptions { Delta = 0.0, Multiplier = 0.01 } }
-                }
-            });
-
-            model.InputRegisters.Add("pv_tot_power", new GrowattParameter
-            {
-                Growatt = new GrowatttRegister
-                {
-                    Position = new GrowattRegisterPosition { RegisterNo = 7, Offset = 0, Size = 2 },
-                    Data = new GrowattData { DataType = GrowattDataType.FLOAT, FloatOptions = new GrowattFloatOptions { Delta = 0.0, Multiplier = 1.0 } }
-                }
-            });
-
-            model.InputRegisters.Add("pv_eng_today", new GrowattParameter
-            {
-                Growatt = new GrowatttRegister
-                {
-                    Position = new GrowattRegisterPosition { RegisterNo = 72, Offset = 0, Size = 2 },
-                    Data = new GrowattData { DataType = GrowattDataType.FLOAT, FloatOptions = new GrowattFloatOptions { Delta = 0.0, Multiplier = 0.1 } }
-                }
-            });
-
-            model.InputRegisters.Add("pv_eng_month", new GrowattParameter
-            {
-                Growatt = new GrowatttRegister
-                {
-                    Position = new GrowattRegisterPosition { RegisterNo = 74, Offset = 0, Size = 2 },
-                    Data = new GrowattData { DataType = GrowattDataType.FLOAT, FloatOptions = new GrowattFloatOptions { Delta = 0.0, Multiplier = 0.1 } }
-                }
-            });
-
-            model.InputRegisters.Add("pv_eng_year", new GrowattParameter
-            {
-                Growatt = new GrowatttRegister
-                {
-                    Position = new GrowattRegisterPosition { RegisterNo = 76, Offset = 0, Size = 2 },
-                    Data = new GrowattData { DataType = GrowattDataType.FLOAT, FloatOptions = new GrowattFloatOptions { Delta = 0.0, Multiplier = 0.1 } }
-                }
-            });
-
-            model.InputRegisters.Add("eng_out_device", new GrowattParameter
-            {
-                Growatt = new GrowatttRegister
-                {
-                    Position = new GrowattRegisterPosition { RegisterNo = 78, Offset = 0, Size = 2 },
-                    Data = new GrowattData { DataType = GrowattDataType.FLOAT, FloatOptions = new GrowattFloatOptions { Delta = 0.0, Multiplier = 0.1 } }
-                }
-            });
-
-            model.InputRegisters.Add("discharge_limit", new GrowattParameter
-            {
-                Growatt = new GrowatttRegister
-                {
-                    Position = new GrowattRegisterPosition { RegisterNo = 91, Offset = 0, Size = 2 },
-                    Data = new GrowattData { DataType = GrowattDataType.FLOAT, FloatOptions = new GrowattFloatOptions { Delta = 0.0, Multiplier = 1.0 } }
-                }
-            });
-
-            model.InputRegisters.Add("charge_limit", new GrowattParameter
-            {
-                Growatt = new GrowatttRegister
-                {
-                    Position = new GrowattRegisterPosition { RegisterNo = 90, Offset = 0, Size = 2 },
-                    Data = new GrowattData { DataType = GrowattDataType.FLOAT, FloatOptions = new GrowattFloatOptions { Delta = 0.0, Multiplier = 1.0 } }
-                }
-            });
-
-            model.InputRegisters.Add("charging_discharging", new GrowattParameter
-            {
-                Growatt = new GrowatttRegister
-                {
-                    Position = new GrowattRegisterPosition { RegisterNo = 11, Offset = 0, Size = 2 },
-                    Data = new GrowattData { DataType = GrowattDataType.FLOAT, FloatOptions = new GrowattFloatOptions { Delta = -30000.0, Multiplier = 1.0 } }
-                }
-            });
-
-            model.InputRegisters.Add("temp1", new GrowattParameter
-            {
-                Growatt = new GrowatttRegister
-                {
-                    Position = new GrowattRegisterPosition { RegisterNo = 94, Offset = 0, Size = 2 },
-                    Data = new GrowattData { DataType = GrowattDataType.FLOAT, FloatOptions = new GrowattFloatOptions { Delta = 0.0, Multiplier = 0.01 } }
-                }
-            });
-
-            model.InputRegisters.Add("temp2", new GrowattParameter
-            {
-                Growatt = new GrowatttRegister
-                {
-                    Position = new GrowattRegisterPosition { RegisterNo = 97, Offset = 0, Size = 2 },
-                    Data = new GrowattData { DataType = GrowattDataType.FLOAT, FloatOptions = new GrowattFloatOptions { Delta = 0.0, Multiplier = 0.01 } }
-                }
-            });
-
-            model.InputRegisters.Add("priority_mode", new GrowattParameter
-            {
-                Growatt = new GrowatttRegister
-                {
-                    Position = new GrowattRegisterPosition { RegisterNo = 8, Offset = 0, Size = 2 },
-                    Data = new GrowattData { DataType = GrowattDataType.ENUM, EnumOptions = new GrowattEnumOptions { EnumType = "INT_MAP", Values = new Dictionary<string, string> { { "0", "Load First" }, { "1", "Battery First" }, { "2", "Grid First" } } } }
-                }
-            });
-
+            /// RegisterNo 102
             model.InputRegisters.Add("register_102", new GrowattParameter
             {
                 Growatt = new GrowatttRegister
                 {
                     Position = new GrowattRegisterPosition { RegisterNo = 102, Offset = 0, Size = 2 },
                     Data = new GrowattData { DataType = GrowattDataType.FLOAT, FloatOptions = new GrowattFloatOptions { Delta = 0.0, Multiplier = 1.0 } }
+                }
+            });
+
+            /// RegisterNo 103
+            model.InputRegisters.Add("pv3Voltage", new GrowattParameter
+            {
+                Growatt = new GrowatttRegister
+                {
+                    Position = new GrowattRegisterPosition { RegisterNo = 103, Offset = 0, Size = 2 },
+                    Data = new GrowattData { DataType = GrowattDataType.FLOAT, FloatOptions = new GrowattFloatOptions { Delta = 0.0, Multiplier = 0.01 } }
+                }
+            });
+
+            model.InputRegisters.Add("pv3Current", new GrowattParameter
+            {
+                Growatt = new GrowatttRegister
+                {
+                    Position = new GrowattRegisterPosition { RegisterNo = 104, Offset = 0, Size = 2 },
+                    Data = new GrowattData { DataType = GrowattDataType.FLOAT, FloatOptions = new GrowattFloatOptions { Delta = 0.0, Multiplier = 0.01 } }
+                }
+            });
+
+            model.InputRegisters.Add("pv3Temp", new GrowattParameter
+            {
+                Growatt = new GrowatttRegister
+                {
+                    Position = new GrowattRegisterPosition { RegisterNo = 105, Offset = 0, Size = 2 },
+                    Data = new GrowattData { DataType = GrowattDataType.FLOAT, FloatOptions = new GrowattFloatOptions { Delta = 0.0, Multiplier = 0.01 } }
+                }
+            });
+
+            model.InputRegisters.Add("pv4Voltage", new GrowattParameter
+            {
+                Growatt = new GrowatttRegister
+                {
+                    Position = new GrowattRegisterPosition { RegisterNo = 106, Offset = 0, Size = 2 },
+                    Data = new GrowattData { DataType = GrowattDataType.FLOAT, FloatOptions = new GrowattFloatOptions { Delta = 0.0, Multiplier = 0.01 } }
+                }
+            });
+
+            model.InputRegisters.Add("pv4Current", new GrowattParameter
+            {
+                Growatt = new GrowatttRegister
+                {
+                    Position = new GrowattRegisterPosition { RegisterNo = 107, Offset = 0, Size = 2 },
+                    Data = new GrowattData { DataType = GrowattDataType.FLOAT, FloatOptions = new GrowattFloatOptions { Delta = 0.0, Multiplier = 0.01 } }
+                }
+            });
+
+            model.InputRegisters.Add("pv4Temp", new GrowattParameter
+            {
+                Growatt = new GrowatttRegister
+                {
+                    Position = new GrowattRegisterPosition { RegisterNo = 108, Offset = 0, Size = 2 },
+                    Data = new GrowattData { DataType = GrowattDataType.FLOAT, FloatOptions = new GrowattFloatOptions { Delta = 0.0, Multiplier = 0.01 } }
+                }
+            });
+
+            /// RegisterNo 109
+            model.InputRegisters.Add("out_voltage", new GrowattParameter
+            {
+                Growatt = new GrowatttRegister
+                {
+                    Position = new GrowattRegisterPosition { RegisterNo = 109, Offset = 0, Size = 2 },
+                    Data = new GrowattData { DataType = GrowattDataType.FLOAT, FloatOptions = new GrowattFloatOptions { Delta = 0.0, Multiplier = 0.01 } }
                 }
             });
 
