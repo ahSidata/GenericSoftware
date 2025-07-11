@@ -40,7 +40,6 @@ class Client:
         
         # Message timing and connection monitoring
         self._lastBrokerMessageTime = 0
-        self._growattConnectionActive = False
         self._connectionCheckInterval = 5  # Check interval in seconds
         self._connectionTimeout = 60  # Timeout in seconds
         
@@ -94,6 +93,14 @@ class Client:
             if self.log_callback:
                 self.log_callback(f"Send message: {e}")
 
+    @property
+    def is_growatt_connected(self):
+        return self._clientGrowatt is not None and self._clientGrowatt.is_connected()
+
+    @property
+    def is_broker_connected(self):
+        return self._clientBroker is not None and self._clientBroker.is_connected()
+
     def start(self):
         try:
             if self.log_callback:
@@ -116,8 +123,7 @@ class Client:
                 time.sleep(0.1)
 
             self._clientBroker.disconnect()
-            if self._growattConnectionActive:
-                self._clientGrowatt.disconnect()
+            self._clientGrowatt.disconnect()
 
             if self.log_callback:
                 self.log_callback("Python client finished!")
@@ -144,15 +150,15 @@ class Client:
             current_time = time.time()
             time_since_last_message = current_time - self._lastBrokerMessageTime
             
-            if self._growattConnectionActive and time_since_last_message > self._connectionTimeout:
+            if (self.is_growatt_connected and time_since_last_message > self._connectionTimeout):
+
                 if self.log_callback:
                     self.log_callback(f"[TRACE] No broker message for {time_since_last_message:.1f} seconds. Disconnecting from Growatt.")                
                 try:
                     if self._clientGrowattLooping:
-                        self._clientGrowatt.disconnect()
                         self._clientGrowatt.loop_stop()
                         self._clientGrowattLooping = False
-                    self._growattConnectionActive = False
+                    self._clientGrowatt.disconnect()
                 except Exception as e:
                     if self.log_callback:
                         self.log_callback(f"[TRACE] Error disconnecting from Growatt: {e}")
@@ -184,25 +190,18 @@ class Client:
             self._clientBroker.tls_insecure_set(True)
             self._clientBroker.on_disconnect = self.__on_broker_disconnect
             self._clientBroker.on_message = self.__on_message
-            self._clientBroker.connect(self._brokerHost, self._brokerPort, 60)
+            self._clientBroker.connect(self._brokerHost, self._brokerPort, 420)
             self._clientBroker.loop_start()
             self._clientBrokerLooping = True
 
-            wait_time = 0
-            while not self._clientBroker.is_connected():
-                time.sleep(0.1)
-                wait_time += 0.1
-                if wait_time >= 5:
-                    if self.log_callback:
-                        self.log_callback("[TRACE] Broker connection timeout.")
-                    break
+            time.sleep(1)
 
-            if self.log_callback:
-                self.log_callback("[TRACE] Successfully connected to Broker.")
-                self.log_callback("Subscribe c/#")
-
-            self._clientBroker.subscribe("c/#")
-
+            if (self._clientBroker is not None 
+                and self._clientBroker.is_connected()):
+                if self.log_callback:
+                    self.log_callback("[TRACE] Successfully connected to Broker.")
+                    self.log_callback("Subscribe c/#")
+                self._clientBroker.subscribe("c/#")
         except Exception as e:
             if self.log_callback:
                 self.log_callback(f"Python exception: {e}")
@@ -223,7 +222,6 @@ class Client:
             if self._clientGrowattLooping:
                 self._clientGrowatt.loop_stop()
                 self._clientGrowattLooping = False
-            self._growattConnectionActive = False
         except Exception as e:
             if self.log_callback:
                 self.log_callback(f"[TRACE] disconnect attempt failed: {e}")
@@ -238,23 +236,13 @@ class Client:
             self._clientGrowatt.tls_insecure_set(True)
             self._clientGrowatt.on_message = self.__on_message_forward_client
             self._clientGrowatt.on_disconnect = self.__on_growatt_disconnect
-
             self._clientGrowatt.connect(self._growattHost,  self._growattPort, 420)
-
             self._clientGrowatt.loop_start()
             self._clientGrowattLooping = True
 
-            wait_time = 0
-            while not self._clientGrowatt.is_connected():
-                time.sleep(0.1)
-                wait_time += 0.1
-                if wait_time >= 5:
-                    if self.log_callback:
-                        self.log_callback("[TRACE] Growatt connection timeout.")
-                    break
+            time.sleep(1)
 
             if self._clientGrowatt.is_connected():
-                self._growattConnectionActive = True
                 if self.log_callback:
                     self.log_callback("[TRACE] Successfully connected to Growatt.")  
             else:
@@ -268,30 +256,29 @@ class Client:
                 if self._clientGrowattLooping:
                     self._clientGrowatt.loop_stop()
                     self._clientGrowattLooping = False
-                self._growattConnectionActive = False
 
     def __on_message(self, client, userdata, msg: MQTTMessage):
         try:
             # Aktualisiere den Zeitstempel des letzten Pakets
             self._lastBrokerMessageTime = time.time()
-            
-            if self.dump_callback:
-                self.dump_callback(msg.topic, msg.payload, msg.qos, msg.retain, msg.state, msg.dup, msg.mid)
-            
+
             # Stelle sicher, dass Growatt verbunden ist, bevor wir Nachrichten weiterleiten
-            if not self._growattConnectionActive:
+            if not self.is_growatt_connected:
                 if self.log_callback:
-                    self.log_callback("[TRACE] Broker message received. Reconnecting to Growatt.")
-                self.__connect_to_growatt_server()
-            
+                    self.log_callback("Broker message received. Reconnecting to Growatt.")
+                self.__connect_to_growatt_server()           
+
             # Nur weiterleiten, wenn die Verbindung erfolgreich hergestellt wurde
-            if self._growattConnectionActive:
+            if self.is_growatt_connected:
                 self._clientGrowatt.publish(
                     msg.topic,
                     payload=msg.payload,
                     qos=msg.qos,
                     retain=msg.retain,
                 )
+
+            if self.dump_callback:
+                self.dump_callback(msg.topic, msg.payload, msg.qos, msg.retain, msg.state, msg.dup, msg.mid)
         except Exception as e:
             if self.log_callback:
                 self.log_callback(f"Error Processing message: {e}")
@@ -303,14 +290,13 @@ class Client:
 
             device_id = msg.topic.split("/")[-1]
 
-            # We need to publish the messages from Growatt on the Topic
-            # s/33/{deviceid}. Growatt sends them on Topic s/{deviceid}
-            self._clientBroker.publish(
-                msg.topic.split("/")[0] + "/33/" + device_id,
-                payload=msg.payload,
-                qos=msg.qos,
-                retain=msg.retain,
-            )
+            if self.is_broker_connected:
+                self._clientBroker.publish(
+                    msg.topic.split("/")[0] + "/33/" + device_id,
+                    payload=msg.payload,
+                    qos=msg.qos,
+                    retain=msg.retain,
+                )
         except Exception as e:
             if self.log_callback:
                 self.log_callback(f"Forwarding message: {e}")
