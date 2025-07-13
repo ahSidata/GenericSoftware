@@ -31,13 +31,17 @@ class Client:
         self._clientId = ""
 
         # MQTT client instances
-        self._clientBroker = None
-        self._clientGrowatt = None
-
-        # Connection state tracking
-        self._clientBrokerLooping = False
-        self._clientGrowattLooping = False
-        
+        self._clientBroker = mqtt.Client(
+            client_id="relay",
+        )
+        self._clientBroker.tls_set(cert_reqs=ssl.CERT_NONE)
+        self._clientBroker.tls_insecure_set(True)
+        self._clientBroker.reconnect_delay_set(1, 120)
+        self._clientBroker._reconnect_on_failure = True
+        self._clientBroker.on_connect = self.__on_broker_connect
+        self._clientBroker.on_disconnect = self.__on_broker_disconnect
+        self._clientBroker.on_message = self.__on_broker_message
+      
         # Message timing and connection monitoring
         self._lastBrokerMessageTime = 0
         self._connectionCheckInterval = 5  # Check interval in seconds
@@ -65,16 +69,24 @@ class Client:
     def set_options(self, options):
         if self.log_callback:
             self.log_callback(f"[TRACE] Python received options: ClientId={options.ClientId}, BrokerHost={options.BrokerHost}, BrokerPort={options.BrokerPort}, GrowattHost={options.GrowattHost}, GrowattPort={options.GrowattPort}")
+        
         self._clientId = options.ClientId
+
         self._brokerHost = options.BrokerHost
         self._brokerPort = options.BrokerPort
         self._growattHost = options.GrowattHost
         self._growattPort = options.GrowattPort
 
-    def set_clientid(self, clientId):
-        if self.log_callback:
-            self.log_callback(f"[TRACE] Python received clientid: {clientId}")
-        self._clientId = clientId
+        self._clientGrowatt = mqtt.Client(
+            client_id=self._clientId,
+        )
+        self._clientGrowatt.tls_set(cert_reqs=ssl.CERT_NONE)
+        self._clientGrowatt.tls_insecure_set(True)
+        self._clientGrowatt.reconnect_delay_set(1, 120)
+        self._clientGrowatt._reconnect_on_failure = True
+        self._clientGrowatt.on_connect = self.__on_growatt_connect
+        self._clientGrowatt.on_disconnect = self.__on_growatt_disconnect
+        self._clientGrowatt.on_message = self.__on_growatt_message
 
     def send_msg(self, topic: string, payload: bytes, qos: int, retain: int):
         try:
@@ -109,14 +121,11 @@ class Client:
             # Initialisiere die letzte Nachrichtenzeit
             self._lastBrokerMessageTime = time.time()
 
-            # Start a new thread (task)
-            broker_task_thread = threading.Thread(target=self.__connect_to_broker())
-            broker_task_thread.start()
+            # Start broker client
+            self.__connect_to_broker()
 
             # Start connection monitoring thread
-            monitor_thread = threading.Thread(target=self.__monitor_connection)
-            monitor_thread.daemon = True
-            monitor_thread.start()
+            self.start_monitoring()
 
             self._running = True
             while self._running:
@@ -131,6 +140,11 @@ class Client:
         except Exception as e:
             if self.log_callback:
                 self.log_callback(f"Python exception: {e}")
+
+    def start_monitoring(self):
+        monitor_thread = threading.Thread(target=self.__monitor_connection)
+        monitor_thread.daemon = True
+        monitor_thread.start()
 
     def stop(self):
         try:
@@ -155,9 +169,7 @@ class Client:
                 if self.log_callback:
                     self.log_callback(f"[TRACE] No broker message for {time_since_last_message:.1f} seconds. Disconnecting from Growatt.")                
                 try:
-                    if self._clientGrowattLooping:
-                        self._clientGrowatt.loop_stop()
-                        self._clientGrowattLooping = False
+                    self._clientGrowatt.loop_stop()
                     self._clientGrowatt.disconnect()
                 except Exception as e:
                     if self.log_callback:
@@ -169,9 +181,7 @@ class Client:
         try:
             if self.log_callback:
                 self.log_callback("Disconnected from Broker, trying to reconnect...")
-            if self._clientBrokerLooping:
-                self._clientBroker.loop_stop()
-                self._clientBrokerLooping = False
+            time.sleep(30)
         except Exception as e:
                 if self.log_callback:
                     self.log_callback(f"[TRACE] disconnect attempt failed: {e}")
@@ -180,84 +190,59 @@ class Client:
             task_thread = threading.Thread(target=self.__connect_to_broker())
             task_thread.start()
             
-    def __connect_to_broker(self):           
-        try:
-            if self.log_callback:
-                self.log_callback(f"Connecting to Broker at 'ah.azure.sidata.com:7006' with clientID: {self._clientId}")
-
-            self._clientBroker = mqtt.Client(client_id="relay")
-            self._clientBroker.tls_set(cert_reqs=ssl.CERT_NONE)
-            self._clientBroker.tls_insecure_set(True)
-            self._clientBroker.on_disconnect = self.__on_broker_disconnect
-            self._clientBroker.on_message = self.__on_message
-            self._clientBroker.connect(self._brokerHost, self._brokerPort, 420)
-            self._clientBroker.loop_start()
-            self._clientBrokerLooping = True
-
-            time.sleep(1)
-
-            if (self._clientBroker is not None 
-                and self._clientBroker.is_connected()):
+    def __on_broker_connect(self, client, userdata, flags, rc):           
+        if self.log_callback:
+            if rc == 0:
+                self.log_callback(f"Connected to Broker at 'ah.azure.sidata.com:7006' with clientID: {self._clientBroker._client_id}")
                 if self.log_callback:
-                    self.log_callback("[TRACE] Successfully connected to Broker.")
                     self.log_callback("Subscribe c/#")
                 self._clientBroker.subscribe("c/#")
+            else:
+                if self.log_callback:
+                    self.log_callback(f"Connect to Broker attempt failed:: {rc}")
+    
+    def __connect_to_broker(self):
+        try:
+            if self.log_callback:
+                self.log_callback(f"Connecting to Broker at '{self._brokerHost}:{self._brokerPort}' with clientID: {self._clientBroker._client_id}")
+
+            self._clientBroker.connect(self._brokerHost, self._brokerPort, 420)
+            self._clientBroker.loop_start()
+            time.sleep(1)
+
         except Exception as e:
             if self.log_callback:
-                self.log_callback(f"Python exception: {e}")
-        finally:
-            if not self._clientBroker.is_connected():
-                if self._clientBrokerLooping:
-                    self._clientBroker.loop_stop()
-                    self._clientBrokerLooping = False
-                time.sleep(30)
-                # Start a new thread (task)
-                task_thread = threading.Thread(target=self.__connect_to_broker())
-                task_thread.start()
+                self.log_callback(f"Python exception connecting to Growatt: {e}")
+
+    def __on_growatt_connect(self, client, userdata, flags, rc):          
+        if self.log_callback:
+            if rc == 0:   
+                self.log_callback(f"Connected to Growatt at '{self._growattHost}:{self._growattPort}' with clientID: {self._clientGrowatt._client_id}")
+            else:
+                self.log_callback(f"Connect to Growatt attempt failed: {rc}")
 
     def __on_growatt_disconnect(self, client, userdata, rc):
         try:
             if self.log_callback:   
                 self.log_callback("Disconnected from Growatt.")
-            if self._clientGrowattLooping:
-                self._clientGrowatt.loop_stop()
-                self._clientGrowattLooping = False
+
         except Exception as e:
             if self.log_callback:
-                self.log_callback(f"[TRACE] disconnect attempt failed: {e}")
+                self.log_callback(f"Disconnect attempt failed: {e}")
             
-    def __connect_to_growatt_server(self):
+    def __connect_to_growatt(self):
         try:
             if self.log_callback:
-                self.log_callback(f"Connecting to Growatt at 'mqtt.growatt.com:7006' with clientID: {self._clientId}")
-
-            self._clientGrowatt = mqtt.Client(client_id=self._clientId)
-            self._clientGrowatt.tls_set(cert_reqs=ssl.CERT_NONE)
-            self._clientGrowatt.tls_insecure_set(True)
-            self._clientGrowatt.on_message = self.__on_message_forward_client
-            self._clientGrowatt.on_disconnect = self.__on_growatt_disconnect
+                self.log_callback(f"Connecting to Growatt at '{self._growattHost}:{self._growattPort}' with clientID: {self._clientGrowatt._client_id}")
             self._clientGrowatt.connect(self._growattHost,  self._growattPort, 420)
             self._clientGrowatt.loop_start()
-            self._clientGrowattLooping = True
-
             time.sleep(1)
 
-            if self._clientGrowatt.is_connected():
-                if self.log_callback:
-                    self.log_callback("[TRACE] Successfully connected to Growatt.")  
-            else:
-                if self.log_callback:
-                    self.log_callback("[TRACE] Failed to connect to Growatt.")
         except Exception as e:
             if self.log_callback:
                 self.log_callback(f"Python exception connecting to Growatt: {e}")
-        finally:
-            if not self._clientGrowatt.is_connected():
-                if self._clientGrowattLooping:
-                    self._clientGrowatt.loop_stop()
-                    self._clientGrowattLooping = False
 
-    def __on_message(self, client, userdata, msg: MQTTMessage):
+    def __on_broker_message(self, client, userdata, msg: MQTTMessage):
         try:
             # Aktualisiere den Zeitstempel des letzten Pakets
             self._lastBrokerMessageTime = time.time()
@@ -266,7 +251,7 @@ class Client:
             if not self.is_growatt_connected:
                 if self.log_callback:
                     self.log_callback("Broker message received. Reconnecting to Growatt.")
-                self.__connect_to_growatt_server()           
+                self.__connect_to_growatt()           
 
             # Nur weiterleiten, wenn die Verbindung erfolgreich hergestellt wurde
             if self.is_growatt_connected:
@@ -283,7 +268,7 @@ class Client:
             if self.log_callback:
                 self.log_callback(f"Error Processing message: {e}")
 
-    def __on_message_forward_client(self, client, userdata, msg: MQTTMessage):
+    def __on_growatt_message(self, client, userdata, msg: MQTTMessage):
         try:
             if self.dump_callback:
                 self.dump_callback(msg.topic, msg.payload, msg.qos, msg.retain, msg.state, msg.dup, msg.mid)

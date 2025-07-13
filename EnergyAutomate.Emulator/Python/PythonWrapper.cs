@@ -109,6 +109,8 @@ namespace EnergyAutomate.Emulator
                 using (Py.GIL())
                 {
                     dynamic sys = Py.Import("sys");
+
+                    // Add venv site-packages to sys.path
                     sys.path.append(Path.Combine(assemblyDirectory, "Python"));
 
                     LogCallback logCallback = LogFromPython;
