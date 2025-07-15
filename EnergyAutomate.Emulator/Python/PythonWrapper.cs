@@ -18,7 +18,7 @@ namespace EnergyAutomate.Emulator
         public GrowattClientOptions? GrowattClientOptions { get; set; }
 
         public delegate void LogCallback(string message);
-        public delegate Task DumpCallback(string topic, byte[] payload, int qos, int retain, int state, int dup, int mid);
+        public delegate void DumpCallback(string topic, byte[] payload, int qos, int retain, int state, int dup, int mid);
 
         private Thread? _pythonThread;
         private dynamic? _clientInstance;
@@ -171,11 +171,14 @@ namespace EnergyAutomate.Emulator
             }
         }
 
+        private Lock logLock = new();
+
         public void LogFromPython(string message)
         {
             try
             {
-                Logger.LogInformation("{Message}", message);
+                lock(logLock)
+                    Logger.LogInformation("{Message}", message);
             }
             catch (Exception)
             {
@@ -183,71 +186,78 @@ namespace EnergyAutomate.Emulator
             }
         }
 
-        public async Task DumpFromPython(string topic, byte[] payload, int qos, int retain, int state, int dup, int mid)
+        private Lock dumpLock = new();
+
+        public void DumpFromPython(string topic, byte[] payload, int qos, int retain, int state, int dup, int mid)
         {
-            try
-            {
-                PythonMqttMessage message = new PythonMqttMessage
-                {
-                    Topic = topic,
-                    Payload = payload,
-                    Qos = qos,
-                    Retain = retain,
-                    Timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
-                    State = state,
-                    Dup = dup,
-                    Mid = mid
-                };
-
-                string dumpDirectory = Path.Combine(AppContext.BaseDirectory, "dump");
-                if (!Directory.Exists(dumpDirectory))
-                {
-                    Directory.CreateDirectory(dumpDirectory);
-                    Logger.LogInformation("[TRACE] Created dump directory at {DumpDirectory}", dumpDirectory);
-                }
-
-                DateTime dateTime = DateTimeOffset.FromUnixTimeSeconds((long)message.Timestamp).DateTime;
-                string datePart = dateTime.ToString("yyyyMMdd");
-                string topicPart = string.Join("_", message.Topic.Split(Path.GetInvalidFileNameChars(), StringSplitOptions.RemoveEmptyEntries));
-                string fileName = $"{datePart}_{topicPart}.txt";
-                string filePath = Path.Combine(dumpDirectory, fileName);
-
-                StringBuilder sb = new StringBuilder();
-                sb.AppendLine($"Timestamp: {message.Timestamp}");
-                sb.AppendLine($"DateTime: {dateTime:O}");
-                sb.AppendLine($"Topic: {message.Topic}");
-                sb.AppendLine($"Payload: {BitConverter.ToString(message.Payload)}");
-                sb.AppendLine($"Qos: {message.Qos}");
-                sb.AppendLine($"Retain: {message.Retain}");
-                sb.AppendLine($"Mid: {message.Mid}");
-                sb.AppendLine($"State: {message.State}");
-                sb.AppendLine($"Dup: {message.Dup}");
-
-                var modBusMessage = GrowattModbusMqttParser.ParseModbusMessage(message.Payload, message.Topic);
-
-                if (modBusMessage != null)
-                {
-                    sb.AppendLine("Parsed Modbus Message:");
-                    sb.AppendLine($"RawDate: {BitConverter.ToString(modBusMessage.DataRaw)}");
-                    sb.AppendLine($"Function Code: {modBusMessage.DataHeaderFunction.ToString()}");
-                    sb.AppendLine($"Device ID: {modBusMessage.DeviceId}");
-                    sb.AppendLine("RegisterBlocks:");
-                    foreach (var kvp in modBusMessage.RegisterBlocks)
+            _ = Task.Run(() => { 
+                lock(dumpLock)
+                { 
+                    try
                     {
-                        sb.AppendLine($"Start {kvp.Start}: End {kvp.End} : Values {BitConverter.ToString(kvp.Values)}");
+                        PythonMqttMessage message = new PythonMqttMessage
+                        {
+                            Topic = topic,
+                            Payload = payload,
+                            Qos = qos,
+                            Retain = retain,
+                            Timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
+                            State = state,
+                            Dup = dup,
+                            Mid = mid
+                        };
+
+                        string dumpDirectory = Path.Combine(AppContext.BaseDirectory, "dump");
+                        if (!Directory.Exists(dumpDirectory))
+                        {
+                            Directory.CreateDirectory(dumpDirectory);
+                            Logger.LogInformation("[TRACE] Created dump directory at {DumpDirectory}", dumpDirectory);
+                        }
+
+                        DateTime dateTime = DateTimeOffset.FromUnixTimeSeconds((long)message.Timestamp).DateTime;
+                        string datePart = dateTime.ToString("yyyyMMdd");
+                        string topicPart = string.Join("_", message.Topic.Split(Path.GetInvalidFileNameChars(), StringSplitOptions.RemoveEmptyEntries));
+                        string fileName = $"{datePart}_{topicPart}.txt";
+                        string filePath = Path.Combine(dumpDirectory, fileName);
+
+                        StringBuilder sb = new StringBuilder();
+                        sb.AppendLine($"Timestamp: {message.Timestamp}");
+                        sb.AppendLine($"DateTime: {dateTime:O}");
+                        sb.AppendLine($"Topic: {message.Topic}");
+                        sb.AppendLine($"Payload: {BitConverter.ToString(message.Payload)}");
+                        sb.AppendLine($"Qos: {message.Qos}");
+                        sb.AppendLine($"Retain: {message.Retain}");
+                        sb.AppendLine($"Mid: {message.Mid}");
+                        sb.AppendLine($"State: {message.State}");
+                        sb.AppendLine($"Dup: {message.Dup}");
+
+                        var modBusMessage = GrowattModbusMqttParser.ParseModbusMessage(message.Payload, message.Topic);
+
+                        if (modBusMessage != null)
+                        {
+                            sb.AppendLine("Parsed Modbus Message:");
+                            sb.AppendLine($"RawDate: {BitConverter.ToString(modBusMessage.DataRaw)}");
+                            sb.AppendLine($"Function Code: {modBusMessage.DataHeaderFunction.ToString()}");
+                            sb.AppendLine($"Device ID: {modBusMessage.DeviceId}");
+                            sb.AppendLine("RegisterBlocks:");
+                            foreach (var kvp in modBusMessage.RegisterBlocks)
+                            {
+                                sb.AppendLine($"Start {kvp.Start}: End {kvp.End} : Values {BitConverter.ToString(kvp.Values)}");
+                            }
+                        }
+                        else
+                        {
+                            sb.AppendLine("No Modbus message parsed from payload.");
+                        }
+
+                        File.AppendAllText(filePath, sb.ToString());
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.LogError("[TRACE] Error dumping MQTT message: {Exception}", ex);
                     }
                 }
-                else
-                {
-                    sb.AppendLine("No Modbus message parsed from payload.");
-                }
-
-                await File.AppendAllTextAsync(filePath, sb.ToString());
-            }
-            catch (Exception ex)
-            {
-                Logger.LogError("[TRACE] Error dumping MQTT message: {Exception}", ex);
-            }
+            });
         }
     }
 }

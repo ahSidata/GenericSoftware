@@ -44,7 +44,7 @@ class Client:
       
         # Message timing and connection monitoring
         self._lastBrokerMessageTime = 0
-        self._connectionCheckInterval = 5  # Check interval in seconds
+        self._connectionCheckInterval = 1  # Check interval in seconds
         self._connectionTimeout = 60  # Timeout in seconds
         
         # Callbacks will be set later
@@ -90,11 +90,8 @@ class Client:
 
     def send_msg(self, topic: string, payload: bytes, qos: int, retain: int):
         try:
-            if self.log_callback:
-                self.log_callback(f"Sending message: {e}")
-            if self.dump_callback:
-                self.dump_callback(topic, payload, qos, retain)
-
+            self.log(f"Sending message: {e}")
+            self.dump(topic, payload, qos, retain)
             self._clientBroker.publish(
                 topic=topic,
                 payload=payload,
@@ -115,8 +112,7 @@ class Client:
 
     def start(self):
         try:
-            if self.log_callback:
-                self.log_callback("Python client started!")
+            self.log("Python client started!")
 
             # Initialisiere die letzte Nachrichtenzeit
             self._lastBrokerMessageTime = time.time()
@@ -125,122 +121,94 @@ class Client:
             self.__connect_to_broker()
 
             # Start connection monitoring thread
-            self.start_monitoring()
-
-            self._running = True
-            while self._running:
-                time.sleep(0.1)
+            self.__monitor_connection()
 
             self._clientBroker.disconnect()
             self._clientGrowatt.disconnect()
 
-            if self.log_callback:
-                self.log_callback("Python client finished!")
+            self.log("Python client finished!")
 
         except Exception as e:
-            if self.log_callback:
-                self.log_callback(f"Python exception: {e}")
-
-    def start_monitoring(self):
-        monitor_thread = threading.Thread(target=self.__monitor_connection)
-        monitor_thread.daemon = True
-        monitor_thread.start()
+            self.log(f"Python exception: {e}")
 
     def stop(self):
         try:
-            if self.log_callback:
-                self.log_callback("Python client stoped!")
+            self.log("Python client stoped!")
             self._running = False;
 
         except Exception as e:
-            if self.log_callback:
-                self.log_callback(f"Python exception: {e}")
+            self.log(f"Python exception: {e}")
 
     def __monitor_connection(self):
-        if self.log_callback:
-            self.log_callback("[TRACE] Connection monitoring started")
-            
+        self.log("[TRACE] Connection monitoring started")
+        self._running = True
         while self._running:
             current_time = time.time()
             time_since_last_message = current_time - self._lastBrokerMessageTime
             
             if (self.is_growatt_connected and time_since_last_message > self._connectionTimeout):
 
-                if self.log_callback:
-                    self.log_callback(f"[TRACE] No broker message for {time_since_last_message:.1f} seconds. Disconnecting from Growatt.")                
+                self.log(f"[TRACE] No broker message for {time_since_last_message:.1f} seconds. Disconnecting from Growatt.")                
                 try:
                     self._clientGrowatt.loop_stop()
                     self._clientGrowatt.disconnect()
                 except Exception as e:
-                    if self.log_callback:
-                        self.log_callback(f"[TRACE] Error disconnecting from Growatt: {e}")
+                    self.log(f"[TRACE] Error disconnecting from Growatt: {e}")
             
             time.sleep(self._connectionCheckInterval)
 
     def __on_broker_disconnect(self, client: mqtt.Client, userdata, rc):
         try:
-            if self.log_callback:
-                self.log_callback("Disconnected from Broker, trying to reconnect...")
-            time.sleep(30)
+            self.log("Disconnected from Broker, trying to reconnect...")
+            time.sleep(5)
         except Exception as e:
-                if self.log_callback:
-                    self.log_callback(f"[TRACE] disconnect attempt failed: {e}")
+                self.log(f"[TRACE] disconnect attempt failed: {e}")
         finally:
             # Start a new thread (task)
             task_thread = threading.Thread(target=self.__connect_to_broker())
             task_thread.start()
             
     def __on_broker_connect(self, client, userdata, flags, rc):           
-        if self.log_callback:
-            if rc == 0:
-                self.log_callback(f"Connected to Broker at 'ah.azure.sidata.com:7006' with clientID: {self._clientBroker._client_id}")
-                if self.log_callback:
-                    self.log_callback("Subscribe c/#")
-                self._clientBroker.subscribe("c/#")
-            else:
-                if self.log_callback:
-                    self.log_callback(f"Connect to Broker attempt failed:: {rc}")
+        if rc == 0:
+            self.log(f"Connected to Broker at 'ah.azure.sidata.com:7006' with clientID: {self._clientBroker._client_id}")
+            self.log("Subscribe c/#")
+            self._clientBroker.subscribe("c/#")
+        else:
+            self.log(f"Connect to Broker attempt failed:: {rc}")
     
     def __connect_to_broker(self):
         try:
-            if self.log_callback:
-                self.log_callback(f"Connecting to Broker at '{self._brokerHost}:{self._brokerPort}' with clientID: {self._clientBroker._client_id}")
+            self.log(f"Connecting to Broker at '{self._brokerHost}:{self._brokerPort}' with clientID: {self._clientBroker._client_id}")
 
-            self._clientBroker.connect(self._brokerHost, self._brokerPort, 420)
+            self._clientBroker.connect(self._brokerHost, self._brokerPort, 60)
             self._clientBroker.loop_start()
             time.sleep(1)
 
         except Exception as e:
-            if self.log_callback:
-                self.log_callback(f"Python exception connecting to Growatt: {e}")
+            self.log(f"Python exception connecting to Growatt: {e}")
 
-    def __on_growatt_connect(self, client, userdata, flags, rc):          
-        if self.log_callback:
-            if rc == 0:   
-                self.log_callback(f"Connected to Growatt at '{self._growattHost}:{self._growattPort}' with clientID: {self._clientGrowatt._client_id}")
-            else:
-                self.log_callback(f"Connect to Growatt attempt failed: {rc}")
+    def __on_growatt_connect(self, client, userdata, flags, rc):                 
+        if rc == 0:   
+            self.log(f"Connected to Growatt at '{self._growattHost}:{self._growattPort}' with clientID: {self._clientGrowatt._client_id}")
+        else:
+            self.log(f"Connect to Growatt attempt failed: {rc}")
 
     def __on_growatt_disconnect(self, client, userdata, rc):
         try:
-            if self.log_callback:   
-                self.log_callback("Disconnected from Growatt.")
+            self.log("Disconnected from Growatt.")
 
         except Exception as e:
-            if self.log_callback:
-                self.log_callback(f"Disconnect attempt failed: {e}")
+            self.log(f"Disconnect attempt failed: {e}")
             
     def __connect_to_growatt(self):
         try:
-            if self.log_callback:
-                self.log_callback(f"Connecting to Growatt at '{self._growattHost}:{self._growattPort}' with clientID: {self._clientGrowatt._client_id}")
+            self.log(f"Connecting to Growatt at '{self._growattHost}:{self._growattPort}' with clientID: {self._clientGrowatt._client_id}")
             self._clientGrowatt.connect(self._growattHost,  self._growattPort, 420)
             self._clientGrowatt.loop_start()
             time.sleep(1)
 
         except Exception as e:
-            if self.log_callback:
-                self.log_callback(f"Python exception connecting to Growatt: {e}")
+            self.log(f"Python exception connecting to Growatt: {e}")
 
     def __on_broker_message(self, client, userdata, msg: MQTTMessage):
         try:
@@ -249,8 +217,7 @@ class Client:
 
             # Stelle sicher, dass Growatt verbunden ist, bevor wir Nachrichten weiterleiten
             if not self.is_growatt_connected:
-                if self.log_callback:
-                    self.log_callback("Broker message received. Reconnecting to Growatt.")
+                self.log("Broker message received. Reconnecting to Growatt.")
                 self.__connect_to_growatt()           
 
             # Nur weiterleiten, wenn die Verbindung erfolgreich hergestellt wurde
@@ -262,17 +229,12 @@ class Client:
                     retain=msg.retain,
                 )
 
-            if self.dump_callback:
-                self.dump_callback(msg.topic, msg.payload, msg.qos, msg.retain, msg.state, msg.dup, msg.mid)
+            self.dump(msg.topic, msg.payload, msg.qos, msg.retain, msg.state, msg.dup, msg.mid)
         except Exception as e:
-            if self.log_callback:
-                self.log_callback(f"Error Processing message: {e}")
+            self.log(f"Error Processing message: {e}")
 
     def __on_growatt_message(self, client, userdata, msg: MQTTMessage):
         try:
-            if self.dump_callback:
-                self.dump_callback(msg.topic, msg.payload, msg.qos, msg.retain, msg.state, msg.dup, msg.mid)
-
             device_id = msg.topic.split("/")[-1]
 
             if self.is_broker_connected:
@@ -282,6 +244,31 @@ class Client:
                     qos=msg.qos,
                     retain=msg.retain,
                 )
+
+            self.dump(msg.topic, msg.payload, msg.qos, msg.retain, msg.state, msg.dup, msg.mid)
         except Exception as e:
+            self.log(f"Forwarding message: {e}")
+
+    def log(self, msg):
+        """
+        Logs a message in a separate thread.
+        """
+        # Define the target function for the thread
+        def log_task():
             if self.log_callback:
-                self.log_callback(f"Forwarding message: {e}")
+                self.log_callback(msg)
+
+        # Start the thread with the target function
+        threading.Thread(target=log_task).start()  
+        
+    def dump(self, topic, payload, qos, retain, state, dup, mid):
+        """
+        Logs a message in a separate thread.
+        """
+        # Define the target function for the thread
+        def dump_task():
+            if self.dump_callback:
+                self.dump_callback(topic, payload, qos, retain, state, dup, mid)
+
+        # Start the thread with the target function
+        threading.Thread(target=dump_task).start()
