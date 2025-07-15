@@ -16,7 +16,11 @@ RUN apt-get update && \
     ln -s /usr/bin/python3 /usr/bin/python
 
 # Install required Python packages
+
 RUN apt-get install -y python3-paho-mqtt
+
+#RUN python3 -m venv /opt/venv
+#RUN /opt/venv/bin/pip install --no-cache-dir --upgrade paho-mqtt
 
 # Set environment variable for pythonnet to find libpython
 ENV PYTHONNET_PYDLL=/usr/lib/x86_64-linux-gnu/libpython3.11.so

@@ -110,7 +110,22 @@ namespace EnergyAutomate.Emulator
                 {
                     dynamic sys = Py.Import("sys");
 
+                    string version = sys.version.ToString();
+
+                    LogFromPython($"Python Verson: {version}");
+
+                    int major = sys.version_info.major;
+                    int minor = sys.version_info.minor;
+
                     // Add venv site-packages to sys.path
+                    var venvPath = $"/opt/venv/lib/python{major}.{minor}/site-packages";
+                    LogFromPython($"Packages venv path: {venvPath}");
+                    if (File.Exists(venvPath))
+                    {
+                        LogFromPython($"sys.path.append: {venvPath}");
+                        sys.path.append(venvPath);
+                    }
+
                     sys.path.append(Path.Combine(assemblyDirectory, "Python"));
 
                     LogCallback logCallback = LogFromPython;

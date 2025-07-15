@@ -148,7 +148,7 @@ class Client:
             
             if (self.is_growatt_connected and time_since_last_message > self._connectionTimeout):
 
-                self.log(f"[TRACE] No broker message for {time_since_last_message:.1f} seconds. Disconnecting from Growatt.")                
+                self.log(f"No broker message for {time_since_last_message:.1f} seconds. Last msg: {self._lastBrokerMessageTime} Disconnecting from Growatt.")                
                 try:
                     self._clientGrowatt.loop_stop()
                     self._clientGrowatt.disconnect()
@@ -214,6 +214,7 @@ class Client:
         try:
             # Aktualisiere den Zeitstempel des letzten Pakets
             self._lastBrokerMessageTime = time.time()
+            self.log(f"Set _lastBrokerMessageTime to {self._lastBrokerMessageTime:.1f} seconds.")  
 
             # Stelle sicher, dass Growatt verbunden ist, bevor wir Nachrichten weiterleiten
             if not self.is_growatt_connected:
