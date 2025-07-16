@@ -4,6 +4,7 @@ Client for the grobro mqtt side, handling messages from/to
 * growatt devices
 """
 
+from concurrent.futures import ThreadPoolExecutor
 from http import client
 import os
 import signal
@@ -24,6 +25,9 @@ class Client:
         """
         Initialize the Client with default configuration values.
         """
+        # Thread-Pool mit begrenzter Anzahl von Threads
+        self._thread_pool = ThreadPoolExecutor(max_workers=10)
+
         # Connection parameters
         self._brokerHost = "localhost"
         self._brokerPort = 7006
@@ -83,7 +87,7 @@ class Client:
         )
         self._clientGrowatt.tls_set(cert_reqs=ssl.CERT_NONE)
         self._clientGrowatt.tls_insecure_set(True)
-        self._clientGrowatt.reconnect_delay_set(1, 120)
+        self._clientGrowatt.reconnect_delay_set(5, 120)
         self._clientGrowatt._reconnect_on_failure = True
         self._clientGrowatt.on_connect = self.__on_growatt_connect
         self._clientGrowatt.on_disconnect = self.__on_growatt_disconnect
@@ -164,13 +168,13 @@ class Client:
     def __on_broker_disconnect(self, client: mqtt.Client, userdata, rc):
         try:
             self.log("Disconnected from Broker, trying to reconnect...")
-            time.sleep(5)
         except Exception as e:
                 self.log(f"[TRACE] disconnect attempt failed: {e}")
         finally:
-            # Start a new thread (task)
-            task_thread = threading.Thread(target=self.__connect_to_broker())
-            task_thread.start()
+            try:
+                threading.Thread(target=self.__connect_to_broker()).start()
+            except RuntimeError as e:
+                self.log(f"[ERROR] Failed to start broker thread: {e}")
             
     def __on_broker_connect(self, client, userdata, flags, rc):           
         if rc == 0:
@@ -183,10 +187,8 @@ class Client:
     def __connect_to_broker(self):
         try:
             self.log(f"Connecting to Broker at '{self._brokerHost}:{self._brokerPort}' with clientID: {self._clientBroker._client_id}")
-
             self._clientBroker.connect(self._brokerHost, self._brokerPort, 60)
             self._clientBroker.loop_start()
-            time.sleep(1)
 
         except Exception as e:
             self.log(f"Python exception connecting to Growatt: {e}")
@@ -209,7 +211,6 @@ class Client:
             self.log(f"Connecting to Growatt at '{self._growattHost}:{self._growattPort}' with clientID: {self._clientGrowatt._client_id}")
             self._clientGrowatt.connect(self._growattHost,  self._growattPort, 420)
             self._clientGrowatt.loop_start()
-            time.sleep(1)
 
         except Exception as e:
             self.log(f"Python exception connecting to Growatt: {e}")
@@ -222,8 +223,11 @@ class Client:
             # Stelle sicher, dass Growatt verbunden ist, bevor wir Nachrichten weiterleiten
             if not self.is_growatt_connected:
                 self.log("Broker message received. Reconnecting to Growatt.")
-                self.__connect_to_growatt()           
-
+                try:
+                    threading.Thread(target=self.__connect_to_growatt()).start()                   
+                except RuntimeError as e:
+                    self.log(f"[ERROR] Failed to start growatt thread: {e}")
+         
             # Nur weiterleiten, wenn die Verbindung erfolgreich hergestellt wurde
             if self.is_growatt_connected:
                 self._clientGrowatt.publish(
@@ -261,10 +265,12 @@ class Client:
         def log_task():
             if self.log_callback:
                 self.log_callback(msg)
-
         # Start the thread with the target function
-        threading.Thread(target=log_task).start()  
-        
+        try:
+            self._thread_pool.submit(log_task)
+        except RuntimeError as e:
+            self.log(f"[ERROR] Failed to start log thread: {e}")
+                
     def dump(self, topic, payload, qos, retain, state, dup, mid):
         """
         Logs a message in a separate thread.
@@ -275,4 +281,7 @@ class Client:
                 self.dump_callback(topic, payload, qos, retain, state, dup, mid)
 
         # Start the thread with the target function
-        threading.Thread(target=dump_task).start()
+        try:
+            self._thread_pool.submit(dump_task)
+        except RuntimeError as e:
+            self.log(f"[ERROR] Failed to start dump thread: {e}")

@@ -104,7 +104,7 @@ namespace EnergyAutomate.Emulator
 
                 LogFromPython("[TRACE] Initializing Python runtime in background thread");
                 PythonEngine.Initialize();
-
+                
                 // Initialisierung und Start des Python-Clients im GIL-Kontext
                 using (Py.GIL())
                 {
