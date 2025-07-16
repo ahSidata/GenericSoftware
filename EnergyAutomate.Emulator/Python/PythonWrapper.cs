@@ -190,15 +190,18 @@ namespace EnergyAutomate.Emulator
 
         public void LogFromPython(string message)
         {
-            try
+            _ = Task.Run(() =>
             {
-                lock(logLock)
-                    Logger.LogInformation("{Message}", message);
-            }
-            catch (Exception)
-            {
-                throw;
-            }
+                try
+                {
+                    lock (logLock)
+                        Logger.LogInformation("{Message}", message);
+                }
+                catch (Exception)
+                {
+                    throw;
+                }
+            });
         }
 
         private Lock dumpLock = new();

@@ -48,11 +48,10 @@ public class CustomLoggerProvider : ILoggerProvider
         {
             LogMessages.Add(item);
 
-            if(LogMessages.Count > 50)
+            if (LogMessages.Where(x => x.Category == item.Category).ToList().Count > 50 )
             {
-                // Remove all entries older than 1 hour
-                var oneHourAgo = DateTimeOffset.UtcNow.AddHours(-1);
-                LogMessages.Skip(50).ToList().Where(x => x.TS < oneHourAgo).ToList().ForEach(x => LogMessages.Remove(x));
+                var result = LogMessages.Where(x => x.Category == item.Category).OrderByDescending(o => o.TS).Skip(50).ToList();
+                result.ForEach(x => LogMessages.Remove(x));
             }
         }
 
