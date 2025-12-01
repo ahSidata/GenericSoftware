@@ -1,6 +1,3 @@
-using Newtonsoft.Json;
-using Newtonsoft.Json.Converters;
-using Newtonsoft.Json.Serialization;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -11,6 +8,9 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
+using Newtonsoft.Json.Serialization;
 
 namespace EnergyAutomate.Tibber
 {
@@ -44,7 +44,7 @@ namespace EnergyAutomate.Tibber
 
         public TibberApiClient(string accessToken, ProductInfoHeaderValue userAgent = null, HttpMessageHandler messageHandler = null, TimeSpan? timeout = null, string baseUrl = null)
         {
-            if (string.IsNullOrWhiteSpace(accessToken))
+            if (String.IsNullOrWhiteSpace(accessToken))
                 throw new ArgumentException("access token required", nameof(accessToken));
 
             _accessToken = accessToken;
@@ -95,12 +95,6 @@ namespace EnergyAutomate.Tibber
             var result = await Query(new TibberQueryBuilder().WithHomes().Build(), cancellationToken);
             ValidateResult(result);
             return result;
-        }
-
-        public async Task<Guid?> GetHomeId(CancellationToken cancellationToken = default)
-        {
-            var basicData = await GetBasicData(cancellationToken);
-            return basicData.Data.Viewer.Homes.FirstOrDefault()?.Id;
         }
 
         /// <summary>
@@ -231,13 +225,13 @@ namespace EnergyAutomate.Tibber
         /// Stops real-time measurement listener.
         /// </summary>
         /// <param name="homeId"></param>
-        public async Task StopRealTimeMeasurementListener(Guid homeId, CancellationToken cancellationToken)
+        public async Task StopRealTimeMeasurementListener(Guid homeId)
         {
             await Semaphore.WaitAsync();
 
             try
             {
-                await _realTimeMeasurementListener.UnsubscribeHome(homeId, cancellationToken);
+                await _realTimeMeasurementListener.UnsubscribeHome(homeId, CancellationToken.None);
             }
             finally
             {
@@ -253,7 +247,7 @@ namespace EnergyAutomate.Tibber
 
             try
             {
-                response = await _httpClient.PostAsync(string.Empty, JsonContent(new { query }), cancellationToken);
+                response = await _httpClient.PostAsync(String.Empty, JsonContent(new { query }), cancellationToken);
             }
             catch (Exception exception)
             {
@@ -275,7 +269,7 @@ namespace EnergyAutomate.Tibber
         {
             if (response.Errors is not null && response.Errors.Any())
                 throw new TibberApiException(
-                    $"Query execution failed:{Environment.NewLine}{string.Join(Environment.NewLine, response.Errors.Select(e => $"{e.Message} (locations: {string.Join(";", e.Locations.Select(l => $"line: {l.Line}, column: {l.Column}"))})"))}"
+                    $"Query execution failed:{Environment.NewLine}{String.Join(Environment.NewLine, response.Errors.Select(e => $"{e.Message} (locations: {String.Join(";", e.Locations.Select(l => $"line: {l.Line}, column: {l.Column}"))})"))}"
                 );
         }
     }

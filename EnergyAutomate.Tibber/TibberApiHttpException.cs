@@ -123,16 +123,16 @@ namespace EnergyAutomate.Tibber
             if (RequestHeaders != null && RequestHeaders.Any())
             {
                 builder.AppendLine("Request headers:");
-                builder.AppendLine(string.Join(Environment.NewLine, RequestHeaders.Select(h => $"{h.Key}: [{string.Join(", ", h.Value)}]")));
+                builder.AppendLine(String.Join(Environment.NewLine, RequestHeaders.Select(h => $"{h.Key}: [{String.Join(", ", h.Value)}]")));
             }
 
             if (RequestContentHeaders != null && RequestContentHeaders.Any())
             {
                 builder.AppendLine("Request content headers:");
-                builder.AppendLine(string.Join(Environment.NewLine, RequestContentHeaders.Select(h => $"{h.Key}: [{string.Join(", ", h.Value)}]")));
+                builder.AppendLine(String.Join(Environment.NewLine, RequestContentHeaders.Select(h => $"{h.Key}: [{String.Join(", ", h.Value)}]")));
             }
 
-            if (!string.IsNullOrEmpty(RequestContent))
+            if (!String.IsNullOrEmpty(RequestContent))
             {
                 builder.AppendLine("Request content:");
                 if (RequestContent.Length > MaximumBodyLength)
@@ -150,16 +150,16 @@ namespace EnergyAutomate.Tibber
             if (ResponseHeaders != null && ResponseHeaders.Any())
             {
                 builder.AppendLine("Response headers:");
-                builder.AppendLine(string.Join(Environment.NewLine, ResponseHeaders.Select(h => $"{h.Key}: [{string.Join(", ", h.Value)}]")));
+                builder.AppendLine(String.Join(Environment.NewLine, ResponseHeaders.Select(h => $"{h.Key}: [{String.Join(", ", h.Value)}]")));
             }
 
             if (ResponseContentHeaders != null && ResponseContentHeaders.Any())
             {
                 builder.AppendLine("Response content headers:");
-                builder.AppendLine(string.Join(Environment.NewLine, ResponseContentHeaders.Select(h => $"{h.Key}: [{string.Join(", ", h.Value)}]")));
+                builder.AppendLine(String.Join(Environment.NewLine, ResponseContentHeaders.Select(h => $"{h.Key}: [{String.Join(", ", h.Value)}]")));
             }
 
-            if (!string.IsNullOrEmpty(ResponseContent))
+            if (!String.IsNullOrEmpty(ResponseContent))
             {
                 builder.AppendLine("Response content:");
 

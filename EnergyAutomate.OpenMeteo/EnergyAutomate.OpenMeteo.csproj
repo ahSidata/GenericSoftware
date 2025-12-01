@@ -1,12 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-	<PropertyGroup>
-		<TargetFramework>netstandard2.1</TargetFramework>
-		<LangVersion>Latest</LangVersion>
-		<ImplicitUsings>enable</ImplicitUsings>
-		<Nullable>enable</Nullable>
-	</PropertyGroup>
-
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
 		<Deterministic>True</Deterministic>
 	</PropertyGroup>
@@ -27,7 +20,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="System.Text.Json" Version="9.0.3" />
+		<PackageReference Include="System.Text.Json" Version="10.0.0" />
 	</ItemGroup>
 
 </Project>

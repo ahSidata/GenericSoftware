@@ -1,4 +1,3 @@
-using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -8,6 +7,7 @@ using System.Net.WebSockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Newtonsoft.Json;
 
 namespace EnergyAutomate.Tibber
 {
@@ -178,7 +178,7 @@ namespace EnergyAutomate.Tibber
 
         private async Task SubscribeStream(Guid homeId, int subscriptionId, CancellationToken cancellationToken, TibberApiSubscriptionQueryBuilder queryBuilder = null)
         {
-            Trace.WriteLine($"subscribe to home id {homeId} with subscription id {subscriptionId}", "Tibber");
+            Trace.WriteLine($"subscribe to home id {homeId} with subscription id {subscriptionId}");
 
             queryBuilder ??= new TibberApiSubscriptionQueryBuilder().WithLiveMeasurement(new LiveMeasurementQueryBuilder().WithAllScalarFields(), homeId);
             var query = queryBuilder.Build().Replace(@"""", @"\""");
@@ -192,13 +192,13 @@ namespace EnergyAutomate.Tibber
 
         private async Task UnsubscribeStream(int subscriptionId, CancellationToken cancellationToken)
         {
-            Trace.WriteLine($"unsubscribe subscription with id {subscriptionId}", "Tibber");
+            Trace.WriteLine($"unsubscribe subscription with id {subscriptionId}");
             await ExecuteStreamRequest($@"{{""type"":""complete"",""id"":""{subscriptionId}""}}", cancellationToken);
         }
 
         private Task ExecuteStreamRequest(string request, CancellationToken cancellationToken)
         {
-            Trace.WriteLine($"send message; client state {_wssClient.State} {_wssClient.CloseStatus} {_wssClient.CloseStatusDescription} {request}", "Tibber");
+            Trace.WriteLine($"send message; client state {_wssClient.State} {_wssClient.CloseStatus} {_wssClient.CloseStatusDescription} {request}");
             var requestBytes = new ArraySegment<byte>(Encoding.ASCII.GetBytes(request));
             return _wssClient.SendAsync(requestBytes, WebSocketMessageType.Text, true, cancellationToken);
         }
@@ -219,7 +219,7 @@ namespace EnergyAutomate.Tibber
 #endif
             await _wssClient.ConnectAsync(websocketSubscriptionUrl, cancellationToken);
 
-            Trace.WriteLine("web socket connected", "Tibber");
+            Trace.WriteLine("web socket connected");
 
             var connectionInitMessage = new WebSocketConnectionInitMessage { Payload = connectionInitPayload };
             var json = JsonConvert.SerializeObject(connectionInitMessage, TibberApiClient.JsonSerializerSettings);
@@ -227,7 +227,7 @@ namespace EnergyAutomate.Tibber
 
             await _wssClient.SendAsync(init, WebSocketMessageType.Text, true, cancellationToken);
 
-            Trace.WriteLine("web socket initialization message sent", "Tibber");
+            Trace.WriteLine("web socket initialization message sent");
 
             var result = await _wssClient.ReceiveAsync(_receiveBuffer, cancellationToken);
             if (result.CloseStatus.HasValue)
@@ -240,7 +240,7 @@ namespace EnergyAutomate.Tibber
 
             _isInitialized = true;
 
-            Trace.WriteLine("web socket initialization completed", "Tibber");
+            Trace.WriteLine("web socket initialization completed");
         }
 
         private async void StartListening()
@@ -258,7 +258,7 @@ namespace EnergyAutomate.Tibber
 
                     do
                     {
-                        Trace.WriteLine($"receive message; client state {_wssClient.State} {_wssClient.CloseStatus} {_wssClient.CloseStatusDescription}", "Tibber");
+                        Trace.WriteLine($"receive message; client state {_wssClient.State} {_wssClient.CloseStatus} {_wssClient.CloseStatusDescription}");
                         result = await _wssClient.ReceiveAsync(_receiveBuffer, _cancellationTokenSource.Token);
                         var json = Encoding.ASCII.GetString(_receiveBuffer.Array, 0, result.Count);
                         stringBuilder.Append(json);
@@ -266,7 +266,7 @@ namespace EnergyAutomate.Tibber
                 }
                 catch (OperationCanceledException)
                 {
-                    Trace.WriteLine("web socket operation canceled", "Tibber");
+                    Trace.WriteLine("web socket operation canceled");
                     return;
                 }
                 catch (Exception exception)
@@ -290,7 +290,7 @@ namespace EnergyAutomate.Tibber
 
                             if (!_cancellationTokenSource.IsCancellationRequested)
                             {
-                                Trace.WriteLine("connection re-established; re-initialize data streams", "Tibber");
+                                Trace.WriteLine("connection re-established; re-initialize data streams");
                                 ResubscribeStreams(c => true);
                                 continue;
                             }
@@ -354,7 +354,7 @@ namespace EnergyAutomate.Tibber
                                 break;
 
                             case "error":
-                                Trace.WriteLine($"web socket error message received: {string.Join("; ", message.Payload.Errors.Select(e => e.Message))}");
+                                Trace.WriteLine($"web socket error message received: {String.Join("; ", message.Payload.Errors.Select(e => e.Message))}");
                                 foreach (var error in message.Payload.Errors)
                                     homeStreamObserverCollection.Observable.Error(error.Message);
 
@@ -385,7 +385,7 @@ namespace EnergyAutomate.Tibber
                 if (_isDisposed)
                     return;
 
-                Trace.WriteLine("listener disposal started", "Tibber");
+                Trace.WriteLine("listener disposal started");
 
                 _isDisposed = true;
 
@@ -413,7 +413,7 @@ namespace EnergyAutomate.Tibber
             _wssClient.Dispose();
             _cancellationTokenSource.Dispose();
 
-            Trace.WriteLine("listener disposal finished", "Tibber");
+            Trace.WriteLine("listener disposal finished");
         }
 
         private void CheckObjectNotDisposed()
@@ -444,14 +444,14 @@ namespace EnergyAutomate.Tibber
                 try
                 {
                     var delay = GetDelay(failures);
-                    Trace.WriteLine($"retrying to connect in {delay.TotalSeconds} seconds", "Tibber");
+                    Trace.WriteLine($"retrying to connect in {delay.TotalSeconds} seconds");
                     await Task.Delay(delay, _cancellationTokenSource.Token);
 
-                    Trace.WriteLine("check there is a valid real time device", "Tibber");
+                    Trace.WriteLine("check there is a valid real time device");
                     var homes = await _tibberApiClient.ValidateRealtimeDevice();
                     _websocketSubscriptionUrl = new Uri(homes.Data.Viewer.WebsocketSubscriptionUrl);
 
-                    Trace.WriteLine("retrying to connect in...", "Tibber");
+                    Trace.WriteLine("retrying to connect in...");
                     await Initialize(_websocketSubscriptionUrl, _cancellationTokenSource.Token);
                     return;
                 }

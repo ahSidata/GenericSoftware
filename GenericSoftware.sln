@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 17
-VisualStudioVersion = 17.13.35825.156
+# Visual Studio Version 18
+VisualStudioVersion = 18.0.11222.15
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EnergyAutomate", "EnergyAutomate\EnergyAutomate\EnergyAutomate.csproj", "{3E6D1F50-3D7F-4DC1-ACAB-395E7533A847}"
 EndProject
@@ -27,10 +27,6 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EnergyAutomate.Emulator.Cli", "EnergyAutomate.Emulator.Cli\EnergyAutomate.Emulator.Cli.csproj", "{14DCA0CA-D0AD-4C98-A47D-B1F33ECA4A76}"
 EndProject
 Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "EnergyAutomation.GroBro", "EnergyAutomation.GroBro\EnergyAutomation.GroBro.pyproj", "{AAE9915A-6337-4E99-9253-5C5B39198D52}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Nuget", "Nuget", "{10F3DA9F-BA49-42A9-AA4F-81C761AB1FE7}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "M2Mqtt.Net", "Nuget\M2Mqtt\M2Mqtt.Net.csproj", "{2D71AB0A-3050-46E2-C1CE-DD80AA4DE719}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -72,16 +68,9 @@ Global
 		{14DCA0CA-D0AD-4C98-A47D-B1F33ECA4A76}.Release|Any CPU.Build.0 = Release|Any CPU
 		{AAE9915A-6337-4E99-9253-5C5B39198D52}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{AAE9915A-6337-4E99-9253-5C5B39198D52}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{2D71AB0A-3050-46E2-C1CE-DD80AA4DE719}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{2D71AB0A-3050-46E2-C1CE-DD80AA4DE719}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{2D71AB0A-3050-46E2-C1CE-DD80AA4DE719}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{2D71AB0A-3050-46E2-C1CE-DD80AA4DE719}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
-	EndGlobalSection
-	GlobalSection(NestedProjects) = preSolution
-		{2D71AB0A-3050-46E2-C1CE-DD80AA4DE719} = {10F3DA9F-BA49-42A9-AA4F-81C761AB1FE7}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {C102F243-1405-406D-9EF4-F8B5F552E015}

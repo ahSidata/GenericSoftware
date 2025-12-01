@@ -13,7 +13,6 @@ namespace EnergyAutomate.Emulator
         private ILogger<MqttProxyWorker> Logger => ServiceProvider.GetRequiredService<ILogger<MqttProxyWorker>>();
 
         private PythonWrapper _pythonWrapper;
-        private GrowattMqttProxy _growattMqttProxy;
 
         public MqttProxyWorker(IServiceProvider serviceProvider)
         {
@@ -28,21 +27,11 @@ namespace EnergyAutomate.Emulator
                 GrowattHost = "mqtt.growatt.com",
                 GrowattPort = 7006
             };
-
-            _growattMqttProxy = new GrowattMqttProxy(
-                "0PVP50ZR16ST00CB",
-                "ah.azure.sidata.com",
-                7006,
-                "mqtt.growatt.com",
-                7006,
-                serviceProvider.GetRequiredService<ILogger<GrowattMqttProxy>>()
-            );
         }
 
         protected override Task ExecuteAsync(CancellationToken stoppingToken)
         {
             _pythonWrapper.StartPythonClient();
-            //_growattMqttProxy.Start();
 
             return Task.CompletedTask;
         }

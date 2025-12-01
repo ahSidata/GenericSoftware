@@ -71,7 +71,10 @@ namespace EnergyAutomate.Watchdogs
             {
                 if (!ApiService.TibberHomeId.HasValue)
                 {
-                    ApiService.TibberHomeId = await ServiceProvider.GetRequiredService<TibberApiClient>().GetHomeId(cancellationToken);
+                    var basicData = await ServiceProvider.GetRequiredService<TibberApiClient>().GetBasicData();
+                    var homeId = basicData.Data.Viewer.Homes.First().Id;
+
+                    ApiService.TibberHomeId = homeId;
                 }
 
                 if (ApiService.TibberHomeId.HasValue && TibberApiClient != null)
@@ -108,7 +111,7 @@ namespace EnergyAutomate.Watchdogs
                 await RealTimeMeasurementCancellationTokenSource.CancelAsync();
 
             if (ApiService.TibberHomeId.HasValue && TibberApiClient != null)
-                await TibberApiClient.StopRealTimeMeasurementListener(ApiService.TibberHomeId.Value, cancellationToken);
+                await TibberApiClient.StopRealTimeMeasurementListener(ApiService.TibberHomeId.Value);
 
             if (RealTimeMeasurementObserver != null)
             {
