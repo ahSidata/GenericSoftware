@@ -12,36 +12,7 @@
 
 <input type="checkbox" title="Navigation menu" class="navbar-toggler" />
 
-<script>
-    
-    let originalWidth;
-
-    document.querySelector('.navbar-toggler').addEventListener('change', function() {
-        if (window.innerWidth >= 641) {
-            // Aktionen für Bildschirme ab 641px
-            console.log("Bildschirm ist mindestens 641px breit");
-      
-            const linkTexts = document.querySelectorAll('#navbar-brand-text');
-            linkTexts.forEach(text => {
-                text.style.display = this.checked ? 'none' : '';
-            });
-
-            const sidebar = document.querySelector('.sidebar');
-            if (this.checked) {
-                // Sidebar verkleinern
-                originalWidth = sidebar.style.width;
-                sidebar.style.width = '100px'; // Beispielwert für reduzierte Breite
-            } else {
-                // Sidebar auf ursprüngliche Breite zurücksetzen
-                sidebar.style.width = originalWidth;
-            }
-        }
-    });
-
-
-</script>
-
-<div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
+<div class="nav-scrollable" onclick="(window.__ea_navmenu && window.__ea_navmenu.collapseIfNeeded) ? window.__ea_navmenu.collapseIfNeeded(event) : null">
     <nav class="nav flex-column">
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
