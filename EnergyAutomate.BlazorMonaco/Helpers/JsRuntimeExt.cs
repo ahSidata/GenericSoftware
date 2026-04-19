@@ -1,7 +1,6 @@
 ﻿using Microsoft.JSInterop;
-using System.Threading.Tasks;
 
-namespace BlazorMonaco.Helpers
+namespace EnergyAutomate.BlazorMonaco.Helpers
 {
     internal static class JsRuntimeExt
     {

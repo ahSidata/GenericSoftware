@@ -1,11 +1,13 @@
-﻿using BlazorMonaco.Editor;
-using BlazorMonaco.Helpers;
+﻿using EnergyAutomate.BlazorMonaco.Helpers;
 using Microsoft.JSInterop;
-using System.Collections.Generic;
 using System.Text.Json.Serialization;
-using System.Threading.Tasks;
+// ReSharper disable ClassNeverInstantiated.Global
+// ReSharper disable UnusedAutoPropertyAccessor.Global
+// ReSharper disable UnusedMember.Global
+// ReSharper disable InvalidXmlDocComment
+// ReSharper disable GrammarMistakeInComment
 
-namespace BlazorMonaco.Bridge
+namespace EnergyAutomate.BlazorMonaco.Bridge
 {
     /**
      * A model.
@@ -73,20 +75,20 @@ namespace BlazorMonaco.Bridge
          * @param eol The end of line character preference. This will only be used for multiline ranges. Defaults to `EndOfLinePreference.TextDefined`.
          * @return The text.
          */
-        public Task<string> GetValueInRange(Range range, EndOfLinePreference? eol)
+        public Task<string> GetValueInRange(EditorRange range, EndOfLinePreference? eol)
             => JsRuntime.SafeInvokeAsync<string>("blazorMonaco.editor.model.getValueInRange", Uri, range, eol);
         /**
          * Get the length of text in a certain range.
          * @param range The range describing what text length to get.
          * @return The text length.
          */
-        public Task<int> GetValueLengthInRange(Range range, EndOfLinePreference? eol)
+        public Task<int> GetValueLengthInRange(EditorRange range, EndOfLinePreference? eol)
             => JsRuntime.SafeInvokeAsync<int>("blazorMonaco.editor.model.getValueLengthInRange", Uri, range, eol);
         /**
          * Get the character count of text in a certain range.
          * @param range The range describing what text length to get.
          */
-        public Task<int> GetCharacterCountInRange(Range range, EndOfLinePreference? eol)
+        public Task<int> GetCharacterCountInRange(EditorRange range, EndOfLinePreference? eol)
             => JsRuntime.SafeInvokeAsync<int>("blazorMonaco.editor.model.getCharacterCountInRange", Uri, range, eol);
         /**
          * Get the number of lines in the model.
@@ -161,8 +163,13 @@ namespace BlazorMonaco.Bridge
         /**
          * Create a valid range.
          */
-        public Task<Range> ValidateRange(Range range)
-            => JsRuntime.SafeInvokeAsync<Range>("blazorMonaco.editor.model.validateRange", Uri, range);
+        public Task<EditorRange> ValidateRange(EditorRange range)
+            => JsRuntime.SafeInvokeAsync<EditorRange>("blazorMonaco.editor.model.validateRange", Uri, range);
+        /**
+         * Verifies the range is valid.
+         */
+        public Task<bool> IsValidRange(EditorRange range)
+            => JsRuntime.SafeInvokeAsync<bool>("blazorMonaco.editor.model.isValidRange", Uri, range);
         /**
          * Converts the position to a zero-based offset.
          *
@@ -184,8 +191,8 @@ namespace BlazorMonaco.Bridge
         /**
          * Get a range covering the entire model.
          */
-        public Task<Range> GetFullModelRange()
-            => JsRuntime.SafeInvokeAsync<Range>("blazorMonaco.editor.model.getFullModelRange", Uri);
+        public Task<EditorRange> GetFullModelRange()
+            => JsRuntime.SafeInvokeAsync<EditorRange>("blazorMonaco.editor.model.getFullModelRange", Uri);
         /**
          * Returns if the model was disposed or not.
          */
@@ -215,7 +222,7 @@ namespace BlazorMonaco.Bridge
          * @param limitResultCount Limit the number of results
          * @return The ranges where the matches are. It is empty if no matches have been found.
          */
-        public Task<List<FindMatch>> FindMatches(string searchString, Range searchScope, bool isRegex, bool matchCase, string wordSeparators, bool captureMatches, int? limitResultCount)
+        public Task<List<FindMatch>> FindMatches(string searchString, EditorRange searchScope, bool isRegex, bool matchCase, string wordSeparators, bool captureMatches, int? limitResultCount)
             => JsRuntime.SafeInvokeAsync<List<FindMatch>>("blazorMonaco.editor.model.findMatches", Uri, searchString, searchScope, isRegex, matchCase, wordSeparators, captureMatches, limitResultCount);
         /**
          * Search the model for the next match. Loops to the beginning of the model if needed.
@@ -284,46 +291,50 @@ namespace BlazorMonaco.Bridge
          * @param id The decoration id.
          * @return The decoration range or null if the decoration was not found.
          */
-        public Task<Range> GetDecorationRange(string id)
-            => JsRuntime.SafeInvokeAsync<Range>("blazorMonaco.editor.model.getDecorationRange", Uri, id);
+        public Task<EditorRange> GetDecorationRange(string id)
+            => JsRuntime.SafeInvokeAsync<EditorRange>("blazorMonaco.editor.model.getDecorationRange", Uri, id);
         /**
          * Gets all the decorations for the line `lineNumber` as an array.
          * @param lineNumber The line number
          * @param ownerId If set, it will ignore decorations belonging to other owners.
          * @param filterOutValidation If set, it will ignore decorations specific to validation (i.e. warnings, errors).
+         * @param filterFontDecorations If set, it will ignore font decorations.
          * @return An array with the decorations
          */
-        public Task<ModelDecoration> GetLineDecorations(int lineNumber, int? ownerId, bool? filterOutValidation)
-            => JsRuntime.SafeInvokeAsync<ModelDecoration>("blazorMonaco.editor.model.getLineDecorations", Uri, lineNumber, ownerId, filterOutValidation);
+        public Task<ModelDecoration> GetLineDecorations(int lineNumber, int? ownerId, bool? filterOutValidation, bool? filterFontDecorations)
+            => JsRuntime.SafeInvokeAsync<ModelDecoration>("blazorMonaco.editor.model.getLineDecorations", Uri, lineNumber, ownerId, filterOutValidation, filterFontDecorations);
         /**
          * Gets all the decorations for the lines between `startLineNumber` and `endLineNumber` as an array.
          * @param startLineNumber The start line number
          * @param endLineNumber The end line number
          * @param ownerId If set, it will ignore decorations belonging to other owners.
          * @param filterOutValidation If set, it will ignore decorations specific to validation (i.e. warnings, errors).
+         * @param filterFontDecorations If set, it will ignore font decorations.
          * @return An array with the decorations
          */
-        public Task<ModelDecoration> GetLinesDecorations(int startLineNumber, int endLineNumber, int? ownerId, bool? filterOutValidation)
-            => JsRuntime.SafeInvokeAsync<ModelDecoration>("blazorMonaco.editor.model.getLinesDecorations", Uri, startLineNumber, endLineNumber, ownerId, filterOutValidation);
+        public Task<ModelDecoration> GetLinesDecorations(int startLineNumber, int endLineNumber, int? ownerId, bool? filterOutValidation, bool? filterFontDecorations)
+            => JsRuntime.SafeInvokeAsync<ModelDecoration>("blazorMonaco.editor.model.getLinesDecorations", Uri, startLineNumber, endLineNumber, ownerId, filterOutValidation, filterFontDecorations);
         /**
          * Gets all the decorations in a range as an array. Only `startLineNumber` and `endLineNumber` from `range` are used for filtering.
          * So for now it returns all the decorations on the same line as `range`.
          * @param range The range to search in
          * @param ownerId If set, it will ignore decorations belonging to other owners.
          * @param filterOutValidation If set, it will ignore decorations specific to validation (i.e. warnings, errors).
+         * @param filterFontDecorations If set, it will ignore font decorations.
          * @param onlyMinimapDecorations If set, it will return only decorations that render in the minimap.
          * @param onlyMarginDecorations If set, it will return only decorations that render in the glyph margin.
          * @return An array with the decorations
          */
-        public Task<ModelDecoration[]> GetDecorationsInRange(Range range, int? ownerId, bool? filterOutValidation, bool? onlyMinimapDecorations, bool? onlyMarginDecorations)
-            => JsRuntime.SafeInvokeAsync<ModelDecoration[]>("blazorMonaco.editor.model.getDecorationsInRange", Uri, range, ownerId, filterOutValidation, onlyMinimapDecorations, onlyMarginDecorations);
+        public Task<ModelDecoration[]> GetDecorationsInRange(EditorRange range, int? ownerId, bool? filterOutValidation, bool? filterFontDecorations, bool? onlyMinimapDecorations, bool? onlyMarginDecorations)
+            => JsRuntime.SafeInvokeAsync<ModelDecoration[]>("blazorMonaco.editor.model.getDecorationsInRange", Uri, range, ownerId, filterOutValidation, filterFontDecorations, onlyMinimapDecorations, onlyMarginDecorations);
         /**
          * Gets all the decorations as an array.
          * @param ownerId If set, it will ignore decorations belonging to other owners.
          * @param filterOutValidation If set, it will ignore decorations specific to validation (i.e. warnings, errors).
+         * @param filterFontDecorations If set, it will ignore font decorations.
          */
-        public Task<List<ModelDecoration>> GetAllDecorations(int? ownerId, bool? filterOutValidation)
-            => JsRuntime.SafeInvokeAsync<List<ModelDecoration>>("blazorMonaco.editor.model.getAllDecorations", Uri, ownerId, filterOutValidation);
+        public Task<List<ModelDecoration>> GetAllDecorations(int? ownerId, bool? filterOutValidation, bool? filterFontDecorations)
+            => JsRuntime.SafeInvokeAsync<List<ModelDecoration>>("blazorMonaco.editor.model.getAllDecorations", Uri, ownerId, filterOutValidation, filterFontDecorations);
         /**
          * Gets all decorations that render in the glyph margin as an array.
          * @param ownerId If set, it will ignore decorations belonging to other owners.
@@ -334,15 +345,22 @@ namespace BlazorMonaco.Bridge
          * Gets all the decorations that should be rendered in the overview ruler as an array.
          * @param ownerId If set, it will ignore decorations belonging to other owners.
          * @param filterOutValidation If set, it will ignore decorations specific to validation (i.e. warnings, errors).
+         * @param filterFontDecorations If set, it will ignore font decorations.
          */
-        public Task<ModelDecoration> GetOverviewRulerDecorations(int? ownerId, bool? filterOutValidation)
-            => JsRuntime.SafeInvokeAsync<ModelDecoration>("blazorMonaco.editor.model.getOverviewRulerDecorations", Uri, ownerId, filterOutValidation);
+        public Task<ModelDecoration> GetOverviewRulerDecorations(int? ownerId, bool? filterOutValidation, bool? filterFontDecorations)
+            => JsRuntime.SafeInvokeAsync<ModelDecoration>("blazorMonaco.editor.model.getOverviewRulerDecorations", Uri, ownerId, filterOutValidation, filterFontDecorations);
         /**
          * Gets all the decorations that contain injected text.
          * @param ownerId If set, it will ignore decorations belonging to other owners.
          */
         public Task<ModelDecoration[]> GetInjectedTextDecorations(int? ownerId)
             => JsRuntime.SafeInvokeAsync<ModelDecoration[]>("blazorMonaco.editor.model.getInjectedTextDecorations", Uri, ownerId);
+        /**
+         * Gets all the decorations that contain custom line heights.
+         * @param ownerId If set, it will ignore decorations belonging to other owners.
+         */
+        public Task<ModelDecoration[]> GetCustomLineHeightsDecorations(int? ownerId)
+            => JsRuntime.SafeInvokeAsync<ModelDecoration[]>("blazorMonaco.editor.model.getCustomLineHeightsDecorations", Uri, ownerId);
         /**
          * Normalize a string containing whitespace according to indentation rules (converts to spaces or to tabs).
          */
@@ -399,6 +417,28 @@ namespace BlazorMonaco.Bridge
          */
         public Task SetEOL(EndOfLineSequence eol)
             => JsRuntime.SafeInvokeAsync("blazorMonaco.editor.model.setEOL", Uri, eol);
+        /**
+         * Undo edit operations until the previous undo/redo point.
+         * The inverse edit operations will be pushed on the redo stack.
+         */
+        public Task Undo()
+            => JsRuntime.SafeInvokeAsync("blazorMonaco.editor.model.undo", Uri);
+        /**
+         * Is there anything in the undo stack?
+         */
+        public Task<bool> CanUndo()
+            => JsRuntime.SafeInvokeAsync<bool>("blazorMonaco.editor.model.canUndo", Uri);
+        /**
+         * Redo edit operations until the next undo/redo point.
+         * The inverse edit operations will be pushed on the undo stack.
+         */
+        public Task Redo()
+            => JsRuntime.SafeInvokeAsync("blazorMonaco.editor.model.redo", Uri);
+        /**
+         * Is there anything in the redo stack?
+         */
+        public Task<bool> CanRedo()
+            => JsRuntime.SafeInvokeAsync<bool>("blazorMonaco.editor.model.canRedo", Uri);
         /**
          * An event emitted when the contents of the model have changed.
          * @event
