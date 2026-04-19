@@ -334,7 +334,33 @@ namespace EnergyAutomate.BlazorMonaco.Bridge
             var isBrowser = System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Create("BROWSER"));
             await JsRuntimeExt.UpdateRuntime(jsRuntime).SafeInvokeAsync("blazorMonaco.editor.setWasm", isBrowser);
 #endif
-            await JsRuntimeExt.UpdateRuntime(jsRuntime).SafeInvokeAsync("blazorMonaco.editor.create", domElementId, optionsDict, overrideServices, dotnetObjectRef);
+            // Call the JS create method and await a confirmation boolean. The JS implementation
+            // returns a Promise that resolves when the editor is fully created and registered.
+            var created = await JsRuntimeExt.UpdateRuntime(jsRuntime).SafeInvokeAsync<bool>("blazorMonaco.editor.create", domElementId, optionsDict, overrideServices, dotnetObjectRef);
+            if (!created)
+            {
+                // As a fallback, try to poll briefly for the editor registration before giving up.
+                var runtime = JsRuntimeExt.UpdateRuntime(jsRuntime);
+                const int maxAttempts = 40;
+                const int delayMs = 50;
+                for (int attempt = 0; attempt < maxAttempts; attempt++)
+                {
+                    try
+                    {
+                        var editorType = await runtime.SafeInvokeAsync<string>("blazorMonaco.editor.getEditorType", domElementId);
+                        if (!string.IsNullOrWhiteSpace(editorType))
+                            return;
+                    }
+                    catch (JSException)
+                    {
+                        // ignore and retry
+                    }
+
+                    await Task.Delay(delayMs);
+                }
+
+                throw new InvalidOperationException($"Failed to create Monaco editor with id '{domElementId}'");
+            }
         }
 
         internal static async Task CreateDiffEditor(
@@ -357,7 +383,31 @@ namespace EnergyAutomate.BlazorMonaco.Bridge
             var isBrowser = System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Create("BROWSER"));
             await JsRuntimeExt.UpdateRuntime(jsRuntime).SafeInvokeAsync("blazorMonaco.editor.setWasm", isBrowser);
 #endif
-            await JsRuntimeExt.UpdateRuntime(jsRuntime).SafeInvokeAsync("blazorMonaco.editor.createDiffEditor", domElementId, optionsDict, overrideServices, dotnetObjectRef, dotnetObjectRefOriginal, dotnetObjectRefModified);
+            var created = await JsRuntimeExt.UpdateRuntime(jsRuntime).SafeInvokeAsync<bool>("blazorMonaco.editor.createDiffEditor", domElementId, optionsDict, overrideServices, dotnetObjectRef, dotnetObjectRefOriginal, dotnetObjectRefModified);
+            if (!created)
+            {
+                // Brief fallback polling
+                var runtime = JsRuntimeExt.UpdateRuntime(jsRuntime);
+                const int maxAttempts = 40;
+                const int delayMs = 50;
+                for (int attempt = 0; attempt < maxAttempts; attempt++)
+                {
+                    try
+                    {
+                        var editorType = await runtime.SafeInvokeAsync<string>("blazorMonaco.editor.getEditorType", domElementId);
+                        if (!string.IsNullOrWhiteSpace(editorType))
+                            return;
+                    }
+                    catch (JSException)
+                    {
+                        // ignore and retry
+                    }
+
+                    await Task.Delay(delayMs);
+                }
+
+                throw new InvalidOperationException($"Failed to create Monaco diff editor with id '{domElementId}'");
+            }
         }
 
         [Obsolete("This method is deprecated as it's WASM only. Use the overload that takes an IJSRuntime parameter.")]

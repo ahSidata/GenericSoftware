@@ -1,9 +1,9 @@
 ﻿@page "/Account/ConfirmEmail"
 
 @using System.Text
+@using EnergyAutomate.Components.Account.Shared
 @using Microsoft.AspNetCore.Identity
 @using Microsoft.AspNetCore.WebUtilities
-@using EnergyAutomate.Data
 
 @inject UserManager<ApplicationUser> UserManager
 @inject IdentityRedirectManager RedirectManager
@@ -30,6 +30,7 @@
         if (UserId is null || Code is null)
         {
             RedirectManager.RedirectTo("");
+            return;
         }
 
         var user = await UserManager.FindByIdAsync(UserId);

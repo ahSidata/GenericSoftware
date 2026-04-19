@@ -1,4 +1,6 @@
-var require = { paths: { vs: document.baseURI + '_content/BlazorMonaco/lib/monaco-editor/min/vs' } };
+// Ensure the path points to the package static content folder produced by the library
+// Use absolute path so loader can find the Monaco AMD files when served from the app
+var require = { paths: { vs: '/_content/EnergyAutomate.BlazorMonaco/lib/monaco-editor/min/vs' } };
 window.blazorMonaco = window.blazorMonaco || {};
 window.blazorMonaco.editors = [];
 
@@ -151,67 +153,153 @@ window.blazorMonaco.editor = {
     },
 
     create: function (id, options, override, dotnetRef) {
-        if (typeof monaco === 'undefined') {
-            console.error("BlazorMonaco: monaco is undefined. Please check that you have the script tag for editor.main.js in your html file");
-            return;
-        }
+        return new Promise((resolve, reject) => {
+            const doCreate = () => {
+                try {
+                    if (options == null)
+                        options = {};
 
-        if (options == null)
-            options = {};
+                    let oldEditor = this.getEditor(id, true);
+                    if (oldEditor !== null) {
+                        if (options.value == null) {
+                            options.value = oldEditor.getValue();
+                        }
 
-        let oldEditor = this.getEditor(id, true);
-        if (oldEditor !== null) {
-            if (options.value == null) {
-                options.value = oldEditor.getValue();
-            }
+                        window.blazorMonaco.editors.splice(window.blazorMonaco.editors.findIndex(h => h.id === id), 1);
+                        oldEditor.dispose();
+                    }
 
-            window.blazorMonaco.editors.splice(window.blazorMonaco.editors.findIndex(h => h.id === id), 1);
-            oldEditor.dispose();
-        }
+                    if (options.lineNumbers == "function") {
+                        options.lineNumbers = (lineNumber) => {
+                            return this.getEditorLineNumber(id, lineNumber);
+                        };
+                    }
 
-        if (options.lineNumbers == "function") {
-            options.lineNumbers = (lineNumber) => {
-                return this.getEditorLineNumber(id, lineNumber);
+                    let element = document.getElementById(id);
+                    if (element == null) {
+                        console.error("BlazorMonaco: DOM element with id '" + id + "' not found");
+                        resolve(false);
+                        return;
+                    }
+
+                    let editor = monaco.editor.create(element, options, override);
+                    window.blazorMonaco.editors.push({ id: id, editor: editor, dotnetRef: dotnetRef });
+                    resolve(true);
+                }
+                catch (err) {
+                    console.error("BlazorMonaco: failed to create editor for id '" + id + "'", err);
+                    reject(err);
+                }
             };
-        }
 
-        let editor = monaco.editor.create(document.getElementById(id), options, override);
-        window.blazorMonaco.editors.push({ id: id, editor: editor, dotnetRef: dotnetRef });
+            if (typeof monaco === 'undefined') {
+                // Try to load the editor main if loader is present
+                if (typeof require !== 'undefined' && typeof require.config === 'function') {
+                    try {
+                        require(['vs/editor/editor.main'], () => {
+                            if (typeof monaco === 'undefined') {
+                                console.error("BlazorMonaco: monaco still undefined after loader");
+                                resolve(false);
+                                return;
+                            }
+                            doCreate();
+                        }, (err) => {
+                            console.error('BlazorMonaco: require failed to load editor.main', err);
+                            reject(err);
+                        });
+                    }
+                    catch (err) {
+                        console.error('BlazorMonaco: require threw', err);
+                        reject(err);
+                    }
+                }
+                else {
+                    console.error("BlazorMonaco: monaco is undefined and require is not available. Please check that editor.main.js is loaded.");
+                    resolve(false);
+                }
+            }
+            else {
+                doCreate();
+            }
+        });
     },
 
     createDiffEditor: function (id, options, override, dotnetRef, dotnetRefOriginal, dotnetRefModified) {
-        if (typeof monaco === 'undefined') {
-            console.error("BlazorMonaco: monaco is undefined. Please check that you have the script tag for editor.main.js in your html file");
-            return;
-        }
+        return new Promise((resolve, reject) => {
+            const doCreate = () => {
+                try {
+                    if (options == null)
+                        options = {};
 
-        if (options == null)
-            options = {};
+                    let oldEditor = this.getEditor(id, true);
+                    let oldModel = null;
+                    if (oldEditor !== null) {
+                        oldModel = oldEditor.getModel();
 
-        let oldEditor = this.getEditor(id, true);
-        let oldModel = null;
-        if (oldEditor !== null) {
-            oldModel = oldEditor.getModel();
+                        window.blazorMonaco.editors.splice(window.blazorMonaco.editors.findIndex(h => h.id === id + "_original"), 1);
+                        window.blazorMonaco.editors.splice(window.blazorMonaco.editors.findIndex(h => h.id === id + "_modified"), 1);
+                        window.blazorMonaco.editors.splice(window.blazorMonaco.editors.findIndex(h => h.id === id), 1);
+                        oldEditor.dispose();
+                    }
 
-            window.blazorMonaco.editors.splice(window.blazorMonaco.editors.findIndex(h => h.id === id + "_original"), 1);
-            window.blazorMonaco.editors.splice(window.blazorMonaco.editors.findIndex(h => h.id === id + "_modified"), 1);
-            window.blazorMonaco.editors.splice(window.blazorMonaco.editors.findIndex(h => h.id === id), 1);
-            oldEditor.dispose();
-        }
+                    if (options.lineNumbers == "function") {
+                        options.lineNumbers = (lineNumber) => {
+                            return this.getEditorLineNumber(id, lineNumber);
+                        };
+                    }
 
-        if (options.lineNumbers == "function") {
-            options.lineNumbers = (lineNumber) => {
-                return this.getEditorLineNumber(id, lineNumber);
+                    let element = document.getElementById(id);
+                    if (element == null) {
+                        console.error("BlazorMonaco: DOM element with id '" + id + "' not found");
+                        resolve(false);
+                        return;
+                    }
+
+                    let editor = monaco.editor.createDiffEditor(element, options, override);
+                    window.blazorMonaco.editors.push({ id: id, editor: editor, dotnetRef: dotnetRef });
+                    window.blazorMonaco.editors.push({ id: id + "_original", editor: editor.getOriginalEditor(), dotnetRef: dotnetRefOriginal });
+                    window.blazorMonaco.editors.push({ id: id + "_modified", editor: editor.getModifiedEditor(), dotnetRef: dotnetRefModified });
+
+                    if (oldModel !== null && oldModel?.original !== null && oldModel?.modified !== null)
+                        editor.setModel(oldModel);
+
+                    resolve(true);
+                }
+                catch (err) {
+                    console.error("BlazorMonaco: failed to create diff editor for id '" + id + "'", err);
+                    reject(err);
+                }
             };
-        }
 
-        let editor = monaco.editor.createDiffEditor(document.getElementById(id), options, override);
-        window.blazorMonaco.editors.push({ id: id, editor: editor, dotnetRef: dotnetRef });
-        window.blazorMonaco.editors.push({ id: id + "_original", editor: editor.getOriginalEditor(), dotnetRef: dotnetRefOriginal });
-        window.blazorMonaco.editors.push({ id: id + "_modified", editor: editor.getModifiedEditor(), dotnetRef: dotnetRefModified });
-
-        if (oldModel !== null && oldModel?.original !== null && oldModel?.modified !== null)
-            editor.setModel(oldModel);
+            if (typeof monaco === 'undefined') {
+                if (typeof require !== 'undefined' && typeof require.config === 'function') {
+                    try {
+                        require(['vs/editor/editor.main'], () => {
+                            if (typeof monaco === 'undefined') {
+                                console.error("BlazorMonaco: monaco still undefined after loader");
+                                resolve(false);
+                                return;
+                            }
+                            doCreate();
+                        }, (err) => {
+                            console.error('BlazorMonaco: require failed to load editor.main', err);
+                            reject(err);
+                        });
+                    }
+                    catch (err) {
+                        console.error('BlazorMonaco: require threw', err);
+                        reject(err);
+                    }
+                }
+                else {
+                    console.error("BlazorMonaco: monaco is undefined and require is not available. Please check that editor.main.js is loaded.");
+                    resolve(false);
+                }
+            }
+            else {
+                doCreate();
+            }
+        });
     },
 
     createModel: function (value, language, uriStr) {

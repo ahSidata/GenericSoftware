@@ -26,11 +26,14 @@ public class Program
     {
         var builder = WebApplication.CreateBuilder(args);
 
+        // Add services to the container.
+        builder.Services.AddRazorComponents()
+            .AddInteractiveServerComponents();
+
 #if DEBUG
         //builder.Logging.AddDebug();
 #endif
         //builder.Logging.AddConsole();
-
 
         // Konfiguration laden
         var configuration = builder.Configuration;
@@ -42,12 +45,6 @@ public class Program
             builder.Logging.AddCustomLogger(LogLevel.Trace, category => category.StartsWith("EnergyAutomate"));
             builder.Services.AddSingleton(sp => new ILoggerTraceListener(sp));
         }
-
-        // Add services to the container.
-        builder.Services.AddRazorComponents()
-            .AddInteractiveServerComponents()
-            .AddInteractiveWebAssemblyComponents()
-            .AddAuthenticationStateSerialization();
 
         builder.Services.AddCascadingAuthenticationState();
         builder.Services.AddScoped<IdentityUserAccessor>();
@@ -143,9 +140,7 @@ public class Program
 
         app.MapStaticAssets();
         app.MapRazorComponents<App>()
-            .AddInteractiveServerRenderMode()
-            .AddInteractiveWebAssemblyRenderMode()
-            .AddAdditionalAssemblies(typeof(Client._Imports).Assembly);
+            .AddInteractiveServerRenderMode();
 
         // Add additional endpoints required by the Identity /Account Razor components.
         app.MapAdditionalIdentityEndpoints();
