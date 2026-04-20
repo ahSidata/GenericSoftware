@@ -7,8 +7,6 @@
         "ASPNETCORE_ENVIRONMENT": "Development",
         "PYTHONNET_PYDLL": "C:\\Users\\alexander.hailfinger\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll"
       },
-      "dotnetRunMessages": true,
-      "inspectUri": "{wsProtocol}://{url.hostname}:{url.port}/_framework/debug/ws-proxy?browser={browserInspectUri}",
       "applicationUrl": "http://localhost:5070"
     },
     "https": {
@@ -18,8 +16,6 @@
         "ASPNETCORE_ENVIRONMENT": "Development",
         "PYTHONNET_PYDLL": "C:\\Users\\alexander.hailfinger\\AppData\\Local\\Programs\\Python\\Python313\\python313.dll"
       },
-      "dotnetRunMessages": true,
-      "inspectUri": "{wsProtocol}://{url.hostname}:{url.port}/_framework/debug/ws-proxy?browser={browserInspectUri}",
       "applicationUrl": "https://localhost:7069;http://localhost:5070"
     },
     "Container (Dockerfile)": {

@@ -111,7 +111,6 @@ public class Program
 
         // Configure the HTTP request pipeline.
 
-        app.UseWebAssemblyDebugging();
         app.UseMigrationsEndPoint();
 
         //migrate database

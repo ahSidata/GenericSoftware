@@ -40,7 +40,7 @@ namespace EnergyAutomate.Services
 
         #region Properties
 
-        public bool IsEnabled { get; set; } = true;
+        public bool IsEnabled { get; set; } = false;
         public bool ApiSettingAutoMode { get; set; }
         public int ApiSettingAvgPower { get; set; } = 200;
         public List<APiTraceValue> ApiSettingAvgPowerAdjustmentTraceValues { get; set; } = [];

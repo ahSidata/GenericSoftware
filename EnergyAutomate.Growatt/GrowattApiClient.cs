@@ -34,7 +34,8 @@ namespace EnergyAutomate.Growatt
             }
             catch (Exception ex)
             {
-                throw new ApiException("API error: Other", -10, ex);
+                // Include the full exception information to help diagnostics in callers/logs
+                throw new ApiException($"API error: Other - {ex.Message}", -10, ex);
             }
         }
 
@@ -47,8 +48,12 @@ namespace EnergyAutomate.Growatt
             return await ExecuteWithExceptionHandlingAsync(async () =>
             {
                 var response = await _httpClient.GetAsync(endpoint);
-                response.EnsureSuccessStatusCode();
-                return await response.Content.ReadAsStringAsync();
+                var responseString = await response.Content.ReadAsStringAsync();
+                if (!response.IsSuccessStatusCode)
+                {
+                    throw new ApiException($"HTTP {(int)response.StatusCode} {response.ReasonPhrase}: {responseString}", (int)response.StatusCode);
+                }
+                return responseString;
             });
         }
 
@@ -60,9 +65,11 @@ namespace EnergyAutomate.Growatt
                 var content = deviceQuery.ToFormUrlEncodedContent();
 
                 var response = await _httpClient.PostAsync(endpoint, content);
-                response.EnsureSuccessStatusCode();
-
                 var responseString = await response.Content.ReadAsStringAsync();
+                if (!response.IsSuccessStatusCode)
+                {
+                    throw new ApiException($"HTTP {(int)response.StatusCode} {response.ReasonPhrase}: {responseString}", (int)response.StatusCode);
+                }
                 var result = JsonConvert.DeserializeObject<TResponse>(responseString);
 
                 if (result != null && result.Code == 0)
@@ -86,9 +93,11 @@ namespace EnergyAutomate.Growatt
                 var content = deviceQuery.ToFormUrlEncodedContent();
 
                 var response = await _httpClient.PostAsync(endpoint, content);
-                response.EnsureSuccessStatusCode();
-
                 var responseString = await response.Content.ReadAsStringAsync();
+                if (!response.IsSuccessStatusCode)
+                {
+                    throw new ApiException($"HTTP {(int)response.StatusCode} {response.ReasonPhrase}: {responseString}", (int)response.StatusCode);
+                }
                 var result = JsonConvert.DeserializeObject<TResponse>(responseString);
 
                 if (result != null && result.Code == 0)
@@ -115,9 +124,11 @@ namespace EnergyAutomate.Growatt
                 });
 
                 var response = await _httpClient.PostAsync(endpoint, content);
-                response.EnsureSuccessStatusCode();
-
                 var responseString = await response.Content.ReadAsStringAsync();
+                if (!response.IsSuccessStatusCode)
+                {
+                    throw new ApiException($"HTTP {(int)response.StatusCode} {response.ReasonPhrase}: {responseString}", (int)response.StatusCode);
+                }
                 var result = JsonConvert.DeserializeObject<DeviceListResponse>(responseString);
 
                 if (result != null && result.Code == 0)
@@ -141,9 +152,11 @@ namespace EnergyAutomate.Growatt
                 var content = deviceQuery.ToFormUrlEncodedContent();
 
                 var response = await _httpClient.PostAsync(endpoint, content);
-                response.EnsureSuccessStatusCode();
-
                 var responseString = await response.Content.ReadAsStringAsync();
+                if (!response.IsSuccessStatusCode)
+                {
+                    throw new ApiException($"HTTP {(int)response.StatusCode} {response.ReasonPhrase}: {responseString}", (int)response.StatusCode);
+                }
                 var result = JsonConvert.DeserializeObject<DeviceNoahHistoricalDataResponse>(responseString);
 
                 if (result != null && result.Code == 0)
@@ -182,14 +195,17 @@ namespace EnergyAutomate.Growatt
                 var content = deviceQuery.ToFormUrlEncodedContent();
 
                 var response = await _httpClient.PostAsync(endpoint, content);
-                response.EnsureSuccessStatusCode();
-
                 var responseString = await response.Content.ReadAsStringAsync();
+                if (!response.IsSuccessStatusCode)
+                {
+                    throw new ApiException($"HTTP {(int)response.StatusCode} {response.ReasonPhrase}: {responseString}", (int)response.StatusCode);
+                }
+
                 var result = JsonConvert.DeserializeObject<ApiResponse>(responseString);
 
                 if (result != null && result.Code != 0)
                 {
-                    throw new ApiException($"API error: {result.Message}", result.Code);
+                    throw new ApiException($"API error: {result.Message} - RawResponse: {responseString}", result.Code);
                 }
             }
             catch (ApiException apiException)
