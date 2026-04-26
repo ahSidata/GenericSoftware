@@ -1,4 +1,5 @@
 ﻿using EnergyAutomate.Definitions;
+using EnergyAutomate.Services.CodeFactory;
 using System.Diagnostics;
 
 namespace EnergyAutomate.Utilities
@@ -17,6 +18,7 @@ namespace EnergyAutomate.Utilities
         #region Properties
 
         private ApiService ApiService => ServiceProvider.GetRequiredService<ApiService>();
+        private RuntimeCodeTemplateExecutor CodeTemplateExecutor => ServiceProvider.GetRequiredService<RuntimeCodeTemplateExecutor>();
         private ApiQueueWatchdog<IDeviceQuery> GrowattDeviceQueryQueueWatchdog => ServiceProvider.GetRequiredService<ApiQueueWatchdog<IDeviceQuery>>();
         private ILogger LoggerRTM => ServiceProvider.GetRequiredService<ILogger<DistributionManager>>();
         private IServiceProvider ServiceProvider { get; init; }
@@ -27,23 +29,15 @@ namespace EnergyAutomate.Utilities
 
         public async Task HandleDistributionAsync(List<DeviceList> devices, int totalPower, bool prioritizeHighSoc, DateTimeOffset timestamp)
         {
-            var dbContext = ServiceProvider.CreateScope().ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var factory = new EnergyDistributionManagerScriptFactory(
+                new EnergyDistributionManagerEvent(timestamp, devices, totalPower, prioritizeHighSoc),
+                ApiService,
+                GrowattDeviceQueryQueueWatchdog,
+                CodeTemplateExecutor,
+                LoggerRTM);
 
-            var distributionElement = dbContext.GrowattElements
-                .FirstOrDefault(x => x.ElementType == GrowattElement.ElementTypes.Distribution && x.IsActive);
-
-            LoggerRTM.LogTrace("Active distribution element: {ElementId}", distributionElement.Id);
-
-            if (distributionElement.Id == GrowattElements.Distribution1.Id)
-            {
-                LoggerRTM.LogTrace("Using Distribution1 strategy");
-                await DistributePower1(devices, totalPower, prioritizeHighSoc, timestamp);
-            }
-            else if (distributionElement.Id == GrowattElements.Distribution2.Id)
-            {
-                LoggerRTM.LogTrace("Using Distribution2 strategy");
-                await DistributePower2(devices, totalPower, prioritizeHighSoc, timestamp);
-            }
+            await CodeTemplateExecutor.ExecuteAsync(ApiService.ActiveDistributionManagerTemplateKey, factory);
+            return;
         }
 
         /// <summary>

@@ -17,7 +17,7 @@ namespace EnergyAutomate.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "9.0.3")
+                .HasAnnotation("ProductVersion", "10.0.6")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
@@ -471,6 +471,86 @@ namespace EnergyAutomate.Migrations
                     b.ToTable("GrowattDeviceNoahLastData");
                 });
 
+            modelBuilder.Entity("EnergyAutomate.Data.ApiRuntimeSettings", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ActiveAdjustmentTemplateKey")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ActiveCalculationTemplateKey")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ActiveDistributionManagerTemplateKey")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ActiveDistributionTemplateKey")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("ApiSettingAutoMode")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("ApiSettingAvgPower")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ApiSettingAvgPowerHysteresis")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ApiSettingAvgPowerLoadSeconds")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ApiSettingAvgPowerOffset")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("ApiSettingBatteryPriorityMode")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("ApiSettingExtentionAvgPower")
+                        .HasColumnType("int");
+
+                    b.Property<TimeSpan>("ApiSettingExtentionExclusionFrom")
+                        .HasColumnType("time");
+
+                    b.Property<TimeSpan>("ApiSettingExtentionExclusionUntil")
+                        .HasColumnType("time");
+
+                    b.Property<bool>("ApiSettingExtentionMode")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("ApiSettingMaxPower")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ApiSettingPowerAdjustmentFactor")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ApiSettingPowerAdjustmentWaitCycles")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("ApiSettingRestrictionMode")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("ApiSettingSocMax")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ApiSettingSocMin")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ApiSettingTimeOffset")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsEnabled")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("ApiRuntimeSettings");
+                });
+
             modelBuilder.Entity("EnergyAutomate.Data.ApplicationUser", b =>
                 {
                     b.Property<string>("Id")
@@ -534,26 +614,6 @@ namespace EnergyAutomate.Migrations
                         .HasFilter("[NormalizedUserName] IS NOT NULL");
 
                     b.ToTable("AspNetUsers", (string)null);
-                });
-
-            modelBuilder.Entity("EnergyAutomate.Definitions.GrowattElement", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<int>("ElementType")
-                        .HasColumnType("int");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("Name")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("GrowattElements");
                 });
 
             modelBuilder.Entity("EnergyAutomate.Growatt.DeviceList", b =>

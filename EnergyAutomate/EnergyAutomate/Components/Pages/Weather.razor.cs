@@ -1,11 +1,16 @@
 ﻿using BlazorBootstrap;
+using Microsoft.AspNetCore.Components;
 using OpenMeteo;
-using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace EnergyAutomate.Components.Pages
 {
     public partial class Weather
     {
+        [Inject]
+        [AllowNull]
+        private ILogger<Weather> Logger { get; set; }
+
         private LineChart radiationChart = default!;
         private ChartData radiationData = default!;
         private LineChart cloudcoverChart = default!;
@@ -44,15 +49,15 @@ namespace EnergyAutomate.Components.Pages
         private async Task GetWeatherData()
         {
             var weatherForecast = await ApiService.CurrentState.GetWeatherForecastAsync();
-            var label_values = weatherForecast?.Hourly?.Time?.Select(s => DateTime.Parse(s).ToString("HH:mm")).ToList();
-            var direct_radiation_instant = weatherForecast?.Hourly?.Direct_radiation_instant?.Select(s => (double?)s).ToList();
-            var charge_window = weatherForecast?.Hourly?.Direct_radiation_instant?.Select(s => (double?)s).ToList();
+            var labelValues = weatherForecast?.Hourly?.Time?.Select(s => DateTime.Parse(s).ToString("HH:mm")).ToList();
+            var directRadiationInstant = weatherForecast?.Hourly?.Direct_radiation_instant?.Select(s => (double?)s).ToList();
+            var chargeWindow = weatherForecast?.Hourly?.Direct_radiation_instant?.Select(s => (double?)s).ToList();
             var hourlyIndex = weatherForecast?.Hourly?.Time?.Select(s => DateTime.Parse(s).ToUniversalTime()).ToArray();
 
-            if (charge_window != null && hourlyIndex != null)
+            if (chargeWindow != null && hourlyIndex != null)
             {
 
-                for (int i = 0; i < charge_window.Count; i++)
+                for (int i = 0; i < chargeWindow.Count; i++)
                 {
                     if
                     (
@@ -62,27 +67,25 @@ namespace EnergyAutomate.Components.Pages
                         )
                     )
                     {
-                        charge_window[i] = null;
+                        chargeWindow[i] = null;
                     }
                 }
             }
 
-            var cloudcover_low = weatherForecast?.Hourly?.Cloudcover_low?.Select(s => (double?)s).ToList();
-            var cloudcover_mid = weatherForecast?.Hourly?.Cloudcover_mid?.Select(s => (double?)s).ToList();
-            var cloudcover_high = weatherForecast?.Hourly?.Cloudcover_high?.Select(s => (double?)s).ToList();
-
-            var dataSource =
+            var cloudcoverLow = weatherForecast?.Hourly?.Cloudcover_low?.Select(s => (double?)s).ToList();
+            var cloudcoverMid = weatherForecast?.Hourly?.Cloudcover_mid?.Select(s => (double?)s).ToList();
+            var cloudcoverHigh = weatherForecast?.Hourly?.Cloudcover_high?.Select(s => (double?)s).ToList();
 
             radiationData = new ChartData
             {
-                Labels = label_values,
+                Labels = labelValues,
                 Datasets = new List<IChartDataset>()
                 {
                     new LineChartDataset()
                     {
 
                         Label = "charge_window",
-                        Data = charge_window,
+                        Data = chargeWindow,
                         BackgroundColor = "rgba(0, 255, 0, 0.5)",
                         BorderColor = "rgb(0, 255, 0)",
                         BorderWidth = 2,
@@ -95,7 +98,7 @@ namespace EnergyAutomate.Components.Pages
                     {
 
                         Label = "direct_radiation_instant",
-                        Data = direct_radiation_instant,
+                        Data = directRadiationInstant,
                         BackgroundColor = "rgb(255, 0, 0)",
                         BorderColor = "rgb(255, 0, 0)",
                         BorderWidth = 2,
@@ -108,13 +111,13 @@ namespace EnergyAutomate.Components.Pages
 
             cloudcoverData = new ChartData
             {
-                Labels = label_values,
+                Labels = labelValues,
                 Datasets = new List<IChartDataset>()
                 {
                     new LineChartDataset()
                     {
                         Label = "cloudcover_low",
-                        Data = cloudcover_low,
+                        Data = cloudcoverLow,
                         BackgroundColor = "rgba(173,216,230, 0.5)",
                         BorderColor = "rgb(173,216,230)",
                         BorderWidth = 2,
@@ -126,7 +129,7 @@ namespace EnergyAutomate.Components.Pages
                     new LineChartDataset()
                     {
                         Label = "cloudcover_mid",
-                        Data = cloudcover_mid,
+                        Data = cloudcoverMid,
                         BackgroundColor = "rgba(0, 0, 255, 0.5)",
                         BorderColor = "rgb(0, 0, 255)",
                         BorderWidth = 2,
@@ -138,7 +141,7 @@ namespace EnergyAutomate.Components.Pages
                     new LineChartDataset()
                     {
                         Label = "cloudcover_high",
-                        Data = cloudcover_high,
+                        Data = cloudcoverHigh,
                         BackgroundColor = "rgba(0, 0, 155, 0.5)",
                         BorderColor = "rgb(0, 0, 155)",
                         BorderWidth = 2,
@@ -192,7 +195,7 @@ namespace EnergyAutomate.Components.Pages
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"Error in UpdateChartsAsync: {ex.Message}");
+                Logger.LogError(ex, "Error in UpdateChartsAsync");
             }
         }
     }

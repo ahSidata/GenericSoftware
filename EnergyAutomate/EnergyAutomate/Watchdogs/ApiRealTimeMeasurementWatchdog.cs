@@ -65,36 +65,50 @@ namespace EnergyAutomate.Watchdogs
 
         public async Task StartListener(CancellationToken cancellationToken = default)
         {
+            var configuration = ServiceProvider.GetService<IConfiguration>();
+            var token = configuration?["ApiSettings:TibberApiToken"];
+            if (string.IsNullOrWhiteSpace(token) || token.Contains("your-api-token", StringComparison.OrdinalIgnoreCase))
+            {
+                Logger.LogWarning("Tibber API token is missing or placeholder. Real-time listener will not start.");
+                return;
+            }
+
             TibberApiClient = ServiceProvider.GetRequiredService<TibberApiClient>();
 
             if (TibberApiClient != null)
             {
                 if (!ApiService.TibberHomeId.HasValue)
                 {
-                    var basicData = await ServiceProvider.GetRequiredService<TibberApiClient>().GetBasicData();
-                    var homeId = basicData.Data.Viewer.Homes.First().Id;
+                    Logger.LogTrace("Loading Tibber basic data");
+                    var basicData = await TibberApiClient.GetBasicData(cancellationToken);
+                    var homeId = basicData.Data?.Viewer?.Homes?.FirstOrDefault()?.Id;
 
-                    ApiService.TibberHomeId = homeId;
+                    if (!homeId.HasValue)
+                    {
+                        Logger.LogWarning("Tibber returned no home id. Real-time listener will not start.");
+                        return;
+                    }
+
+                    ApiService.TibberHomeId = homeId.Value;
                 }
 
                 if (ApiService.TibberHomeId.HasValue && TibberApiClient != null)
                 {
                     try
                     {
-                        Trace.WriteLine("StartRealTimeMeasurementListener calling ...", "Tibber");
+                        Logger.LogTrace("StartRealTimeMeasurementListener calling");
 
                         RealTimeMeasurementListener = await TibberApiClient.StartRealTimeMeasurementListener(ApiService.TibberHomeId.Value, null, cancellationToken);
                         RealTimeMeasurementObserver = RealTimeMeasurementListener.Subscribe(new RealTimeMeasurementObserver(this, ApiService));
+                        Logger.LogInformation("Tibber real-time measurement listener started for home {HomeId}", ApiService.TibberHomeId.Value);
                     }
-                    catch (OperationCanceledException ex) when (ex.CancellationToken == cancellationToken)
+                    catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
                     {
-                        Console.WriteLine("Operation cancled.");
+                        Logger.LogInformation("Tibber real-time listener startup was canceled");
                     }
                     catch (Exception ex)
                     {
-                        Debug.WriteLine(ex.Message);
-                        await Task.Delay(5000);
-                        _ = StartListener();
+                        Logger.LogError(ex, "Tibber real-time listener startup failed");
                     }
                 }
             }

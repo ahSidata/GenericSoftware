@@ -1,5 +1,7 @@
 ﻿@page "/tracelog"
 
+@implements IDisposable
+
 @rendermode Microsoft.AspNetCore.Components.Web.RenderMode.InteractiveServer
 
 <h3>Trace Log</h3>
@@ -79,20 +81,26 @@ else
 
     protected override void OnInitialized()
     {
-        ((CustomLoggerProvider)CustomLoggerProvider).LogMessagesChanged += () =>
+        ((CustomLoggerProvider)CustomLoggerProvider).LogMessagesChanged += OnLogMessagesChanged;
+    }
+
+    public void Dispose()
+    {
+        ((CustomLoggerProvider)CustomLoggerProvider).LogMessagesChanged -= OnLogMessagesChanged;
+    }
+
+    private void OnLogMessagesChanged()
+    {
+        var groupedCategories = ((CustomLoggerProvider)CustomLoggerProvider).GetLogCategories();
+
+        foreach (var category in groupedCategories)
         {
-
-            var groupedCategories = ((CustomLoggerProvider)CustomLoggerProvider).GetLogCategories();
-
-            foreach (var category in groupedCategories)
+            if (!LogMessageCategories.Any(x => x.Item1 == category))
             {
-                if (!LogMessageCategories.Any(x => x.Item1 == category))
-                {
-                    LogMessageCategories.Add(new Tuple<string, bool>(category, false));
-                }
+                LogMessageCategories.Add(new Tuple<string, bool>(category, false));
             }
+        }
 
-            InvokeAsync(StateHasChanged); // Nur der Bereich mit der Collection wird aktualisiert
-        };
+        _ = InvokeAsync(StateHasChanged);
     }
 }

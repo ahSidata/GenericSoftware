@@ -28,7 +28,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<DeviceNoahInfoData> GrowattDeviceNoahInfoData { get; set; }
     public DbSet<DeviceNoahLastData> GrowattDeviceNoahLastData { get; set; }
     public DbSet<DeviceList> GrowattDevices { get; set; }
-    public DbSet<GrowattElement> GrowattElements { get; set; }
+    public DbSet<ApiRuntimeSettings> ApiRuntimeSettings { get; set; }
     public DbSet<TibberPrice> TibberPrices { get; set; }
     public DbSet<TibberRealTimeMeasurement> TibberRealTimeMeasurements { get; set; }
 
@@ -51,7 +51,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
         modelBuilder.Entity<TibberRealTimeMeasurement>().Ignore(x => x.TotalPower);
         modelBuilder.Entity<TibberPrice>().HasKey(x => new { x.Id });
 
-        modelBuilder.Entity<GrowattElement>().HasKey(x => new { x.Id });
+        modelBuilder.Entity<ApiRuntimeSettings>().HasKey(x => x.Id);
 
         // Set all string properties to be nullable
         foreach (var entityType in modelBuilder.Model.GetEntityTypes())

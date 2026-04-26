@@ -10,7 +10,38 @@
     </div>
 </div>
 
-<input type="checkbox" title="Navigation menu" class="navbar-toggler" />
+<input id="navbar-toggler-checkbox" type="checkbox" title="Navigation menu" class="navbar-toggler" />
+
+<script>
+    (function () {
+        if (!window.__ea_navmenu) {
+            window.__ea_navmenu = {
+                collapseIfNeeded: function (event) {
+                    try {
+                        if (!event || !event.target) {
+                            return;
+                        }
+
+                        if (event.target.closest && event.target.closest('form')) {
+                            console.trace('ea_navmenu: form click skipped');
+                            return;
+                        }
+
+                        if (window.innerWidth < 641) {
+                            const toggler = document.querySelector('#navbar-toggler-checkbox');
+                            if (toggler && toggler.checked) {
+                                console.trace('ea_navmenu: collapsing mobile navigation');
+                                toggler.click();
+                            }
+                        }
+                    } catch (error) {
+                        console.error('ea_navmenu: collapse failed', error);
+                    }
+                }
+            };
+        }
+    })();
+</script>
 
 <div class="nav-scrollable" onclick="(window.__ea_navmenu && window.__ea_navmenu.collapseIfNeeded) ? window.__ea_navmenu.collapseIfNeeded(event) : null">
     <nav class="nav flex-column">
@@ -46,6 +77,13 @@
             <NavLink class="nav-link" href="editor">
                 <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> 
                 <span class="link-text">Editor</span>
+            </NavLink>
+        </div>
+
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="settings">
+                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span>
+                <span class="link-text">Settings</span>
             </NavLink>
         </div>
 

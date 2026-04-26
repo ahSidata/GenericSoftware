@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace EnergyAutomate.Services
 {
-    public partial class ApiService
+    public partial class ApiService : IDisposable
     {
         #region Fields
 
@@ -14,8 +14,11 @@ namespace EnergyAutomate.Services
         private readonly Lock lockLoadBalance = new();
 
         private readonly string messageTemplatePowerSet = "{CurrentState.UtcNow} {Type} ({device}) PowerValue: {powerValue} W";
+        private readonly IServiceScopeFactory _serviceScopeFactory;
 
         private int _adjustmentWaitCycles = 0;
+        private int _timerCallbackRunning;
+        private bool _disposed;
 
         #endregion Fields
 
@@ -26,6 +29,7 @@ namespace EnergyAutomate.Services
             DistributionManager = new DistributionManager(serviceProvider);
             CurrentState = new ApiState(serviceProvider, this);
             ServiceProvider = serviceProvider;
+            _serviceScopeFactory = serviceProvider.GetRequiredService<IServiceScopeFactory>();
             GrowattDeviceQueryQueueWatchdog.OnItemDequeued += GrowattDeviceQueryQueueWatchdog_OnItemDequeued;
             Timer = new Timer(TimerCallback, null, 1000, 1000);
         }
@@ -63,6 +67,10 @@ namespace EnergyAutomate.Services
         public DistributionManager DistributionManager { get; init; }
         public int GrowattDeviceQueryQueueWatchdogCount => GrowattDeviceQueryQueueWatchdog.Count;
         public Guid? TibberHomeId { get; set; }
+        public string ActiveCalculationTemplateKey { get; set; } = "calculation.average-power";
+        public string ActiveAdjustmentTemplateKey { get; set; } = "adjustment.auto-mode";
+        public string ActiveDistributionTemplateKey { get; set; } = "distribution.equal";
+        public string ActiveDistributionManagerTemplateKey { get; set; } = "distribution-manager.default";
         private ApiRealTimeMeasurementWatchdog ApiRealTimeMeasurementWatchdog => ServiceProvider.GetRequiredService<ApiRealTimeMeasurementWatchdog>();
         private GrowattApiClient GrowattApiClient => ServiceProvider.GetRequiredService<GrowattApiClient>();
         private ThreadSafeObservableCollection<DeviceMinInfoData> GrowattDeviceMinInfoData { get; set; } = [];
@@ -89,6 +97,8 @@ namespace EnergyAutomate.Services
         public async Task ApiLoadDataFromDatabase()
         {
             var dbContext = ApiGetDbContext();
+
+            await ApiLoadRuntimeSettingsFromDatabaseAsync(dbContext);
 
             var devices = await dbContext.GrowattDevices.ToListAsync();
             GrowattDevices.Clear();
@@ -126,6 +136,28 @@ namespace EnergyAutomate.Services
             }
         }
 
+        public async Task ApiLoadRuntimeSettingsFromDatabaseAsync()
+        {
+            var dbContext = ApiGetDbContext();
+            await ApiLoadRuntimeSettingsFromDatabaseAsync(dbContext);
+        }
+
+        public async Task ApiSaveRuntimeSettingsToDatabaseAsync()
+        {
+            var dbContext = ApiGetDbContext();
+            var settings = await dbContext.ApiRuntimeSettings.FindAsync(ApiRuntimeSettings.DefaultId);
+            if (settings is null)
+            {
+                settings = new ApiRuntimeSettings();
+                dbContext.ApiRuntimeSettings.Add(settings);
+            }
+
+            ApplyRuntimeSettingsToEntity(settings);
+            settings.UpdatedAt = DateTimeOffset.UtcNow;
+            await dbContext.SaveChangesAsync();
+            Logger.LogInformation("Runtime settings saved to database");
+        }
+
         public async Task ApiStartAsync(CancellationToken cancellationToken)
         {
             await ApiLoadDataFromDatabase();
@@ -134,6 +166,18 @@ namespace EnergyAutomate.Services
         public async Task ApiStopAsync(CancellationToken cancellationToken)
         {
             await Task.CompletedTask;
+        }
+
+        public void Dispose()
+        {
+            if (_disposed)
+            {
+                return;
+            }
+
+            _disposed = true;
+            Timer.Dispose();
+            GrowattDeviceQueryQueueWatchdog.OnItemDequeued -= GrowattDeviceQueryQueueWatchdog_OnItemDequeued;
         }
 
         public List<DeviceList> GrowattAllNoahDevices()
@@ -352,28 +396,6 @@ namespace EnergyAutomate.Services
             await Task.CompletedTask;
         }
 
-        public async Task GrowattSetElementActive(GrowattElement growattElement)
-        {
-            var dbContext = ApiGetDbContext();
-            var item = await dbContext.GrowattElements.FirstOrDefaultAsync(x => x.Id == growattElement.Id);
-            if (item != null)
-            {
-                item.IsActive = true;
-
-                // Setze alle anderen vom gleichen Typ auf false
-                var elementsOfSameType = await dbContext.GrowattElements
-                    .Where(x => x.ElementType == growattElement.ElementType && x.Id != growattElement.Id)
-                    .ToListAsync();
-
-                foreach (var element in elementsOfSameType)
-                {
-                    element.IsActive = false;
-                }
-            }
-
-            await dbContext.SaveChangesAsync();
-        }
-
         public async Task TibberGetDataFromWeb()
         {
             try
@@ -539,7 +561,7 @@ namespace EnergyAutomate.Services
 
         private ApplicationDbContext ApiGetDbContext()
         {
-            return ServiceProvider.CreateScope().ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            return _serviceScopeFactory.CreateScope().ServiceProvider.GetRequiredService<ApplicationDbContext>();
         }
 
         private async Task<ApiException?> ExecuteWithExceptionHandlingAsync(IDeviceQuery item, DeviceList? device, Func<Task> action)
@@ -578,6 +600,11 @@ namespace EnergyAutomate.Services
             await GrowattDeviceQueryQueueWatchdog.ClearAsync();
 
             var devices = GrowattGetDevicesNoahOnline();
+            if (devices.Count == 0)
+            {
+                Logger.LogTrace("No online Noah devices available for setting power");
+                return;
+            }
 
             var powerValuePerDevice = powerValue / devices.Count;
 
@@ -854,6 +881,11 @@ namespace EnergyAutomate.Services
             Queue<IDeviceQuery> DeviceTimeSegmentQueue = new();
 
             var deviceLists = GrowattGetDevicesNoahOnline();
+            if (deviceLists.Count == 0)
+            {
+                Logger.LogTrace("No online Noah devices available for load priority time segments");
+                return;
+            }
 
             await GrowattQueryClearDeviceNoahTimeSegments(DeviceTimeSegmentQueue, deviceLists);
 
@@ -1421,7 +1453,7 @@ namespace EnergyAutomate.Services
             {
                 price.AutoModeRestriction = price.Total > avg;
 
-                Console.WriteLine($"Zeit: {price.StartsAt}, Preis: {price.Total} EUR/kWh");
+                Logger.LogTrace("Tibber price {StartsAt}: {Total} EUR/kWh", price.StartsAt, price.Total);
 
                 //Prüfe ob es denn eintrag schon gibt und falls ja mach ein update
                 if (!TibberPrices.Any(x => x.StartsAt == price.StartsAt))
@@ -1438,6 +1470,106 @@ namespace EnergyAutomate.Services
                 }
             }
             await dbContext.SaveChangesAsync(); // Änderungen speichern
+        }
+
+        private async Task ExecuteCalculationTemplateAsync(TibberRealTimeMeasurement measurement)
+        {
+            List<TibberRealTimeMeasurement> measurements;
+            lock (TibberRealTimeMeasurement._syncRoot)
+            {
+                measurements = TibberRealTimeMeasurement.ToList();
+            }
+
+            var eventData = new EnergyCalculationEvent(
+                measurement.TS,
+                (int)measurement.Power,
+                measurement.PowerProduction.HasValue ? (int?)measurement.PowerProduction.Value : null,
+                measurement.TotalPower);
+
+            var factory = new EnergyCalculationScriptFactory(eventData, measurement, measurements, LoggerRTM);
+            await ServiceProvider.GetRequiredService<RuntimeCodeTemplateExecutor>().ExecuteAsync(ActiveCalculationTemplateKey, factory);
+        }
+
+        private async Task ExecuteAdjustmentTemplateAsync(TibberRealTimeMeasurement measurement)
+        {
+            var onlineDevices = GrowattGetDevicesNoahOnline();
+            var eventData = new EnergyAdjustmentEvent(
+                measurement.TS,
+                measurement.TotalPower,
+                measurement.PowerAvgConsumption ?? 0,
+                measurement.PowerAvgProduction ?? 0,
+                CurrentState.IsGrowattOnline,
+                CurrentState.IsExpensiveRestrictionMode);
+
+            var factory = new EnergyAdjustmentScriptFactory(eventData, this, GrowattDeviceQueryQueueWatchdog, onlineDevices, LoggerRTM);
+            await ServiceProvider.GetRequiredService<RuntimeCodeTemplateExecutor>().ExecuteAsync(ActiveAdjustmentTemplateKey, factory);
+        }
+
+        private async Task ApiLoadRuntimeSettingsFromDatabaseAsync(ApplicationDbContext dbContext)
+        {
+            var settings = await dbContext.ApiRuntimeSettings.FindAsync(ApiRuntimeSettings.DefaultId);
+            if (settings is null)
+            {
+                settings = new ApiRuntimeSettings();
+                dbContext.ApiRuntimeSettings.Add(settings);
+                await dbContext.SaveChangesAsync();
+                Logger.LogInformation("Default runtime settings inserted into database");
+            }
+
+            ApplyRuntimeSettingsFromEntity(settings);
+            Logger.LogInformation("Runtime settings loaded from database");
+        }
+
+        private void ApplyRuntimeSettingsFromEntity(ApiRuntimeSettings settings)
+        {
+            IsEnabled = settings.IsEnabled;
+            ApiSettingAutoMode = settings.ApiSettingAutoMode;
+            ApiSettingAvgPower = settings.ApiSettingAvgPower;
+            ApiSettingAvgPowerHysteresis = settings.ApiSettingAvgPowerHysteresis;
+            ApiSettingAvgPowerLoadSeconds = settings.ApiSettingAvgPowerLoadSeconds;
+            ApiSettingAvgPowerOffset = settings.ApiSettingAvgPowerOffset;
+            ApiSettingBatteryPriorityMode = settings.ApiSettingBatteryPriorityMode;
+            ApiSettingExtentionMode = settings.ApiSettingExtentionMode;
+            ApiSettingExtentionAvgPower = settings.ApiSettingExtentionAvgPower;
+            ApiSettingExtentionExclusionFrom = settings.ApiSettingExtentionExclusionFrom;
+            ApiSettingExtentionExclusionUntil = settings.ApiSettingExtentionExclusionUntil;
+            ApiSettingMaxPower = settings.ApiSettingMaxPower;
+            ApiSettingPowerAdjustmentFactor = settings.ApiSettingPowerAdjustmentFactor;
+            ApiSettingPowerAdjustmentWaitCycles = settings.ApiSettingPowerAdjustmentWaitCycles;
+            ApiSettingRestrictionMode = settings.ApiSettingRestrictionMode;
+            ApiSettingSocMax = settings.ApiSettingSocMax;
+            ApiSettingSocMin = settings.ApiSettingSocMin;
+            ApiSettingTimeOffset = settings.ApiSettingTimeOffset;
+            ActiveCalculationTemplateKey = settings.ActiveCalculationTemplateKey;
+            ActiveAdjustmentTemplateKey = settings.ActiveAdjustmentTemplateKey;
+            ActiveDistributionTemplateKey = settings.ActiveDistributionTemplateKey;
+            ActiveDistributionManagerTemplateKey = settings.ActiveDistributionManagerTemplateKey;
+        }
+
+        private void ApplyRuntimeSettingsToEntity(ApiRuntimeSettings settings)
+        {
+            settings.IsEnabled = IsEnabled;
+            settings.ApiSettingAutoMode = ApiSettingAutoMode;
+            settings.ApiSettingAvgPower = ApiSettingAvgPower;
+            settings.ApiSettingAvgPowerHysteresis = ApiSettingAvgPowerHysteresis;
+            settings.ApiSettingAvgPowerLoadSeconds = ApiSettingAvgPowerLoadSeconds;
+            settings.ApiSettingAvgPowerOffset = ApiSettingAvgPowerOffset;
+            settings.ApiSettingBatteryPriorityMode = ApiSettingBatteryPriorityMode;
+            settings.ApiSettingExtentionMode = ApiSettingExtentionMode;
+            settings.ApiSettingExtentionAvgPower = ApiSettingExtentionAvgPower;
+            settings.ApiSettingExtentionExclusionFrom = ApiSettingExtentionExclusionFrom;
+            settings.ApiSettingExtentionExclusionUntil = ApiSettingExtentionExclusionUntil;
+            settings.ApiSettingMaxPower = ApiSettingMaxPower;
+            settings.ApiSettingPowerAdjustmentFactor = ApiSettingPowerAdjustmentFactor;
+            settings.ApiSettingPowerAdjustmentWaitCycles = ApiSettingPowerAdjustmentWaitCycles;
+            settings.ApiSettingRestrictionMode = ApiSettingRestrictionMode;
+            settings.ApiSettingSocMax = ApiSettingSocMax;
+            settings.ApiSettingSocMin = ApiSettingSocMin;
+            settings.ApiSettingTimeOffset = ApiSettingTimeOffset;
+            settings.ActiveCalculationTemplateKey = ActiveCalculationTemplateKey;
+            settings.ActiveAdjustmentTemplateKey = ActiveAdjustmentTemplateKey;
+            settings.ActiveDistributionTemplateKey = ActiveDistributionTemplateKey;
+            settings.ActiveDistributionManagerTemplateKey = ActiveDistributionManagerTemplateKey;
         }
 
         #endregion Private Methods
@@ -1462,18 +1594,7 @@ namespace EnergyAutomate.Services
 
                     var tibberRealTimeMeasurement = new TibberRealTimeMeasurement(value);
 
-                    var calculationElement = dbContext.GrowattElements.FirstOrDefault(x => x.ElementType == GrowattElement.ElementTypes.Calculation && x.IsActive);
-                    if (calculationElement != null)
-                    {
-                        if (calculationElement.Id == GrowattElements.Calculation1.Id)
-                        {
-                            await TibberRTMCalculation1(tibberRealTimeMeasurement);
-                        }
-                        else if (calculationElement.Id == GrowattElements.Calculation2.Id)
-                        {
-                            await TibberRTMCalculation2(tibberRealTimeMeasurement);
-                        }
-                    }
+                    await ExecuteCalculationTemplateAsync(tibberRealTimeMeasurement);
 
                     if (tibberRealTimeMeasurement == null)
                     {
@@ -1499,22 +1620,7 @@ namespace EnergyAutomate.Services
                         (CurrentState.BatteryChargeStart, CurrentState.BatteryChargeEnd) = CurrentState.CalculateBatteryChargingWindow();
                     }
 
-                    var ajustmentElement = dbContext.GrowattElements.FirstOrDefault(x => x.ElementType == GrowattElement.ElementTypes.Adjustment && x.IsActive);
-                    if (ajustmentElement != null)
-                    {
-                        if (ajustmentElement.Id == GrowattElements.Adjustment1.Id)
-                        {
-                            await TibberRTMAdjustment1(tibberRealTimeMeasurement);
-                        }
-                        else if (ajustmentElement.Id == GrowattElements.Adjustment2.Id)
-                        {
-                            await TibberRTMAdjustment2(tibberRealTimeMeasurement);
-                        }
-                        else if (ajustmentElement.Id == GrowattElements.Adjustment3.Id)
-                        {
-                            await TibberRTMAdjustment3(tibberRealTimeMeasurement);
-                        }
-                    }
+                    await ExecuteAdjustmentTemplateAsync(tibberRealTimeMeasurement);
 
                     tibberRealTimeMeasurement.PowerValueTotalDefault = CurrentState.GrowattNoahTotalDefaultPower;
                     ApiSettingAvgPowerAdjustmentTraceValues.AddOrUpdate(new APiTraceValue(tibberRealTimeMeasurement.TS, 3, "RTMTotalPowerDefaultNoah", (tibberRealTimeMeasurement.PowerValueTotalDefault ?? 0).ToString()));
@@ -1548,6 +1654,11 @@ namespace EnergyAutomate.Services
 
         private async void TimerCallback(object? state)
         {
+            if (_disposed || Interlocked.Exchange(ref _timerCallbackRunning, 1) == 1)
+            {
+                return;
+            }
+
             try
             {
                 //if (!smlParserRunning)
@@ -1565,6 +1676,10 @@ namespace EnergyAutomate.Services
             catch (Exception ex)
             {
                 Logger.LogError(ex, "Error in TimerCallback.");
+            }
+            finally
+            {
+                Interlocked.Exchange(ref _timerCallbackRunning, 0);
             }
         }
 

@@ -103,58 +103,6 @@
             }
         </Content>
     </Tab>
-    <Tab Title="Settings">
-        <Content>
-            <div class="mt-3 d-flex flex-column justify-content-center gap-3">
-                <Card>
-                    <CardHeader>
-                        General
-                    </CardHeader>
-                    <CardBody>
-                        <div class="col-md-3">
-                            <Switch Color="ButtonColor.Primary" @bind-Value="ApiService.IsEnabled" Label="Enable" />
-                        </div>
-                        <div class="col-md-3">
-                            <Button Color="ButtonColor.Primary" @onclick="ApiService.GrowattInvokeRefreshNoahsLastData">Refresh</Button>
-                        </div>
-                    </CardBody>
-                </Card>
-
-                <Card>
-                    <CardHeader>
-                        Timeouts
-                    </CardHeader>
-                    <CardBody>
-                        <div>
-                            ApiTimeOffset <RangeInput TValue="int" @bind-Value="ApiService.ApiSettingTimeOffset" Min="-12" Max="12" TickMarks="ApiSettingTimeOffsetTickList" Step="1" />
-                        </div>
-                    </CardBody>
-                </Card>
-                <Card>
-                    <CardHeader>
-                        Adjust settings
-                    </CardHeader>
-                    <CardBody>
-                        <div>
-                            AvgPowerOffset <RangeInput TValue="int" @bind-Value="ApiService.ApiSettingAvgPowerOffset" Min="-25" Max="150" TickMarks="ApiOffsetAvgTickList" Step="5" />
-                        </div>
-                        <div>
-                            AvgPowerHysteresis <RangeInput TValue="int" @bind-Value="ApiService.ApiSettingAvgPowerHysteresis" Min="0" Max="300" TickMarks="ApiToleranceAvgTickList" Step="10" />
-                        </div>
-                        <div>
-                            AvgPowerLoadSeconds <RangeInput TValue="int" @bind-Value="ApiService.ApiSettingAvgPowerLoadSeconds" Min="0" Max="180" TickMarks="AvgPowerLoadSecondsTickList" Step="5" />
-                        </div>
-                        <div>
-                            PowerAdjustmentWaitCycles <RangeInput TValue="int" @bind-Value="ApiService.ApiSettingPowerAdjustmentWaitCycles" Min="0" Max="5" TickMarks="ApiSettingPowerAdjustmentWaitCyclesTickList" Step="1" />
-                        </div>
-                        <div>
-                            PowerAdjustmentFactor <RangeInput TValue="int" @bind-Value="ApiService.ApiSettingPowerAdjustmentFactor" Min="0" Max="100" TickMarks="ApiSettingPowerAdjustmentFactorTickList" Step="10" />
-                        </div>
-                    </CardBody>
-                </Card>
-            </div>
-        </Content>
-    </Tab>
 </Tabs>
 
 

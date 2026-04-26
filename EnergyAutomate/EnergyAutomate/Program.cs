@@ -3,6 +3,7 @@ global using EnergyAutomate.Components.Account;
 global using EnergyAutomate.Data;
 global using EnergyAutomate.Growatt;
 global using EnergyAutomate.Services;
+global using EnergyAutomate.Services.CodeFactory;
 global using EnergyAutomate.Tibber;
 global using EnergyAutomate.Watchdogs;
 using CoordinateSharp;
@@ -96,10 +97,22 @@ public class Program
         builder.Services.AddSingleton<ApiService>();
         builder.Services.AddSingleton<ApiRealTimeMeasurementWatchdog>();
         builder.Services.AddSingleton<ApiQueueWatchdog<IDeviceQuery>>();
+        builder.Services.AddSingleton<ICodeTemplateProvider, DefaultCodeTemplateProvider>();
+        builder.Services.AddSingleton<RuntimeCodeTemplateStore>();
+        builder.Services.AddSingleton<RoslynCodeFactory>();
+        builder.Services.AddSingleton<RuntimeCodeTemplateExecutor>();
 
-        // Registrieren des Hintergrunddienstes
-        builder.Services.AddHostedService<ApiBackgroundService>();
-        builder.Services.AddHostedService<MqttProxyWorker>();
+        // Register background services only when enabled. Optional services must not block web startup.
+        if (configuration.GetSection("BackgroundServices").GetValue("ApiBackgroundService", true))
+        {
+            builder.Services.AddHostedService<ApiBackgroundService>();
+        }
+
+        if (configuration.GetSection("BackgroundServices").GetValue("MqttProxyWorker", false))
+        {
+            builder.Services.AddHostedService<MqttProxyWorker>();
+        }
+
         builder.Services.AddBlazorBootstrap();
 
         var app = builder.Build();
@@ -109,29 +122,64 @@ public class Program
             Trace.Listeners.Add(app.Services.GetRequiredService<ILoggerTraceListener>());
         }
 
-        // Configure the HTTP request pipeline.
-
-        app.UseMigrationsEndPoint();
-
-        //migrate database
-        using (var scope = app.Services.CreateScope())
+        // Capture unexpected process-level failures for diagnostics.
+        AppDomain.CurrentDomain.UnhandledException += (sender, e) =>
         {
-            var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-            dbContext.Database.Migrate();
-            var existingElements = dbContext.GrowattElements.ToList();
-            var newElements = GrowattElements.GrowattDefaultElements().Where(e => !existingElements.Any(existing => existing.Id == e.Id)).ToList();
-
-            if (newElements.Any())
+            try
             {
-                dbContext.GrowattElements.AddRange(newElements);
-                dbContext.SaveChanges();
+                var exception = e.ExceptionObject as Exception;
+                app.Services.GetService<ILogger<Program>>()?.LogCritical(exception, "Unhandled domain exception");
             }
+            catch
+            {
+                // Process-level exception handlers must never throw.
+            }
+        };
+
+        TaskScheduler.UnobservedTaskException += (sender, e) =>
+        {
+            try
+            {
+                app.Services.GetService<ILogger<Program>>()?.LogError(e.Exception, "Unobserved task exception");
+                e.SetObserved();
+            }
+            catch
+            {
+                // Process-level exception handlers must never throw.
+            }
+        };
+
+        // Configure the HTTP request pipeline.
+        if (app.Environment.IsDevelopment())
+        {
+            app.UseDeveloperExceptionPage();
+            app.UseWebAssemblyDebugging();
+            app.UseMigrationsEndPoint();
+        }
+        else
+        {
+            app.UseExceptionHandler("/Error");
+            app.UseHsts();
         }
 
-        app.UseExceptionHandler("/Error");
-        // The default HSTS value is 30 days. You may want to change this for production scenarios,
-        // see https://aka.ms/aspnetcore-hsts.
-        app.UseHsts();
+        // Apply database migrations defensively so startup diagnostics stay visible.
+        try
+        {
+            using (var scope = app.Services.CreateScope())
+            {
+                var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+                logger.LogInformation("Starting database migration");
+
+                var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+                dbContext.Database.Migrate();
+
+                logger.LogInformation("Database migration finished successfully");
+            }
+        }
+        catch (Exception ex)
+        {
+            app.Services.GetService<ILogger<Program>>()?.LogError(ex, "Database migration failed. Continuing startup without applying migrations.");
+        }
 
         app.UseHttpsRedirection();
 

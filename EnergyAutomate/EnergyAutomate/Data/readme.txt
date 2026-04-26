@@ -1,2 +1,0 @@
-Add-Migration InitialSetup -Context ApplicationDbContext -Project EnergyAQutomate -StartupProject EnergyAQutomate
-Add-Migration ChangeTable -Context ApplicationDbContext -Project EnergyAQutomate -StartupProject EnergyAQutomate

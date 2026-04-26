@@ -1,5 +1,7 @@
 using EnergyAutomate.BlazorMonaco;
 using EnergyAutomate.BlazorMonaco.Bridge;
+using BlazorBootstrap;
+using Microsoft.AspNetCore.Components;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 
@@ -7,55 +9,257 @@ namespace EnergyAutomate.Components.Pages
 {
     public partial class Editor
     {
+        [Inject]
+        [AllowNull]
+        private RuntimeCodeTemplateStore TemplateStore { get; set; }
+
+        [Inject]
+        [AllowNull]
+        private RoslynCodeFactory RoslynCodeFactory { get; set; }
+
+        [Inject]
+        [AllowNull]
+        private ILogger<Editor> Logger { get; set; }
+
         [AllowNull]
         private StandaloneCodeEditor _editor;
 
-        private static StandaloneEditorConstructionOptions EditorConstructionOptions(StandaloneCodeEditor editor)
+        private List<CodeTemplateViewModel> Templates { get; set; } = [];
+
+        private IEnumerable<NavItem>? SidebarItems { get; set; }
+
+        private string? SelectedTemplateKey { get; set; }
+
+        [SupplyParameterFromQuery(Name = "template")]
+        private string? QueryTemplateKey { get; set; }
+
+        private CodeTemplateValidationResult? ValidationResult { get; set; }
+
+        private string StatusText { get; set; } = "Select a template.";
+
+        private bool IsEditorInitialized { get; set; }
+
+        private bool CanEdit => IsEditorInitialized && !string.IsNullOrWhiteSpace(SelectedTemplateKey);
+
+        protected override void OnInitialized()
         {
+            Templates = TemplateStore.GetTemplates().ToList();
+            SelectedTemplateKey = GetInitialTemplateKey();
+            StatusText = SelectedTemplateKey is null ? "No templates available." : "Ready.";
+        }
+
+        protected override async Task OnParametersSetAsync()
+        {
+            if (!string.IsNullOrWhiteSpace(QueryTemplateKey)
+                && !string.Equals(SelectedTemplateKey, QueryTemplateKey, StringComparison.OrdinalIgnoreCase))
+            {
+                SelectedTemplateKey = QueryTemplateKey;
+                ValidationResult = null;
+
+                if (IsEditorInitialized)
+                {
+                    await LoadTemplateIntoEditorAsync(QueryTemplateKey);
+                }
+            }
+        }
+
+        private Task<Sidebar2DataProviderResult> Sidebar2DataProvider(Sidebar2DataProviderRequest request)
+        {
+            SidebarItems ??= BuildSidebarItems();
+
+            return Task.FromResult(request.ApplyTo(SidebarItems));
+        }
+
+        private IEnumerable<NavItem> BuildSidebarItems()
+        {
+            var items = new List<NavItem>();
+
+            foreach (var topicGroup in Templates.GroupBy(template => template.Topic).OrderBy(group => group.Key))
+            {
+                var topicId = $"topic-{topicGroup.Key}";
+                items.Add(new NavItem
+                {
+                    Id = topicId,
+                    Text = topicGroup.Key,
+                    IconName = GetTopicIcon(topicGroup.Key),
+                    IconColor = GetTopicIconColor(topicGroup.Key)
+                });
+
+                foreach (var template in topicGroup.OrderBy(item => item.DisplayName))
+                {
+                    items.Add(new NavItem
+                    {
+                        Id = template.Key,
+                        Href = $"/editor?template={Uri.EscapeDataString(template.Key)}",
+                        Text = template.IsModified ? $"{template.DisplayName} *" : template.DisplayName,
+                        IconName = IconName.Dash,
+                        ParentId = topicId
+                    });
+                }
+            }
+
+            return items;
+        }
+
+        private static IconName GetTopicIcon(string topic)
+        {
+            return topic switch
+            {
+                "Calculation" => IconName.Calculator,
+                "Adjustment" => IconName.Sliders,
+                "Distribution" => IconName.Diagram3Fill,
+                _ => IconName.CodeSlash
+            };
+        }
+
+        private static IconColor GetTopicIconColor(string topic)
+        {
+            return topic switch
+            {
+                "Calculation" => IconColor.Primary,
+                "Adjustment" => IconColor.Warning,
+                "Distribution" => IconColor.Success,
+                _ => IconColor.Secondary
+            };
+        }
+
+        private StandaloneEditorConstructionOptions EditorConstructionOptions(StandaloneCodeEditor editor)
+        {
+            var selectedTemplate = GetSelectedTemplate();
+
             return new StandaloneEditorConstructionOptions
             {
-                Language = "javascript",
+                Language = selectedTemplate?.Language ?? "csharp",
+                Theme = "vs-dark",
                 GlyphMargin = true,
                 AutomaticLayout = true,
-                Value = "\"use strict\";\n" +
-                            "function Person(age) {\n" +
-                            "	if (age) {\n" +
-                            "		this.age = age;\n" +
-                            "	}\n" +
-                            "}\n" +
-                            "Person.prototype.getAge = function () {\n" +
-                            "	return this.age;\n" +
-                            "};\n"
+                Value = selectedTemplate?.CurrentCode ?? string.Empty
             };
         }
 
         private async Task EditorOnDidInit()
         {
+            IsEditorInitialized = true;
+
             await _editor.AddCommand((int)KeyMod.CtrlCmd | (int)KeyCode.KeyH, (args) =>
             {
-                Console.WriteLine("Ctrl+H : Initial editor command is triggered.");
+                Logger.LogTrace("Ctrl+H editor command triggered");
             });
 
-            var newDecorations = new ModelDeltaDecoration[]
+            await _editor.AddCommand((int)KeyMod.CtrlCmd | (int)KeyCode.KeyS, async (args) =>
             {
-            new() {
-                Range = new EditorRange(3,1,3,1),
-                Options = new ModelDecorationOptions
-                {
-                    IsWholeLine = true,
-                    ClassName = "decorationContentClass",
-                    GlyphMarginClassName = "decorationGlyphMarginClass"
-                }
-            }
-            };
+                await SaveCurrentTemplateAsync();
+            });
 
-            var decorationIds = await _editor.DeltaDecorations(null, newDecorations);
-            // You can now use '_decorationIds' to change or remove the decorations
+            if (SelectedTemplateKey is not null)
+            {
+                await LoadTemplateIntoEditorAsync(SelectedTemplateKey);
+            }
         }
 
         private void OnContextMenu(EditorMouseEvent eventArg)
         {
-            Console.WriteLine("OnContextMenu : " + JsonSerializer.Serialize(eventArg));
+            Logger.LogTrace("Editor context menu: {Event}", JsonSerializer.Serialize(eventArg));
+        }
+
+        private async Task SelectTemplateAsync(string templateKey)
+        {
+            if (string.Equals(SelectedTemplateKey, templateKey, StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+
+            SelectedTemplateKey = templateKey;
+            ValidationResult = null;
+            await LoadTemplateIntoEditorAsync(templateKey);
+        }
+
+        private async Task LoadTemplateIntoEditorAsync(string templateKey)
+        {
+            var template = TemplateStore.GetTemplate(templateKey);
+            if (template is null)
+            {
+                StatusText = $"Template '{templateKey}' not found.";
+                return;
+            }
+
+            Templates = TemplateStore.GetTemplates().ToList();
+
+            if (IsEditorInitialized)
+            {
+                await _editor.SetValue(template.CurrentCode);
+            }
+
+            StatusText = $"Loaded {template.DisplayName}.";
+            Logger.LogTrace("Code template {TemplateKey} loaded", template.Key);
+        }
+
+        private async Task SaveCurrentTemplateAsync()
+        {
+            if (!CanEdit || SelectedTemplateKey is null)
+            {
+                return;
+            }
+
+            var code = await _editor.GetValue();
+            var validation = RoslynCodeFactory.Validate(code);
+            ValidationResult = validation;
+
+            if (!validation.Success)
+            {
+                StatusText = "Validation failed. Template was not saved.";
+                return;
+            }
+
+            TemplateStore.SaveTemplate(SelectedTemplateKey, code);
+            Templates = TemplateStore.GetTemplates().ToList();
+            SidebarItems = BuildSidebarItems();
+            StatusText = "Template saved.";
+        }
+
+        private async Task ResetCurrentTemplateAsync()
+        {
+            if (!CanEdit || SelectedTemplateKey is null)
+            {
+                return;
+            }
+
+            var template = TemplateStore.ResetTemplate(SelectedTemplateKey);
+            Templates = TemplateStore.GetTemplates().ToList();
+            SidebarItems = BuildSidebarItems();
+            ValidationResult = null;
+            await _editor.SetValue(template.DefaultCode);
+            StatusText = "Template reset to default.";
+        }
+
+        private async Task ValidateCurrentTemplateAsync()
+        {
+            if (!CanEdit)
+            {
+                return;
+            }
+
+            var code = await _editor.GetValue();
+            ValidationResult = RoslynCodeFactory.Validate(code);
+            StatusText = ValidationResult.Success ? "Validation successful." : "Validation failed.";
+        }
+
+        private CodeTemplateViewModel? GetSelectedTemplate()
+        {
+            return SelectedTemplateKey is null
+                ? null
+                : Templates.FirstOrDefault(template => string.Equals(template.Key, SelectedTemplateKey, StringComparison.OrdinalIgnoreCase));
+        }
+
+        private string? GetInitialTemplateKey()
+        {
+            if (!string.IsNullOrWhiteSpace(QueryTemplateKey)
+                && Templates.Any(template => string.Equals(template.Key, QueryTemplateKey, StringComparison.OrdinalIgnoreCase)))
+            {
+                return QueryTemplateKey;
+            }
+
+            return Templates.FirstOrDefault()?.Key;
         }
     }
 }

@@ -1,10 +1,48 @@
 ﻿@page "/editor"
 @using EnergyAutomate.BlazorMonaco
+@using EnergyAutomate.Services.CodeFactory
+@using BlazorBootstrap
 
 @rendermode InteractiveServer 
 
 <PageTitle>Editor</PageTitle>
 
-<StandaloneCodeEditor @ref="_editor" Id="sample-code-editor" ConstructionOptions="EditorConstructionOptions"
-                        OnDidInit="EditorOnDidInit" OnContextMenu="OnContextMenu" />
+<div class="d-flex flex-column gap-2 code-factory-shell">
+    <div class="btn-toolbar gap-2" role="toolbar" aria-label="Code factory toolbar">
+        <button type="button" class="btn btn-primary" disabled="@(!CanEdit)" @onclick="SaveCurrentTemplateAsync">Save</button>
+        <button type="button" class="btn btn-outline-secondary" disabled="@(!CanEdit)" @onclick="ResetCurrentTemplateAsync">Reset to default</button>
+        <button type="button" class="btn btn-outline-info" disabled="@(!CanEdit)" @onclick="ValidateCurrentTemplateAsync">Validate</button>
+        <span class="align-self-center small text-muted">@StatusText</span>
+    </div>
+
+    <div class="row g-2 code-factory-body">
+        <aside class="col-12 col-md-4 col-xl-3">
+            <Sidebar2 Href="/editor"
+                      IconName="IconName.CodeSlash"
+                      Title="Code Factory"
+                      BadgeText="Templates"
+                      DataProvider="Sidebar2DataProvider"
+                      Width="320"
+                      WidthUnit="Unit.Px" />
+        </aside>
+
+        <section class="col-12 col-md-8 col-xl-9">
+            <StandaloneCodeEditor @ref="_editor" Id="sample-code-editor" ConstructionOptions="EditorConstructionOptions"
+                                  OnDidInit="EditorOnDidInit" OnContextMenu="OnContextMenu" />
+
+            @if (ValidationResult is not null && ValidationResult.Diagnostics.Count > 0)
+            {
+                <div class="alert @(ValidationResult.Success ? "alert-warning" : "alert-danger") mt-2" role="alert">
+                    <strong>Diagnostics</strong>
+                    <ul class="mb-0">
+                        @foreach (var diagnostic in ValidationResult.Diagnostics)
+                        {
+                            <li>@diagnostic.Severity @diagnostic.Id (@diagnostic.Line:@diagnostic.Column): @diagnostic.Message</li>
+                        }
+                    </ul>
+                </div>
+            }
+        </section>
+    </div>
+</div>
 

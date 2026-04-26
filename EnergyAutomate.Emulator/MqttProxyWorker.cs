@@ -12,7 +12,7 @@ namespace EnergyAutomate.Emulator
 
         private ILogger<MqttProxyWorker> Logger => ServiceProvider.GetRequiredService<ILogger<MqttProxyWorker>>();
 
-        private PythonWrapper _pythonWrapper;
+        private readonly PythonWrapper _pythonWrapper;
 
         public MqttProxyWorker(IServiceProvider serviceProvider)
         {
@@ -31,9 +31,32 @@ namespace EnergyAutomate.Emulator
 
         protected override Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            _pythonWrapper.StartPythonClient();
+            try
+            {
+                Logger.LogTrace("Starting MQTT proxy worker");
+                _pythonWrapper.StartPythonClient();
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex, "MQTT proxy worker failed to start");
+            }
 
             return Task.CompletedTask;
+        }
+
+        public override Task StopAsync(CancellationToken cancellationToken)
+        {
+            try
+            {
+                Logger.LogTrace("Stopping MQTT proxy worker");
+                _pythonWrapper.StopPythonClient();
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex, "MQTT proxy worker failed to stop");
+            }
+
+            return base.StopAsync(cancellationToken);
         }
 
     }

@@ -27,22 +27,14 @@
             ApiService = null;
         }
 
-        public async void OnCompleted()
+        public void OnCompleted()
         {
-            if (!Watchdog.RestartRequested)
-            {
-                Watchdog.RestartRequested = true;
-                await Watchdog.RestartListener();
-            }
+            _ = RestartListenerAsync();
         }
 
-        public async void OnError(Exception error)
+        public void OnError(Exception error)
         {
-            if (!Watchdog.RestartRequested)
-            {
-                Watchdog.RestartRequested = true;
-                await Watchdog.RestartListener();
-            }
+            _ = RestartListenerAsync(error);
         }
 
         public void OnNext(RealTimeMeasurement value)
@@ -51,5 +43,18 @@
         }
 
         #endregion Public Methods
+
+        #region Private Methods
+
+        private async Task RestartListenerAsync(Exception? error = null)
+        {
+            if (!Watchdog.RestartRequested)
+            {
+                Watchdog.RestartRequested = true;
+                await Watchdog.RestartListener();
+            }
+        }
+
+        #endregion Private Methods
     }
 }

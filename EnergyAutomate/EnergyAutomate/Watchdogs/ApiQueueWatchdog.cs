@@ -110,7 +110,10 @@ namespace EnergyAutomate.Watchdogs
                 _semaphore.Release();
             }
 
-            _ = Task.Run(Proceeding);
+            _ = Task.Run(Proceeding).ContinueWith(task =>
+            {
+                Logger.LogError(task.Exception, "ApiQueueWatchdog<{Type}> processing failed", typeof(T).Name);
+            }, TaskContinuationOptions.OnlyOnFaulted);
         }
 
         public async Task EnqueueAsync(Queue<T> items)
@@ -129,7 +132,10 @@ namespace EnergyAutomate.Watchdogs
                 _semaphore.Release();
             }
 
-            _ = Task.Run(Proceeding);
+            _ = Task.Run(Proceeding).ContinueWith(task =>
+            {
+                Logger.LogError(task.Exception, "ApiQueueWatchdog<{Type}> processing failed", typeof(T).Name);
+            }, TaskContinuationOptions.OnlyOnFaulted);
         }
 
         private async Task Proceeding()
@@ -168,18 +174,17 @@ namespace EnergyAutomate.Watchdogs
                     //Add log entry
                     GrowattDataReads.Add(entry);
 
-                    // Starten des Tasks ohne await und Verarbeitung des Ergebnisses im Hintergrund
-                    _ = OnItemDequeued?.Invoke(item, ServiceProvider.GetRequiredService<GrowattApiClient>(), Logger)
-                        .ContinueWith(task =>
+                    var handler = OnItemDequeued;
+                    if (handler != null)
+                    {
+                        var apiException = await handler.Invoke(item, ServiceProvider.GetRequiredService<GrowattApiClient>(), Logger);
+                        if (apiException != default)
                         {
-                            if (task.IsFaulted || task.Result != default)
-                            {
-                                Logger.LogError("Exception: {Exception}", task.Exception?.InnerException);
-                                Logger.LogError("ApiQueueWatchdog<{Type}> ErrorCode: {ErrorCode}",
-                                    item.GetType().Name, task.Result?.ErrorCode);
-                                Logger.LogError(JsonConvert.SerializeObject(item).ToString());
-                            }
-                        }, TaskScheduler.Current);
+                            Logger.LogError("ApiQueueWatchdog<{Type}> ErrorCode: {ErrorCode} Message: {Message}",
+                                item.GetType().Name, apiException.ErrorCode, apiException.Message);
+                            Logger.LogError("Failed item payload: {Item}", JsonConvert.SerializeObject(item));
+                        }
+                    }
                 }
                 else if (item != null && item.Force)
                 {
