@@ -3,18 +3,16 @@ using System.Diagnostics;
 
 public class ILoggerTraceListener : TraceListener
 {
-    private readonly ILoggerProvider _loggerProvider;
+    private readonly CustomLoggerProvider _loggerProvider;
 
     public ILoggerTraceListener(IServiceProvider serviceProvider)
     {
-        _loggerProvider = serviceProvider.GetRequiredService<ILoggerProvider>();
+        _loggerProvider = serviceProvider.GetRequiredService<CustomLoggerProvider>();
     }
-
-    private CustomLoggerProvider LoggerProvider => (CustomLoggerProvider)_loggerProvider;
 
     public override void WriteLine(string? message, string? category)
     {
-        LoggerProvider.LogMessagesAdd(new CustomTraceLog
+        _loggerProvider.LogMessagesAdd(new CustomTraceLog
         {
             Category = category,
             LogLevel = LogLevel.Trace,
@@ -34,7 +32,7 @@ public class ILoggerTraceListener : TraceListener
     {
         if (!string.IsNullOrWhiteSpace(message) && !message.StartsWith("EnergyAutomate."))
         {
-            LoggerProvider.LogMessagesAdd(new CustomTraceLog
+            _loggerProvider.LogMessagesAdd(new CustomTraceLog
             {
                 Category = "ApiService",
                 LogLevel = LogLevel.Trace,

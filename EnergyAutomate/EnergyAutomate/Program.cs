@@ -40,10 +40,11 @@ public class Program
         var configuration = builder.Configuration;
         var TraceEnabled = configuration.GetSection("Trace").GetValue<bool>("TraceEnabled");
 
+        builder.Services.AddSingleton(sp => new CustomLoggerProvider(sp, LogLevel.Trace, category => category.StartsWith("EnergyAutomate")));
+
         if (TraceEnabled)
         {
-            // Erstellen und registrieren des benutzerdefinierten Trace-Listeners
-            builder.Logging.AddCustomLogger(LogLevel.Trace, category => category.StartsWith("EnergyAutomate"));
+            builder.Services.AddSingleton<ILoggerProvider>(sp => sp.GetRequiredService<CustomLoggerProvider>());
             builder.Services.AddSingleton(sp => new ILoggerTraceListener(sp));
         }
 

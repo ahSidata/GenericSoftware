@@ -7,7 +7,7 @@
 <h3>Trace Log</h3>
 <button @onclick="DownloadLogFile">Download Logs</button>
 
-@if (((CustomLoggerProvider)CustomLoggerProvider).LogMessagesAny)
+@if (CustomLoggerProvider.LogMessagesAny)
 {
     <Tabs @ref="tabsMainRef">
         @foreach (var category in LogMessageCategories)
@@ -25,7 +25,7 @@
                             @{
                                 if (selectedCategory == category.Item1)
                                 {
-                                    @foreach (var log in ((CustomLoggerProvider)CustomLoggerProvider).GetLogMessages(category.Item1))
+                                    @foreach (var log in CustomLoggerProvider.GetLogMessages(category.Item1))
                                     {
                                         <tr>
                                             <td>@log.TS</td>
@@ -52,7 +52,7 @@ else
     private IJSRuntime JSRuntime { get; set; } = default!;
 
     [Inject]
-    private ILoggerProvider CustomLoggerProvider { get; set; } = default!;
+    private CustomLoggerProvider CustomLoggerProvider { get; set; } = default!;
 
     private async Task DownloadLogFile()
     {
@@ -65,7 +65,7 @@ else
 
     private string GetLogMessagesForAI()
     {
-        var logMessages = ((CustomLoggerProvider)CustomLoggerProvider).GetLogMessages()
+        var logMessages = CustomLoggerProvider.GetLogMessages()
             .Select(log => $"[{log.TS}] <{log.Category}>: {log.Message}");
 
         return string.Join("\n", logMessages);
@@ -81,17 +81,17 @@ else
 
     protected override void OnInitialized()
     {
-        ((CustomLoggerProvider)CustomLoggerProvider).LogMessagesChanged += OnLogMessagesChanged;
+        CustomLoggerProvider.LogMessagesChanged += OnLogMessagesChanged;
     }
 
     public void Dispose()
     {
-        ((CustomLoggerProvider)CustomLoggerProvider).LogMessagesChanged -= OnLogMessagesChanged;
+        CustomLoggerProvider.LogMessagesChanged -= OnLogMessagesChanged;
     }
 
     private void OnLogMessagesChanged()
     {
-        var groupedCategories = ((CustomLoggerProvider)CustomLoggerProvider).GetLogCategories();
+        var groupedCategories = CustomLoggerProvider.GetLogCategories();
 
         foreach (var category in groupedCategories)
         {
