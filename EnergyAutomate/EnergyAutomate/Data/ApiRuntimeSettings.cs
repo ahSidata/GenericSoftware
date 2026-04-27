@@ -6,17 +6,17 @@ public sealed class ApiRuntimeSettings
 
     public Guid Id { get; set; } = DefaultId;
 
-    public bool IsEnabled { get; set; } = false;
+    public bool IsEnabled { get; set; } = true;
 
     public bool ApiSettingAutoMode { get; set; }
 
     public int ApiSettingAvgPower { get; set; } = 200;
 
-    public int ApiSettingAvgPowerHysteresis { get; set; } = 40;
+    public int ApiSettingAvgPowerHysteresis { get; set; } = 110;
 
-    public int ApiSettingAvgPowerLoadSeconds { get; set; } = 60;
+    public int ApiSettingAvgPowerLoadSeconds { get; set; } = 70;
 
-    public int ApiSettingAvgPowerOffset { get; set; } = 25;
+    public int ApiSettingAvgPowerOffset { get; set; } = 50;
 
     public bool ApiSettingBatteryPriorityMode { get; set; } = false;
 
