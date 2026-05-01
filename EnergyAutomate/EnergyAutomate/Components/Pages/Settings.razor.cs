@@ -14,8 +14,10 @@ public partial class Settings
     private readonly IEnumerable<TickMark> AvgPowerLoadSecondsTickList = ApiService.GenerateTickTickMarks(0, 180, 5);
 
     [Inject]
-    [AllowNull]
-    private RuntimeCodeTemplateStore TemplateStore { get; set; }
+    public required RuntimeCodeTemplateStore TemplateStore { get; set; }
+
+    [Inject]
+    public required ApiRealTimeMeasurementWatchdog RealTimeMeasurementWatchdog { get; set; }
 
     private string StatusText { get; set; } = "Settings are loaded from database at startup.";
 

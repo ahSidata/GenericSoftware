@@ -363,7 +363,7 @@ MigrationBackup/
 FodyWeavers.xsd
 
 # Visual Studio 2017 auto-generated files
-/EnergyAutomate/EnergyAutomate/appsettings.Development.json
+/EnergyAutomate/EnergyAutomate/appsettings.development.json
 
 # Click-Once directory
 certs/

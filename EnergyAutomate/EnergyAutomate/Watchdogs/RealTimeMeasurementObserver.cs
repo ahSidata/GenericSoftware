@@ -34,7 +34,7 @@
 
         public void OnError(Exception error)
         {
-            _ = Task.Run(() => RestartListenerAsync(error), CancellationToken.None);
+            _ = Task.Run(() => RestartListenerAsync(), CancellationToken.None);
         }
 
         public void OnNext(RealTimeMeasurement value)
@@ -46,7 +46,7 @@
 
         #region Private Methods
 
-        private async Task RestartListenerAsync(Exception? error = null)
+        private async Task RestartListenerAsync()
         {
             if (!Watchdog.RestartRequested)
             {

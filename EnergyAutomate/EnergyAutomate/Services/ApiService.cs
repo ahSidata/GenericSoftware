@@ -44,7 +44,20 @@ namespace EnergyAutomate.Services
 
         #region Properties
 
-        public bool IsEnabled { get; set; } = false;
+        private bool isEnabled;
+        public bool IsEnabled
+        {
+            get => isEnabled;
+            set
+            {
+                if (isEnabled != value)
+                {
+                    isEnabled = value;
+                    _ = ApiRealTimeMeasurementWatchdog?.RestartListener();
+                }
+            }
+        }
+
         public bool ApiSettingAutoMode { get; set; }
         public int ApiSettingAvgPower { get; set; } = 200;
         public List<APiTraceValue> ApiSettingAvgPowerAdjustmentTraceValues { get; set; } = [];
@@ -1581,19 +1594,28 @@ namespace EnergyAutomate.Services
 
         public async void OnNext(RealTimeMeasurement value)
         {
-            if (IsEnabled)
+            realTimeMeasurement = value;
+            try
             {
-                realTimeMeasurement = value;
-                try
+                var dbContext = ApiGetDbContext();
+                var tibberRealTimeMeasurement = new TibberRealTimeMeasurement(value);
+
+                // Always store the measurement data for charts
+                lock (TibberRealTimeMeasurement._syncRoot)
                 {
+                    TibberRealTimeMeasurement.Add(tibberRealTimeMeasurement);
+                }
+
+                dbContext.TibberRealTimeMeasurements.Add(tibberRealTimeMeasurement);
+                await dbContext.SaveChangesAsync();
+
+                // Only process automation logic if enabled
+                if (IsEnabled)
+                {
+                    await ExecuteCalculationTemplateAsync(tibberRealTimeMeasurement);
+
                     ApiSettingAvgPowerAdjustmentTraceValues.AddOrUpdate(new APiTraceValue() { Index = 1, Key = "GrowattNoahTotalPPV", Value = CurrentState.GrowattNoahTotalPPV.ToString() });
                     ApiSettingAvgPowerAdjustmentTraceValues.AddOrUpdate(new APiTraceValue() { Index = 2, Key = "WeatherIsCloudy", Value = CurrentState.IsCloudy().ToString() });
-
-                    var dbContext = ApiGetDbContext();
-
-                    var tibberRealTimeMeasurement = new TibberRealTimeMeasurement(value);
-
-                    await ExecuteCalculationTemplateAsync(tibberRealTimeMeasurement);
 
                     if (tibberRealTimeMeasurement == null)
                     {
@@ -1634,20 +1656,20 @@ namespace EnergyAutomate.Services
                     tibberRealTimeMeasurement.SettingOffSetAvg = ApiSettingAvgPowerOffset;
                     tibberRealTimeMeasurement.SettingAvgPowerHysteresis = ApiSettingAvgPowerHysteresis;
 
-                    lock (TibberRealTimeMeasurement._syncRoot)
+                    // Update database with processed values
+                    var dbEntity = await dbContext.TibberRealTimeMeasurements.FindAsync(tibberRealTimeMeasurement.TS);
+                    if (dbEntity != null)
                     {
-                        TibberRealTimeMeasurement.Add(tibberRealTimeMeasurement);
+                        dbContext.Entry(dbEntity).CurrentValues.SetValues(tibberRealTimeMeasurement);
+                        await dbContext.SaveChangesAsync();
                     }
-
-                    dbContext.TibberRealTimeMeasurements.Add(tibberRealTimeMeasurement); // Speichern in der Datenbank
-                    await dbContext.SaveChangesAsync(); // Änderungen speichern
-
-                    ApiInvokeStateHasChanged();
                 }
-                catch (Exception ex)
-                {
-                    Logger.LogError(ex, ex.Message);
-                }
+
+                ApiInvokeStateHasChanged();
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex, ex.Message);
             }
         }
 

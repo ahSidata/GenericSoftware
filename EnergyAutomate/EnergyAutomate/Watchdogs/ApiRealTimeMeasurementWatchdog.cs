@@ -40,9 +40,7 @@ namespace EnergyAutomate.Watchdogs
             {
                 try
                 {
-#pragma warning disable CS8625
                     RealTimeMeasurementListener = null;
-#pragma warning restore CS8625
                     RealTimeMeasurementObserver?.Dispose();
                     TibberApiClient?.Dispose();
                     TibberApiClient = null;
@@ -58,6 +56,10 @@ namespace EnergyAutomate.Watchdogs
 
                 RestartRequested = false;
             }
+            else 
+            {
+                _ = StartListener();
+            }
         }
 
         public async Task StartAsync(CancellationToken cancellationToken)
@@ -67,6 +69,12 @@ namespace EnergyAutomate.Watchdogs
 
         public async Task StartListener(CancellationToken cancellationToken = default)
         {
+            if (!ApiService.IsEnabled)
+            {
+                Logger.LogTrace("Automation is disabled. Real-time listener will not start.");
+                return;
+            }
+
             var configuration = ServiceProvider.GetService<IConfiguration>();
             var token = configuration?["ApiSettings:TibberApiToken"];
             if (string.IsNullOrWhiteSpace(token) || token.Contains("your-api-token", StringComparison.OrdinalIgnoreCase))
@@ -99,10 +107,7 @@ namespace EnergyAutomate.Watchdogs
                     try
                     {
                         Logger.LogTrace("StartRealTimeMeasurementListener calling");
-
-#pragma warning disable CS8625
                         RealTimeMeasurementListener = await TibberApiClient.StartRealTimeMeasurementListener(ApiService.TibberHomeId.Value, null, cancellationToken);
-#pragma warning restore CS8625
                         RealTimeMeasurementObserver = RealTimeMeasurementListener.Subscribe(new RealTimeMeasurementObserver(this, ApiService));
                         Logger.LogInformation("Tibber real-time measurement listener started for home {HomeId}", ApiService.TibberHomeId.Value);
                     }
@@ -133,9 +138,7 @@ namespace EnergyAutomate.Watchdogs
 
             if (RealTimeMeasurementObserver != null)
             {
-#pragma warning disable CS8625
                 RealTimeMeasurementObserver = null;
-#pragma warning restore CS8625
             }
         }
 
