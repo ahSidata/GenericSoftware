@@ -19,8 +19,8 @@ namespace EnergyAutomate.Growatt
         {
             var keyValuePairs = new[]
             {
-                new KeyValuePair<string, string>("deviceSn", DeviceSn),
-                new KeyValuePair<string, string>("deviceType", DeviceType),
+                new KeyValuePair<string, string>("deviceSn", DeviceSn ?? ""),
+                new KeyValuePair<string, string>("deviceType", DeviceType ?? ""),
             };
 
             return new FormUrlEncodedContent(keyValuePairs);

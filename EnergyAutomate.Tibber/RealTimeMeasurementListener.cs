@@ -27,12 +27,13 @@ namespace EnergyAutomate.Tibber
             SubscriptionId = subscriptionId;
         }
 
-        /// <inheritdoc />
         /// <summary>
+        /// Subscribes the specified observer to receive real-time measurement notifications.
         /// </summary>
-        /// <param name="observer"></param>
-        /// <exception cref="T:System.ArgumentException"></exception>
-        /// <returns></returns>
+        /// <remarks>The observer will receive notifications as new real-time measurements become available. Disposing the
+        /// returned IDisposable will terminate the subscription and stop notifications to the observer.</remarks>
+        /// <param name="observer">The observer that will receive notifications of real-time measurement updates. Cannot be null.</param>
+        /// <returns>An IDisposable that can be used to unsubscribe the observer from receiving further notifications.</returns>
         public IDisposable Subscribe(IObserver<RealTimeMeasurement> observer) => _listener.SubscribeObserver(this, observer);
 
         public void Initialize() => IsInitialized = true;
@@ -309,7 +310,7 @@ namespace EnergyAutomate.Tibber
 
                 foreach (var measurementGroup in measurementGroups)
                 {
-                    HomeStreamObserverCollection homeStreamObserverCollection;
+                    HomeStreamObserverCollection? homeStreamObserverCollection;
                     lock (_homeObservables)
                         homeStreamObserverCollection = _homeObservables.Values.SingleOrDefault(v => v.Observable.SubscriptionId == measurementGroup.Key);
 
@@ -425,14 +426,7 @@ namespace EnergyAutomate.Tibber
         private static void ExecuteObserverAction(IEnumerable<IObserver<RealTimeMeasurement>> observers, Action<IObserver<RealTimeMeasurement>> observerAction)
         {
             foreach (var observer in observers)
-                try
-                {
-                    observerAction(observer);
-                }
-                catch (Exception)
-                {
-                    // disposing not supposed to throw
-                }
+                observerAction(observer);
         }
 
         private async Task TryReconnect()

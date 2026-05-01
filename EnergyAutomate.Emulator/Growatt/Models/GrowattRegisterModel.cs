@@ -10,7 +10,7 @@ namespace EnergyAutomate.Emulator.Growatt.Models
 
         public Dictionary<string, GrowattParameter> PresentRegisters { get; set; } = new();
 
-        public static GrowattRegisterModel SeedDefaults(ILogger logger = null)
+        public static GrowattRegisterModel SeedDefaults(ILogger? logger = null)
         {
             var model = new GrowattRegisterModel();
 

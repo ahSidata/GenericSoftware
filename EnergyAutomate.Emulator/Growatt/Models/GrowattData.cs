@@ -1,4 +1,5 @@
 using System.Text;
+using Microsoft.Extensions.Logging;
 
 namespace EnergyAutomate.Emulator.Growatt.Models
 {
@@ -7,6 +8,8 @@ namespace EnergyAutomate.Emulator.Growatt.Models
     /// </summary>
     public class GrowattData
     {
+        private static ILogger? _logger;
+
         public GrowattDataType DataType { get; set; }
         public GrowattFloatOptions? FloatOptions { get; set; }
         public GrowattEnumOptions? EnumOptions { get; set; }
@@ -23,10 +26,7 @@ namespace EnergyAutomate.Emulator.Growatt.Models
                 return null;
             }
 
-            // Trace log for input
-            System.Diagnostics.Trace.WriteLine($"[GrowattData.Parse] DataType={DataType}, DataRaw={BitConverter.ToString(dataRaw)}");
-
-            string unpackType = dataRaw.Length switch
+            string? unpackType = dataRaw.Length switch
             {
                 1 => "B",
                 2 => "H",
@@ -36,7 +36,7 @@ namespace EnergyAutomate.Emulator.Growatt.Models
 
             if (unpackType == null)
             {
-                System.Diagnostics.Trace.WriteLine($"[GrowattData.Parse] Unsupported data length: {dataRaw.Length}");
+                _logger?.LogWarning("[GrowattData.Parse] Unsupported data length: {DataLength}", dataRaw.Length);
                 return null;
             }
 
@@ -52,14 +52,11 @@ namespace EnergyAutomate.Emulator.Growatt.Models
             switch (DataType)
             {
                 case GrowattDataType.FLOAT:
-                    if (FloatOptions == null)
-                    {
-                        System.Diagnostics.Trace.WriteLine("[GrowattData.Parse] FloatOptions missing.");
-                        return null;
-                    }
-                    var floatValue = ToInt(dataRaw) * FloatOptions.Multiplier + FloatOptions.Delta;
+                    // Use default FloatOptions if none provided
+                    var floatOpts = FloatOptions ?? new GrowattFloatOptions { Multiplier = 1.0, Delta = 0.0 };
+                    var floatValue = ToInt(dataRaw) * floatOpts.Multiplier + floatOpts.Delta;
                     floatValue = Math.Round(floatValue, 3);
-                    System.Diagnostics.Trace.WriteLine($"[GrowattData.Parse] Parsed FLOAT: {floatValue}");
+                    _logger?.LogDebug("[GrowattData.Parse] Parsed FLOAT: {FloatValue}", floatValue);
                     return floatValue;
 
                 case GrowattDataType.TIME_HHMM:
@@ -68,14 +65,14 @@ namespace EnergyAutomate.Emulator.Growatt.Models
                         int h = value / 256;
                         int m = value % 256;
                         int hhmm = h * 100 + m;
-                        System.Diagnostics.Trace.WriteLine($"[GrowattData.Parse] Parsed TIME_HHMM: {hhmm}");
+                        _logger?.LogDebug("[GrowattData.Parse] Parsed TIME_HHMM: {TimeValue}", hhmm);
                         return hhmm;
                     }
 
                 case GrowattDataType.INT:
                     {
                         var value = ToInt(dataRaw);
-                        System.Diagnostics.Trace.WriteLine($"[GrowattData.Parse] Parsed INT: {value}");
+                        _logger?.LogDebug("[GrowattData.Parse] Parsed INT: {IntValue}", value);
                         return value;
                     }
 
@@ -83,23 +80,23 @@ namespace EnergyAutomate.Emulator.Growatt.Models
                     {
                         if (EnumOptions == null)
                         {
-                            System.Diagnostics.Trace.WriteLine("[GrowattData.Parse] EnumOptions missing.");
+                            _logger?.LogWarning("[GrowattData.Parse] EnumOptions missing for ENUM data type");
                             return null;
                         }
                         var value = ToInt(dataRaw);
                         if (EnumOptions.EnumType == "BITFIELD")
                         {
-                            System.Diagnostics.Trace.WriteLine("[GrowattData.Parse] BITFIELD not implemented.");
+                            _logger?.LogWarning("[GrowattData.Parse] BITFIELD not implemented");
                             return null; // TODO: implement BITFIELD
                         }
                         else if (EnumOptions.EnumType == "INT_MAP")
                         {
                             if (EnumOptions.Values != null && EnumOptions.Values.TryGetValue(value.ToString(), out var enumValue))
                             {
-                                System.Diagnostics.Trace.WriteLine($"[GrowattData.Parse] Parsed ENUM INT_MAP: {enumValue} ({value})");
+                                _logger?.LogDebug("[GrowattData.Parse] Parsed ENUM INT_MAP: {EnumValue} ({EnumIntValue})", enumValue, value);
                                 return value;
                             }
-                            System.Diagnostics.Trace.WriteLine($"[GrowattData.Parse] ENUM value {value} not found in map.");
+                            _logger?.LogWarning("[GrowattData.Parse] ENUM value {EnumValue} not found in map", value);
                             return null;
                         }
                         break;
@@ -108,12 +105,12 @@ namespace EnergyAutomate.Emulator.Growatt.Models
                 case GrowattDataType.STRING:
                     {
                         var value = Encoding.ASCII.GetString(dataRaw).Trim('\0');
-                        System.Diagnostics.Trace.WriteLine($"[GrowattData.Parse] Parsed STRING: {value}");
+                        _logger?.LogDebug("[GrowattData.Parse] Parsed STRING: {StringValue}", value);
                         return value;
                     }
             }
 
-            System.Diagnostics.Trace.WriteLine("[GrowattData.Parse] Unknown DataType or not implemented.");
+            _logger?.LogWarning("[GrowattData.Parse] Unknown DataType or not implemented: {DataType}", DataType);
             return null;
         }
     }

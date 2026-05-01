@@ -1,9 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
-	
-		<PropertyGroup>
+
+	<PropertyGroup>
 		<TargetFramework>net10.0</TargetFramework>
 	</PropertyGroup>
-	
+
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
 		<Deterministic>True</Deterministic>
 	</PropertyGroup>
@@ -21,10 +21,6 @@
 			<Pack>True</Pack>
 			<PackagePath>\</PackagePath>
 		</None>
-	</ItemGroup>
-
-	<ItemGroup>
-		<PackageReference Include="System.Text.Json" Version="10.0.6" />
 	</ItemGroup>
 
 </Project>

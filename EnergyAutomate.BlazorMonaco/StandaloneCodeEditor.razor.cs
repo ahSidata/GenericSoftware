@@ -1,4 +1,6 @@
-﻿using EnergyAutomate.BlazorMonaco.Bridge;
+﻿#nullable disable
+
+using EnergyAutomate.BlazorMonaco.Bridge;
 using EnergyAutomate.BlazorMonaco.Helpers;
 using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;

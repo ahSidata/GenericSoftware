@@ -40,7 +40,9 @@ namespace EnergyAutomate.Watchdogs
             {
                 try
                 {
+#pragma warning disable CS8625
                     RealTimeMeasurementListener = null;
+#pragma warning restore CS8625
                     RealTimeMeasurementObserver?.Dispose();
                     TibberApiClient?.Dispose();
                     TibberApiClient = null;
@@ -98,7 +100,9 @@ namespace EnergyAutomate.Watchdogs
                     {
                         Logger.LogTrace("StartRealTimeMeasurementListener calling");
 
+#pragma warning disable CS8625
                         RealTimeMeasurementListener = await TibberApiClient.StartRealTimeMeasurementListener(ApiService.TibberHomeId.Value, null, cancellationToken);
+#pragma warning restore CS8625
                         RealTimeMeasurementObserver = RealTimeMeasurementListener.Subscribe(new RealTimeMeasurementObserver(this, ApiService));
                         Logger.LogInformation("Tibber real-time measurement listener started for home {HomeId}", ApiService.TibberHomeId.Value);
                     }
@@ -129,8 +133,9 @@ namespace EnergyAutomate.Watchdogs
 
             if (RealTimeMeasurementObserver != null)
             {
-                RealTimeMeasurementObserver.Dispose();
+#pragma warning disable CS8625
                 RealTimeMeasurementObserver = null;
+#pragma warning restore CS8625
             }
         }
 

@@ -24,17 +24,19 @@
                 <CardBody>
                     <div class="mb-3">
                         <Switch Color="ButtonColor.Primary" @bind-Value="ApiService.IsEnabled" Label="Enable automation" />
+                        <Button Color="ButtonColor.Primary" @onclick="ApiService.GrowattInvokeRefreshNoahsLastData">Refresh Noah last data</Button>                   
                     </div>
-                    <Button Color="ButtonColor.Primary" @onclick="ApiService.GrowattInvokeRefreshNoahsLastData">Refresh Noah last data</Button>
+
+                    <div class="mb-3">
+                        <div class="mb-3"><Switch @bind-Value="ApiService.ApiSettingAutoMode" Label="AutoMode" /></div>
+                        <div class="mb-3"><Switch @bind-Value="ApiService.ApiSettingRestrictionMode" Label="Restriction Mode" /></div>
+                        <div class="mb-3"><Switch @bind-Value="ApiService.ApiSettingBatteryPriorityMode" Label="Battery Priority Mode" /></div>
+                        <div class="mb-3"><Switch @bind-Value="ApiService.ApiSettingExtentionMode" Label="Extension Mode" /></div> 
+                    </div>
                 </CardBody>
             </Card>
-        </Content>
-    </Tab>
-
-    <Tab Title="Runtime Templates">
-        <Content>
             <Card Class="my-3">
-                <CardHeader>Active Templates</CardHeader>
+                <CardHeader>Extension Mode</CardHeader>
                 <CardBody>
                     <div class="mb-3">
                         <label class="form-label">Calculation</label>
@@ -89,20 +91,6 @@
                     <div class="mb-3">Average Power Load Seconds <RangeInput TValue="int" @bind-Value="ApiService.ApiSettingAvgPowerLoadSeconds" Min="0" Max="180" TickMarks="AvgPowerLoadSecondsTickList" Step="5" /></div>
                     <div class="mb-3">Power Adjustment Wait Cycles <RangeInput TValue="int" @bind-Value="ApiService.ApiSettingPowerAdjustmentWaitCycles" Min="0" Max="5" TickMarks="ApiSettingPowerAdjustmentWaitCyclesTickList" Step="1" /></div>
                     <div class="mb-3">Power Adjustment Factor <RangeInput TValue="int" @bind-Value="ApiService.ApiSettingPowerAdjustmentFactor" Min="0" Max="100" TickMarks="ApiSettingPowerAdjustmentFactorTickList" Step="10" /></div>
-                </CardBody>
-            </Card>
-        </Content>
-    </Tab>
-
-    <Tab Title="Modes">
-        <Content>
-            <Card Class="my-3">
-                <CardHeader>Modes</CardHeader>
-                <CardBody>
-                    <div class="mb-3"><Switch @bind-Value="ApiService.ApiSettingAutoMode" Label="AutoMode" /></div>
-                    <div class="mb-3"><Switch @bind-Value="ApiService.ApiSettingRestrictionMode" Label="Restriction Mode" /></div>
-                    <div class="mb-3"><Switch @bind-Value="ApiService.ApiSettingBatteryPriorityMode" Label="Battery Priority Mode" /></div>
-                    <div class="mb-3"><Switch @bind-Value="ApiService.ApiSettingExtentionMode" Label="Extension Mode" /></div>
                 </CardBody>
             </Card>
         </Content>

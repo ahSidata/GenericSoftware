@@ -1,4 +1,6 @@
-﻿using EnergyAutomate.BlazorMonaco.Bridge;
+﻿#nullable disable
+
+using EnergyAutomate.BlazorMonaco.Bridge;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 

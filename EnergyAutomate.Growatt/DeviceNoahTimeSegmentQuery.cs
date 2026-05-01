@@ -46,7 +46,7 @@ namespace EnergyAutomate.Growatt
 
             return new FormUrlEncodedContent(keyValuePairs);
         }
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             if (obj is DeviceNoahSetTimeSegmentQuery other)
             {
@@ -72,9 +72,6 @@ namespace EnergyAutomate.Growatt
             return HashCode.Combine(hash1, hash2);
         }
 
-
         #endregion Public Methods
-
-
     }
 }

@@ -1577,7 +1577,6 @@ namespace EnergyAutomate.Services
         #region IObservable
 
         private RealTimeMeasurement realTimeMeasurement = null!;
-        private bool smlParserRunning = false;
         private Timer Timer { get; init; } = null!;
 
         public async void OnNext(RealTimeMeasurement value)
@@ -1612,7 +1611,7 @@ namespace EnergyAutomate.Services
 
                     var firstTime = CurrentState.WeatherForecastToday?.Hourly?.Time?.FirstOrDefault();
 
-                    if (firstTime == null || firstTime != null && DateTime.Parse(firstTime).Date != CurrentState.UtcNow.Date)
+                    if (firstTime == null || DateTime.Parse(firstTime).Date != CurrentState.UtcNow.Date)
                     {
                         CurrentState.WeatherForecastToday = await CurrentState.GetWeatherForecastAsync();
                         CurrentState.WeatherForecastTomorrow = await CurrentState.GetWeatherForecastAsync(DateTime.Today.AddDays(1));

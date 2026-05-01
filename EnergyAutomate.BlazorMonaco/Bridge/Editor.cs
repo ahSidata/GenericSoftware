@@ -1,4 +1,6 @@
-﻿using EnergyAutomate.BlazorMonaco.Helpers;
+﻿#nullable disable
+
+using EnergyAutomate.BlazorMonaco.Helpers;
 using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
 using System.Text.Json;

@@ -29,12 +29,12 @@
 
         public void OnCompleted()
         {
-            _ = RestartListenerAsync();
+            _ = Task.Run(() => RestartListenerAsync(), CancellationToken.None);
         }
 
         public void OnError(Exception error)
         {
-            _ = RestartListenerAsync(error);
+            _ = Task.Run(() => RestartListenerAsync(error), CancellationToken.None);
         }
 
         public void OnNext(RealTimeMeasurement value)

@@ -1,3 +1,5 @@
+#nullable disable
+
 using EnergyAutomate.BlazorMonaco.Helpers;
 using Microsoft.JSInterop;
 using System.Diagnostics.CodeAnalysis;
@@ -515,7 +517,7 @@ namespace EnergyAutomate.BlazorMonaco.Bridge
             => JsRuntimeExt.UpdateRuntime(jsRuntime).SafeInvokeAsync("blazorMonaco.editor.remeasureFonts");
     }
 
-    public class BuiltinTheme
+    public static class BuiltinTheme
     {
         public const string Vs = "vs";
         public const string VsDark = "vs-dark";

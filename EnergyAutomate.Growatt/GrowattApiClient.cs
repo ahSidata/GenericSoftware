@@ -28,9 +28,9 @@ namespace EnergyAutomate.Growatt
             {
                 return await func();
             }
-            catch (ApiException apiException)
+            catch (ApiException)
             {
-                throw apiException;
+                throw;
             }
             catch (Exception ex)
             {
@@ -133,7 +133,7 @@ namespace EnergyAutomate.Growatt
 
                 if (result != null && result.Code == 0)
                 {
-                    return result.Data.Devices;
+                    return result.Data?.Devices;
                 }
                 else if (result != null)
                 {
@@ -161,7 +161,7 @@ namespace EnergyAutomate.Growatt
 
                 if (result != null && result.Code == 0)
                 {
-                    return result.Data.Datas;
+                    return result.Data?.Datas;
                 }
                 else if (result != null)
                 {
@@ -208,9 +208,9 @@ namespace EnergyAutomate.Growatt
                     throw new ApiException($"API error: {result.Message} - RawResponse: {responseString}", result.Code);
                 }
             }
-            catch (ApiException apiException)
+            catch (ApiException)
             {
-                throw apiException;
+                throw;
             }
             catch (Exception ex)
             {

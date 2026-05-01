@@ -1,48 +1,288 @@
-﻿@page "/editor"
+@page "/editor"
 @using EnergyAutomate.BlazorMonaco
 @using EnergyAutomate.Services.CodeFactory
 @using BlazorBootstrap
 
-@rendermode InteractiveServer 
+@rendermode InteractiveServer
 
 <PageTitle>Editor</PageTitle>
-
-<div class="d-flex flex-column gap-2 code-factory-shell">
-    <div class="btn-toolbar gap-2" role="toolbar" aria-label="Code factory toolbar">
-        <button type="button" class="btn btn-primary" disabled="@(!CanEdit)" @onclick="SaveCurrentTemplateAsync">Save</button>
-        <button type="button" class="btn btn-outline-secondary" disabled="@(!CanEdit)" @onclick="ResetCurrentTemplateAsync">Reset to default</button>
-        <button type="button" class="btn btn-outline-info" disabled="@(!CanEdit)" @onclick="ValidateCurrentTemplateAsync">Validate</button>
-        <span class="align-self-center small text-muted">@StatusText</span>
-    </div>
-
-    <div class="row g-2 code-factory-body">
-        <aside class="col-12 col-md-4 col-xl-3">
-            <Sidebar2 Href="/editor"
-                      IconName="IconName.CodeSlash"
-                      Title="Code Factory"
-                      BadgeText="Templates"
-                      DataProvider="Sidebar2DataProvider"
-                      Width="320"
-                      WidthUnit="Unit.Px" />
-        </aside>
-
-        <section class="col-12 col-md-8 col-xl-9">
-            <StandaloneCodeEditor @ref="_editor" Id="sample-code-editor" ConstructionOptions="EditorConstructionOptions"
-                                  OnDidInit="EditorOnDidInit" OnContextMenu="OnContextMenu" />
-
-            @if (ValidationResult is not null && ValidationResult.Diagnostics.Count > 0)
-            {
-                <div class="alert @(ValidationResult.Success ? "alert-warning" : "alert-danger") mt-2" role="alert">
-                    <strong>Diagnostics</strong>
-                    <ul class="mb-0">
-                        @foreach (var diagnostic in ValidationResult.Diagnostics)
-                        {
-                            <li>@diagnostic.Severity @diagnostic.Id (@diagnostic.Line:@diagnostic.Column): @diagnostic.Message</li>
-                        }
-                    </ul>
+<Tabs EnableFadeEffect="true">
+    <Tab Title="Editor" Active="true">
+        <Content>
+            <div class="d-flex flex-column gap-2 code-factory-shell p-3">
+                <div class="btn-toolbar gap-2" role="toolbar" aria-label="Code factory toolbar">
+                    <button type="button" class="btn btn-primary" disabled="@(!CanEdit)" @onclick="SaveCurrentTemplateAsync">Save</button>
+                    <button type="button" class="btn btn-outline-secondary" disabled="@(!CanEdit)" @onclick="ResetCurrentTemplateAsync">Reset to default</button>
+                    <button type="button" class="btn btn-outline-info" disabled="@(!CanEdit)" @onclick="ValidateCurrentTemplateAsync">Validate</button>
+                    <span class="align-self-center small text-muted">@StatusText</span>
                 </div>
-            }
-        </section>
-    </div>
-</div>
 
+                <div class="row g-2 code-factory-body">
+                    <aside class="col-12 col-md-4 col-xl-3">
+                        <Sidebar2 Href="/editor"
+                                  IconName="IconName.CodeSlash"
+                                  Title="Code Factory"
+                                  BadgeText="Templates"
+                                  DataProvider="Sidebar2DataProvider"
+                                  Width="320"
+                                  WidthUnit="Unit.Px" />
+                    </aside>
+
+                    <section class="col-12 col-md-8 col-xl-9">
+
+                        <StandaloneCodeEditor @ref="_editor" Id="sample-code-editor" ConstructionOptions="EditorConstructionOptions"
+                                              OnDidInit="EditorOnDidInit" OnContextMenu="OnContextMenu" />
+
+                        @if (ValidationResult is not null && ValidationResult.Diagnostics.Count > 0)
+                        {
+                            <div class="alert @(ValidationResult.Success ? "alert-warning" : "alert-danger") mt-2" role="alert">
+                                <strong>Diagnostics</strong>
+                                <ul class="mb-0">
+                                    @foreach (var diagnostic in ValidationResult.Diagnostics)
+                                    {
+                                        <li>@diagnostic.Severity @diagnostic.Id (@diagnostic.Line:@diagnostic.Column): @diagnostic.Message</li>
+                                    }
+                                </ul>
+                            </div>
+                        }
+
+                    </section>
+                </div>
+            </div>
+
+        </Content>
+    </Tab>
+    <Tab Title="Documentation">
+        <Content>
+            <div style="height: calc(100vh - 300px); display: flex; overflow: hidden;">
+                <Sidebar @ref="docSidebar" 
+                         Title="Script Factory Docs"
+                         IconName="IconName.BookFill"
+                         Width="280"
+                         DataProvider="DocSidebarDataProvider" />
+
+                <div style="flex: 1; overflow-y: auto; padding: 1.5rem;">
+                    <!-- Overview -->
+                    <section id="overview" class="mb-5">
+                        <h4>Overview</h4>
+                        <p>The EnergyAutomate Script Factory is a dynamic code generation and execution system that allows you to define custom energy optimization scripts.</p>
+                        <p><strong>Key Features:</strong></p>
+                        <ul>
+                            <li>Dynamic C# code compilation using Roslyn</li>
+                            <li>Real-time code validation with detailed diagnostics</li>
+                            <li>Template-based script organization (Calculation, Adjustment, Distribution)</li>
+                            <li>Runtime state management and persistence</li>
+                            <li>Integrated logging and event tracking</li>
+                        </ul>
+                    </section>
+
+                    <!-- Categories -->
+                    <section id="categories" class="mb-5">
+                        <h4>Template Categories</h4>
+                        <div class="card mb-3">
+                            <div class="card-header">
+                                <h6 class="mb-0">🧮 Calculation</h6>
+                            </div>
+                            <div class="card-body">
+                                <p>Define calculations based on energy measurements using <code>IEnergyCalculationScriptFactory</code>.</p>
+                            </div>
+                        </div>
+                        <div class="card mb-3">
+                            <div class="card-header">
+                                <h6 class="mb-0">⚙️ Adjustment</h6>
+                            </div>
+                            <div class="card-body">
+                                <p>Control device power and operational modes using <code>IEnergyAdjustmentScriptFactory</code>.</p>
+                            </div>
+                        </div>
+                        <div class="card mb-3">
+                            <div class="card-header">
+                                <h6 class="mb-0">📊 Distribution</h6>
+                            </div>
+                            <div class="card-body">
+                                <p>Allocate power between devices using <code>IEnergyDistributionScriptFactory</code>.</p>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Script Structure -->
+                    <section id="structure" class="mb-5">
+                        <h4>Script Structure</h4>
+                        <p>Every template must contain a public class with an ExecuteAsync method:</p>
+                        <div class="card">
+                            <div class="card-body bg-dark text-light">
+                                <pre><code>@ScriptFactorySamples.Structure</code></pre>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Base Methods -->
+                    <section id="base-methods" class="mb-5">
+                        <h4>Base Methods (All Scripts)</h4>
+                        <div class="card mb-3">
+                            <div class="card-header">
+                                <h6 class="mb-0">GetGlobalParameter(name)</h6>
+                            </div>
+                            <div class="card-body">
+                                <p>Retrieve application configuration parameters.</p>
+                                <pre><code>@ScriptFactorySamples.GlobalParameter</code></pre>
+                            </div>
+                        </div>
+                        <div class="card mb-3">
+                            <div class="card-header">
+                                <h6 class="mb-0">GetRuntimeState(name) / UpdateRuntimeStateAsync()</h6>
+                            </div>
+                            <div class="card-body">
+                                <p>Manage persistent state between script executions.</p>
+                                <pre><code>@ScriptFactorySamples.RuntimeState</code></pre>
+                            </div>
+                        </div>
+                        <div class="card mb-3">
+                            <div class="card-header">
+                                <h6 class="mb-0">Logging Methods</h6>
+                            </div>
+                            <div class="card-body">
+                                <pre><code>@ScriptFactorySamples.Logging</code></pre>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Calculation Methods -->
+                    <section id="calculation" class="mb-5">
+                        <h4>Calculation Methods</h4>
+                        <div class="card mb-3">
+                            <div class="card-header">
+                                <h6 class="mb-0">Measurements - Access measurement data</h6>
+                            </div>
+                            <div class="card-body">
+                                <pre><code>@ScriptFactorySamples.Measurements</code></pre>
+                            </div>
+                        </div>
+                        <div class="card mb-3">
+                            <div class="card-header">
+                                <h6 class="mb-0">GetAverageConsumption(seconds)</h6>
+                            </div>
+                            <div class="card-body">
+                                <pre><code>@ScriptFactorySamples.AverageConsumption</code></pre>
+                            </div>
+                        </div>
+                        <div class="card mb-3">
+                            <div class="card-header">
+                                <h6 class="mb-0">SetCalculatedValueAsync(name, value)</h6>
+                            </div>
+                            <div class="card-body">
+                                <pre><code>@ScriptFactorySamples.SetCalculatedValue</code></pre>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Adjustment Methods -->
+                    <section id="adjustment" class="mb-5">
+                        <h4>Adjustment Methods</h4>
+                        <div class="card mb-3">
+                            <div class="card-header">
+                                <h6 class="mb-0">SetPowerAsync(deviceSn, powerValue)</h6>
+                            </div>
+                            <div class="card-body">
+                                <pre><code>@ScriptFactorySamples.SetPowerAsync</code></pre>
+                            </div>
+                        </div>
+                        <div class="card mb-3">
+                            <div class="card-header">
+                                <h6 class="mb-0">SetPowerForAllNoahsAsync(totalPower)</h6>
+                            </div>
+                            <div class="card-body">
+                                <pre><code>@ScriptFactorySamples.SetPowerForAllNoahs</code></pre>
+                            </div>
+                        </div>
+                        <div class="card mb-3">
+                            <div class="card-header">
+                                <h6 class="mb-0">SetBatteryPriorityAsync() / SetLoadPriorityAsync()</h6>
+                            </div>
+                            <div class="card-body">
+                                <pre><code>@ScriptFactorySamples.BatteryPriority</code></pre>
+                            </div>
+                        </div>
+                        <div class="card mb-3">
+                            <div class="card-header">
+                                <h6 class="mb-0">CheckCondition() / SetActiveCondition()</h6>
+                            </div>
+                            <div class="card-body">
+                                <pre><code>@ScriptFactorySamples.CheckCondition</code></pre>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Distribution Methods -->
+                    <section id="distribution" class="mb-5">
+                        <h4>Distribution Methods</h4>
+                        <div class="card mb-3">
+                            <div class="card-header">
+                                <h6 class="mb-0">OnlineNoahDevices - List active devices</h6>
+                            </div>
+                            <div class="card-body">
+                                <pre><code>@ScriptFactorySamples.OnlineNoahDevices</code></pre>
+                            </div>
+                        </div>
+                        <div class="card mb-3">
+                            <div class="card-header">
+                                <h6 class="mb-0">GetSoc(deviceSn) - State of charge</h6>
+                            </div>
+                            <div class="card-body">
+                                <pre><code>@ScriptFactorySamples.GetSoc</code></pre>
+                            </div>
+                        </div>
+                        <div class="card mb-3">
+                            <div class="card-header">
+                                <h6 class="mb-0">RequestPowerDistributionAsync()</h6>
+                            </div>
+                            <div class="card-body">
+                                <pre><code>@ScriptFactorySamples.RequestPowerDistribution</code></pre>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Validation -->
+                    <section id="validation" class="mb-5">
+                        <h4>Validation</h4>
+                        <div class="card">
+                            <div class="card-body">
+                                <ol>
+                                    <li>Click <strong>Validate</strong> to check syntax and compile errors</li>
+                                    <li>Review diagnostics below the editor</li>
+                                    <li>Fix any errors and validate again</li>
+                                    <li>Click <strong>Save</strong> to persist your changes</li>
+                                </ol>
+                                <p><small class="text-muted">Scripts must pass validation before saving.</small></p>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Best Practices -->
+                    <section id="best-practices" class="mb-5">
+                        <h4>Best Practices</h4>
+                        <div class="card">
+                            <div class="card-body">
+                                <h6>✅ Do:</h6>
+                                <ul>
+                                    <li>Validate frequently while writing code</li>
+                                    <li>Use logging methods for debugging</li>
+                                    <li>Use runtime state for persistent data</li>
+                                    <li>Check device availability before operations</li>
+                                    <li>Handle edge cases and null checks</li>
+                                </ul>
+                                <h6>❌ Don't:</h6>
+                                <ul>
+                                    <li>Use infinite loops or blocking operations</li>
+                                    <li>Depend on external libraries not in the framework</li>
+                                    <li>Leave executable code outside ExecuteAsync</li>
+                                    <li>Ignore CancellationToken for long operations</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </div>
+        </Content>
+    </Tab>
+</Tabs>

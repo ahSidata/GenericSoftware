@@ -31,16 +31,20 @@ public class Program
         builder.Services.AddRazorComponents()
             .AddInteractiveServerComponents();
 
+        // Add API Controllers
+        builder.Services.AddControllers();
+
 #if DEBUG
-        //builder.Logging.AddDebug();
+        builder.Logging.AddDebug();
 #endif
-        //builder.Logging.AddConsole();
+        builder.Logging.AddConsole();
 
         // Konfiguration laden
         var configuration = builder.Configuration;
         var TraceEnabled = configuration.GetSection("Trace").GetValue<bool>("TraceEnabled");
 
-        builder.Services.AddSingleton(sp => new CustomLoggerProvider(sp, LogLevel.Trace, category => category.StartsWith("EnergyAutomate")));
+        // Log all categories - remove category filter to see everything
+        builder.Services.AddSingleton(sp => new CustomLoggerProvider(sp, LogLevel.Trace, category => true));
 
         if (TraceEnabled)
         {
@@ -91,6 +95,7 @@ public class Program
 
             return new Coordinate(latitude, longitude, DateTime.Now);
         });
+
         builder.Services.AddTransient(sp => new GrowattApiClient("https://openapi.growatt.com", builder.Configuration["ApiSettings:GrowattApiToken"] ?? string.Empty));
         builder.Services.AddTransient(sp => new TibberApiClient(builder.Configuration["ApiSettings:TibberApiToken"] ?? string.Empty, new ProductInfoHeaderValue("EnergyAutomate", "1.0")));
         builder.Services.AddTransient(sp => new SmlParser(builder.Configuration["ApiSettings:TibberBridgeHost"] ?? string.Empty, builder.Configuration["ApiSettings:TibberBridgePassword"] ?? string.Empty));

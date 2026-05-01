@@ -24,6 +24,9 @@ namespace EnergyAutomate.Components.Pages
         [AllowNull]
         private StandaloneCodeEditor _editor;
 
+        [AllowNull]
+        private Sidebar docSidebar;
+
         private List<CodeTemplateViewModel> Templates { get; set; } = [];
 
         private IEnumerable<NavItem>? SidebarItems { get; set; }
@@ -260,6 +263,24 @@ namespace EnergyAutomate.Components.Pages
             }
 
             return Templates.FirstOrDefault()?.Key;
+        }
+
+        private Task<SidebarDataProviderResult> DocSidebarDataProvider(SidebarDataProviderRequest request)
+        {
+            var docItems = new List<NavItem>
+            {
+                new NavItem { Id = "overview", Text = "Overview", IconName = IconName.InfoCircle, Href = "#overview" },
+                new NavItem { Id = "categories", Text = "Categories", IconName = IconName.List, Href = "#categories" },
+                new NavItem { Id = "structure", Text = "Structure", IconName = IconName.FileEarmarkCode, Href = "#structure" },
+                new NavItem { Id = "base-methods", Text = "Base Methods", IconName = IconName.Hammer, Href = "#base-methods" },
+                new NavItem { Id = "calculation", Text = "Calculation", IconName = IconName.Calculator, Href = "#calculation" },
+                new NavItem { Id = "adjustment", Text = "Adjustment", IconName = IconName.Sliders, Href = "#adjustment" },
+                new NavItem { Id = "distribution", Text = "Distribution", IconName = IconName.BoxSeam, Href = "#distribution" },
+                new NavItem { Id = "validation", Text = "Validation", IconName = IconName.CheckCircle, Href = "#validation" },
+                new NavItem { Id = "best-practices", Text = "Best Practices", IconName = IconName.Star, Href = "#best-practices" }
+            };
+
+            return Task.FromResult(request.ApplyTo(docItems));
         }
     }
 }

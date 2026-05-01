@@ -49,55 +49,81 @@ else
 @code {
 
     [Inject]
-    private IJSRuntime JSRuntime { get; set; } = default!;
+    private IJSRuntime? JSRuntime { get; set; }
 
     [Inject]
-    private CustomLoggerProvider CustomLoggerProvider { get; set; } = default!;
+    public required CustomLoggerProvider CustomLoggerProvider { get; set; }
 
     private async Task DownloadLogFile()
     {
-        // Generiere die Log-Nachrichten im gewünschten Format
-        var logContent = GetLogMessagesForAI(); // Verwende die Methode aus vorherigen Beispielen
+        if (JSRuntime == null || CustomLoggerProvider == null)
+            return;
 
-        // Rufe die JavaScript-Funktion auf, um die Datei herunterzuladen
+        var logContent = GetLogMessagesForAI();
         await JSRuntime.InvokeVoidAsync("downloadFile", "logs.txt", logContent);
     }
 
     private string GetLogMessagesForAI()
     {
+        if (CustomLoggerProvider == null)
+            return "No logs available";
+
         var logMessages = CustomLoggerProvider.GetLogMessages()
             .Select(log => $"[{log.TS}] <{log.Category}>: {log.Message}");
 
         return string.Join("\n", logMessages);
     }
 
-    private List<Tuple<string, bool>> LogMessageCategories = new List<Tuple<string, bool>>();
+    private List<Tuple<string, bool>> LogMessageCategories = new();
 
-    private Tabs tabsMainRef = default!;
+    private Tabs? tabsMainRef;
 
-    private void OnTabClick(TabEventArgs args) => selectedCategory = args.Title;
+    private void OnTabClick(TabEventArgs args)
+    {
+        if (args != null)
+        {
+            selectedCategory = args.Title;
+        }
+    }
 
-    private string selectedCategory = default!;
+    private string selectedCategory = string.Empty;
 
     protected override void OnInitialized()
     {
-        CustomLoggerProvider.LogMessagesChanged += OnLogMessagesChanged;
+        if (CustomLoggerProvider != null)
+        {
+            CustomLoggerProvider.LogMessagesChanged += OnLogMessagesChanged;
+            OnLogMessagesChanged();
+        }
     }
 
     public void Dispose()
     {
-        CustomLoggerProvider.LogMessagesChanged -= OnLogMessagesChanged;
+        if (CustomLoggerProvider != null)
+        {
+            CustomLoggerProvider.LogMessagesChanged -= OnLogMessagesChanged;
+        }
     }
 
     private void OnLogMessagesChanged()
     {
+        if (CustomLoggerProvider == null)
+            return;
+
         var groupedCategories = CustomLoggerProvider.GetLogCategories();
 
         foreach (var category in groupedCategories)
         {
             if (!LogMessageCategories.Any(x => x.Item1 == category))
             {
-                LogMessageCategories.Add(new Tuple<string, bool>(category, false));
+                var isFirst = LogMessageCategories.Count == 0;
+                LogMessageCategories.Add(new Tuple<string, bool>(category, isFirst));
+
+                // Set selectedCategory to the first category
+                if (isFirst && string.IsNullOrEmpty(selectedCategory))
+                {
+                    selectedCategory = category;
+                }
             }
         }
 

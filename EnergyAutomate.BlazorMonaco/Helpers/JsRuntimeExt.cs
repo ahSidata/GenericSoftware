@@ -1,4 +1,6 @@
-﻿using Microsoft.JSInterop;
+﻿#nullable disable
+
+using Microsoft.JSInterop;
 
 namespace EnergyAutomate.BlazorMonaco.Helpers
 {

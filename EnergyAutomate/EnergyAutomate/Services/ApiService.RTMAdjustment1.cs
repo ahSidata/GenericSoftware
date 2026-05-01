@@ -28,7 +28,6 @@ namespace EnergyAutomate.Services
                 // If the automatic mode is enabled
                 if (ApiSettingRestrictionMode)
                 {
-                    value.SettingRestrictionState = CurrentState.IsExpensiveRestrictionMode;
                     value.SettingAutoMode = ApiSettingAutoMode;
                     value.SettingRestrictionState = ApiSettingRestrictionMode;
                     value.SettingBatteryPriorityMode = ApiSettingBatteryPriorityMode;
@@ -235,7 +234,9 @@ namespace EnergyAutomate.Services
 
                 value.PowerValueNewRequested = powerValue;
                 value.PowerValueNewCommited = 0;
-                value.PowerValueNewDeviceSn = device.DeviceSn;
+#pragma warning disable CS8601
+                value.PowerValueNewDeviceSn = device?.DeviceSn;
+#pragma warning restore CS8601
             }
 
             await Task.CompletedTask;

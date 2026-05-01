@@ -45,7 +45,7 @@ public class ShellyPro3EMUdpServer
 
         string ipString = "192.168.178.10";
         IPAddress ipAddress = IPAddress.Parse(ipString);
-        var macAddress = GetMacAddressForListener(ipAddress).ToLower();
+        var macAddress = GetMacAddressForListener(ipAddress)?.ToLower() ?? "";
 
         while (true)
         {

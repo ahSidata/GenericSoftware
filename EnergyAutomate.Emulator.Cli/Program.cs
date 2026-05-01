@@ -3,11 +3,8 @@ using Microsoft.Extensions.Hosting;
 
 namespace EnergyAutomate.Emulator.Cli
 {
-    internal class Program
+    public static class Program
     {
-
-
-
         public static IHostBuilder CreateHostBuilder(string[] args) =>
             Host.CreateDefaultBuilder(args)
             .ConfigureServices((hostContext, services) =>
@@ -21,7 +18,7 @@ namespace EnergyAutomate.Emulator.Cli
 
             Console.WriteLine("[TRACE] Program start");
             Console.WriteLine("[TRACE] .NET Version: " + Environment.Version);
-            string keylogPath = Environment.GetEnvironmentVariable("SSLKEYLOGFILE");
+            string? keylogPath = Environment.GetEnvironmentVariable("SSLKEYLOGFILE");
             Console.WriteLine("[TRACE] SSLKEYLOGFILE: " + (keylogPath ?? "(not set)"));
 
             if (!string.IsNullOrWhiteSpace(keylogPath))
