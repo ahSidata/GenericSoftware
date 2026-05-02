@@ -5,7 +5,7 @@
       "args": ["run", "--project", "./EnergieAutomation.Mcp/EnergieAutomation.Mcp.csproj"],
       "env": {
         "ASPNETCORE_ENVIRONMENT": "Development",
-		"DUMP_DIR": "D:\"
+		    "DUMP_DIR": "D:\\Dump"
       }
     }
   }
