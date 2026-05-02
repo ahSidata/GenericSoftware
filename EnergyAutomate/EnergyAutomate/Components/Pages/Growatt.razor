@@ -22,7 +22,34 @@
 </style>
 
 <Card Class="my-3">
-    <CardHeader>Actions</CardHeader>
+    <CardHeader>Mqtt Actions</CardHeader>
+    <CardBody>
+        <div class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label">Smart Power</label>
+                <InputNumber TValue="ushort" class="form-control" @bind-Value="SmartPowerValue" />
+            </div>
+            <div class="col-md-3">
+                <Button Color="ButtonColor.Success" class="w-100" @onclick="SetSmartPowerAsync">
+                    Set Smart Power
+                </Button>
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">Default Power</label>
+                <InputNumber TValue="ushort" class="form-control" @bind-Value="DefaultPowerValue" />
+            </div>
+            <div class="col-md-3">
+                <Button Color="ButtonColor.Secondary" class="w-100" @onclick="SetDefaultPowerAsync">
+                    Set Default Power
+                </Button>
+            </div>
+        </div>
+    </CardBody>
+</Card>
+
+<Card Class="my-3">
+    <CardHeader>Api Actions</CardHeader>
     <CardBody>
         <Button Color="ButtonColor.Primary" @onclick="ApiService.GrowattInvokeRefreshDeviceList">Refresh Device List</Button>
         <Button Color="ButtonColor.Primary" @onclick="ApiService.GrowattInvokeClearDeviceNoahTimeSegments">Clear Device Noah Timesegments </Button>

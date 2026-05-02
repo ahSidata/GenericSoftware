@@ -75,7 +75,5 @@ namespace EnergyAutomate.Growatt
 
 
         #endregion Public Methods
-
-
     }
 }

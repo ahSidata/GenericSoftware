@@ -17,7 +17,7 @@ namespace EnergyAutomate.Emulator
         public MqttProxyWorker(IServiceProvider serviceProvider)
         {
             ServiceProvider = serviceProvider;
-            _pythonWrapper = new PythonWrapper(ServiceProvider);
+            _pythonWrapper = serviceProvider.GetRequiredService<PythonWrapper>();
 
             _pythonWrapper.GrowattClientOptions = new GrowattClientOptions()
             {
