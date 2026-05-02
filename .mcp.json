@@ -1,0 +1,11 @@
+{
+  "servers": {
+    "EnergieAutomation.Mcp": {
+      "command": "dotnet",
+      "args": ["run", "--project", "./EnergieAutomation.Mcp/EnergieAutomation.Mcp.csproj"],
+      "env": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      }
+    }
+  }
+}

@@ -14,7 +14,7 @@ namespace EnergyAutomate.Emulator.Growatt
             {
                 if (buffer.Length < 4)
                 {
-                    logger?.LogWarning("GrowattModbusBlock.Parse: Buffer too short.");
+                    logger?.LogWarning("[GrowattModbusBlock.Parse] Buffer too short. Length={Length}", buffer.Length);
                     return null;
                 }
                 ushort start = (ushort)(buffer[0] << 8 | buffer[1]);
@@ -23,22 +23,23 @@ namespace EnergyAutomate.Emulator.Growatt
                 int valuesLength = numBlocks * 2;
                 if (buffer.Length < 4 + valuesLength)
                 {
-                    logger?.LogWarning("GrowattModbusBlock.Parse: Buffer too short for values.");
+                    logger?.LogWarning("[GrowattModbusBlock.Parse] Buffer too short for values. ExpectedLength={ExpectedLength}, ActualLength={ActualLength}", 4 + valuesLength, buffer.Length);
                     return null;
                 }
                 var values = new byte[valuesLength];
                 Array.Copy(buffer, 4, values, 0, valuesLength);
                 if (values.Length != valuesLength)
                 {
-                    logger?.LogWarning("GrowattModbusBlock.Parse: Values length mismatch.");
+                    logger?.LogWarning("[GrowattModbusBlock.Parse] Values length mismatch. Expected={Expected}, Actual={Actual}", valuesLength, values.Length);
                     return null;
                 }
 
+                logger?.LogTrace("[GrowattModbusBlock.Parse] Successfully parsed block. Start={Start}, End={End}, ValuesLength={ValuesLength}", start, end, values.Length);
                 return new GrowattModbusBlock { Start = start, End = end, Values = values };
             }
             catch (Exception ex)
             {
-                logger?.LogWarning(ex, "Parsing GrowattModbusBlock failed: {Message}", ex.Message);
+                logger?.LogError(ex, "[GrowattModbusBlock.Parse] Parsing failed: {Message}", ex.Message);
                 return null;
             }
         }
