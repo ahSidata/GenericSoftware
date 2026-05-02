@@ -1,3 +1,4 @@
+using System;
 using EnergyAutomate.Services.CodeFactory;
 
 namespace EnergyAutomate.RuntimeTemplates;

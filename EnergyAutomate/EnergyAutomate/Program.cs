@@ -23,7 +23,7 @@ public class Program
 {
     #region Public Methods
 
-    public static void Main(string[] args)
+    public static async Task Main(string[] args)
     {
         var builder = WebApplication.CreateBuilder(args);
 
@@ -104,9 +104,10 @@ public class Program
         builder.Services.AddSingleton<ApiRealTimeMeasurementWatchdog>();
         builder.Services.AddSingleton<ApiQueueWatchdog<IDeviceQuery>>();
         builder.Services.AddSingleton<ICodeTemplateProvider, DefaultCodeTemplateProvider>();
-        builder.Services.AddSingleton<RuntimeCodeTemplateStore>();
+        builder.Services.AddScoped<DatabaseCodeTemplateStore>();
+        builder.Services.AddScoped<RuntimeCodeTemplateStore>();
         builder.Services.AddSingleton<RoslynCodeFactory>();
-        builder.Services.AddSingleton<RuntimeCodeTemplateExecutor>();
+        builder.Services.AddScoped<RuntimeCodeTemplateExecutor>();
 
         // Register background services only when enabled. Optional services must not block web startup.
         if (configuration.GetSection("BackgroundServices").GetValue("ApiBackgroundService", true))
@@ -180,11 +181,17 @@ public class Program
                 dbContext.Database.Migrate();
 
                 logger.LogInformation("Database migration finished successfully");
+
+                // Initialize code templates from database
+                logger.LogInformation("Initializing code templates from database");
+                var templateStore = scope.ServiceProvider.GetRequiredService<RuntimeCodeTemplateStore>();
+                await templateStore.InitializeAsync(scope.ServiceProvider.GetRequiredService<CancellationTokenSource>().Token);
+                logger.LogInformation("Code templates initialized successfully");
             }
         }
         catch (Exception ex)
         {
-            app.Services.GetService<ILogger<Program>>()?.LogError(ex, "Database migration failed. Continuing startup without applying migrations.");
+            app.Services.GetService<ILogger<Program>>()?.LogError(ex, "Database migration or template initialization failed. Continuing startup without applying changes.");
         }
 
         app.UseHttpsRedirection();

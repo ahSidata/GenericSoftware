@@ -1,3 +1,4 @@
+using EnergyAutomate.Data.Entities;
 using EnergyAutomate.Definitions;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
@@ -31,6 +32,8 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<ApiRuntimeSettings> ApiRuntimeSettings { get; set; }
     public DbSet<TibberPrice> TibberPrices { get; set; }
     public DbSet<TibberRealTimeMeasurement> TibberRealTimeMeasurements { get; set; }
+    public DbSet<CodeTemplate> CodeTemplates { get; set; }
+    public DbSet<CodeTemplateHistory> CodeTemplateHistories { get; set; }
 
     #endregion Properties
 
@@ -52,6 +55,25 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
         modelBuilder.Entity<TibberPrice>().HasKey(x => new { x.Id });
 
         modelBuilder.Entity<ApiRuntimeSettings>().HasKey(x => x.Id);
+
+        // Configure CodeTemplate
+        modelBuilder.Entity<CodeTemplate>()
+            .HasKey(x => x.Id);
+        modelBuilder.Entity<CodeTemplate>()
+            .HasIndex(x => x.Key)
+            .IsUnique();
+        modelBuilder.Entity<CodeTemplate>()
+            .HasMany(x => x.History)
+            .WithOne(x => x.CodeTemplate)
+            .HasForeignKey(x => x.CodeTemplateId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // Configure CodeTemplateHistory
+        modelBuilder.Entity<CodeTemplateHistory>()
+            .HasKey(x => x.Id);
+        modelBuilder.Entity<CodeTemplateHistory>()
+            .HasIndex(x => new { x.CodeTemplateId, x.Version })
+            .IsUnique();
 
         // Set all string properties to be nullable
         foreach (var entityType in modelBuilder.Model.GetEntityTypes())

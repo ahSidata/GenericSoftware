@@ -10,6 +10,14 @@
 - Never omit parts of the code for brevity. Always provide the complete implementation, so the code can be copied and used directly
 - If a method or class is requested, always output the entire method or class, not just a fragment
 
+## CRITICAL: No Unsolicited Additions or Removals
+- **NEVER add services to Program.cs without explicit permission**
+- **NEVER create new files without explicit permission**
+- **NEVER delete files without explicit permission**
+- **NEVER modify unrelated code without explicit permission**
+- **NEVER suggest "improvements" that weren't requested**
+- Only implement exactly what is requested, nothing more
+
 ## Workflow: Step-by-Step with Token Awareness
 **IMPORTANT: Before implementing ANY change, ALWAYS:**
 1. Analyze the task and estimate token cost

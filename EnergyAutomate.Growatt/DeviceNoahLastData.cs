@@ -43,7 +43,7 @@ public class DeviceNoahLastData
     /// </summary>
     public int battery2ProtectStatus { get; set; }
     /// <summary>Battery pack 2—SN.</summary>
-    public string? battery2SerialNum { get; set; }
+    public string battery2SerialNum { get; set; }
     /// <summary>Battery pack 2_SOC.</summary>
     public int battery2Soc { get; set; }
     /// <summary>Battery pack 2 temperature.</summary>
@@ -67,7 +67,7 @@ public class DeviceNoahLastData
     /// </summary>
     public int battery3ProtectStatus { get; set; }
     /// <summary>Battery pack 3—SN.</summary>
-    public string? battery3SerialNum { get; set; }
+    public string battery3SerialNum { get; set; }
     /// <summary>Battery pack 3_SOC.</summary>
     public int battery3Soc { get; set; }
     /// <summary>Battery pack 3 temperature.</summary>
@@ -91,7 +91,7 @@ public class DeviceNoahLastData
     /// </summary>
     public int battery4ProtectStatus { get; set; }
     /// <summary>Battery pack 4—SN.</summary>
-    public string? battery4SerialNum { get; set; }
+    public string battery4SerialNum { get; set; }
     /// <summary>Battery pack 4_SOC.</summary>
     public int battery4Soc { get; set; }
     /// <summary>Battery pack 4 temperature.</summary>
@@ -118,9 +118,9 @@ public class DeviceNoahLastData
     /// <summary>CT self power.</summary>
     public float ctSelfPower { get; set; }
     /// <summary>Data logger serial number.</summary>
-    public string? datalogSn { get; set; }
+    public string datalogSn { get; set; }
     /// <summary>Device number.</summary>
-    public string? deviceSn { get; set; }
+    public string deviceSn { get; set; }
     /// <summary>Discharge SOC limit.</summary>
     public int dischargeSocLimit { get; set; }
     /// <summary>Monthly power generation.</summary>
@@ -196,7 +196,7 @@ public class DeviceNoahLastData
     /// <summary>Time.</summary>
     public long time { get; set; }
     /// <summary>Time string.</summary>
-    public string? timeStr { get; set; }
+    public string timeStr { get; set; }
     /// <summary>Total battery charging/discharging power.</summary>
     public int totalBatteryPackChargingPower { get; set; }
     /// <summary>BIT0: Charging, BIT1: Discharging, if neither, display standby.</summary>
