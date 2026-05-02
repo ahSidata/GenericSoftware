@@ -14,9 +14,6 @@ namespace EnergyAutomate.Growatt
         public string Enable { get; set; } = "0";
         /// <summary>end time (hours:minutes), Example: 02:05</summary>
         public string EndTime { get; set; } = "23:59";
-
-        [JsonIgnore]
-        public bool Force { get; set; } = false;
         /// <summary>machine mode (0: load priority, 1: battery priority), example: 0</summary>
         public string Mode { get; set; } = "0";
         /// <summary>output power (range 0-800 in w), example: 150</summary>
@@ -25,6 +22,10 @@ namespace EnergyAutomate.Growatt
         public string StartTime { get; set; } = "00:00";
         /// <summary>time period (1~9), example: 1</summary>
         public string Type { get; set; } = "1";
+        public string Repeat { get; set; } = "0";
+
+        [JsonIgnore]
+        public bool Force { get; set; } = false;
 
         #endregion Properties
 

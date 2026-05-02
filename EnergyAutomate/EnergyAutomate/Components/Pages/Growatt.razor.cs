@@ -3,6 +3,7 @@ using EnergyAutomate.Definitions;
 using EnergyAutomate.Emulator;
 using Microsoft.AspNetCore.Components;
 using System.Diagnostics.CodeAnalysis;
+using static Python.Runtime.TypeSpec;
 
 namespace EnergyAutomate.Components.Pages
 {
@@ -24,19 +25,79 @@ namespace EnergyAutomate.Components.Pages
         [Inject]
         public required PythonWrapper PythonWrapper { get; set; }
 
-        private ushort SmartPowerValue { get; set; } = 500;
-        private ushort DefaultPowerValue { get; set; } = 250;
+        private int SmartPowerValue { get; set; } = 500;
+        private int DefaultPowerValue { get; set; } = 250;
 
         #endregion Properties
 
-        private void SetSmartPowerAsync()
+        private async Task SetSmartPowerAsync(DeviceList device)
         {
-            PythonWrapper.SetSmartPower(SmartPowerValue);
+            PythonWrapper.SetSmartPower(device, SmartPowerValue);
         }
 
-        private void SetDefaultPowerAsync()
+        private async Task SetDefaultPowerAsync(DeviceList device)
         {
-            PythonWrapper.SetDefaultPower(DefaultPowerValue);
+            PythonWrapper.SetDefaultPower(device, DefaultPowerValue);
+        }
+
+        private async Task ClearDeviceNoahTimeSegmentsAsync(DeviceList device)
+        {
+            // Clear all 9 time segments (types 1-9) by setting enable to 0
+            for (int slot = 1; slot <= 9; slot++)
+            {
+                var query = new DeviceNoahSetTimeSegmentQuery
+                {
+                    DeviceSn = device.DeviceSn,
+                    DeviceType = device.DeviceType,
+                    Type = slot.ToString(),
+                    Enable = "0",
+                    StartTime = "00:00",
+                    EndTime = "00:00",
+                    Power = "0",
+                    Repeat = ""
+                };
+
+                PythonWrapper.SetNoahTimeSegment(query);
+
+                Logger.LogInformation(
+                    "[TRACE] ClearAllNoahTimeSegments: Cleared time segment slot {Slot}",
+                    slot
+                );
+            }
+        }
+
+        private async Task BattPriorityDeviceNoahAsync(DeviceList device)
+        {
+            var query = new DeviceNoahSetTimeSegmentQuery
+            {
+                DeviceSn = device.DeviceSn,
+                DeviceType = device.DeviceType,
+                Type = "1", // Assuming type 1 is for battery priority
+                Enable = "0",
+                StartTime = "00:00",
+                EndTime = "00:00",
+                Power = "0",
+                Repeat = ""
+            };
+
+            PythonWrapper.SetNoahTimeSegment(query);
+        }
+
+        private async Task LoadPriorityDeviceNoahAsync(DeviceList device)
+        {
+            var query = new DeviceNoahSetTimeSegmentQuery
+            {
+                DeviceSn = device.DeviceSn,
+                DeviceType = device.DeviceType,
+                Type = "0", // Assuming type 0 is for load priority
+                Enable = "0",
+                StartTime = "00:00",
+                EndTime = "00:00",
+                Power = "0",
+                Repeat = ""
+            };
+
+            PythonWrapper.SetNoahTimeSegment(query);
         }
     }
 }

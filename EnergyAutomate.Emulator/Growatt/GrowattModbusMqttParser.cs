@@ -202,7 +202,8 @@ namespace EnergyAutomate.Emulator.Growatt
 
             byte[] header = new byte[] { 0x00, 0x01, 0x00, 0x07, 0x00, 0x06, 0x01, 0x06 };
             byte[] deviceIdBytes = new byte[12];
-            Encoding.ASCII.GetBytes(deviceId.PadRight(12, '\0')).CopyTo(deviceIdBytes, 0);
+            var truncatedDeviceId = deviceId.Length > 12 ? deviceId[..12] : deviceId;
+            Encoding.ASCII.GetBytes(truncatedDeviceId.PadRight(12, '\0')).CopyTo(deviceIdBytes, 0);
             byte[] registerBytes = BitConverter.GetBytes(registerAddress);
             if (BitConverter.IsLittleEndian)
                 Array.Reverse(registerBytes);

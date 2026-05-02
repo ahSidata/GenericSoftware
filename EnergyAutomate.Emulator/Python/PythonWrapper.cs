@@ -1,6 +1,7 @@
 ﻿using EnergyAutomate.Emulator.Growatt;
 using EnergyAutomate.Emulator.Growatt.Models;
 using EnergyAutomate.Emulator.Python;
+using EnergyAutomate.Growatt;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Python.Runtime;
@@ -104,7 +105,7 @@ namespace EnergyAutomate.Emulator
 
                 LogFromPython("[TRACE] Initializing Python runtime in background thread");
                 PythonEngine.Initialize();
-                
+
                 // Initialisierung und Start des Python-Clients im GIL-Kontext
                 using (Py.GIL())
                 {
@@ -159,13 +160,13 @@ namespace EnergyAutomate.Emulator
             }
         }
 
-        public void SetSmartPower(ushort value)
+        public void SetSmartPower(DeviceList device, int value)
         {
             if (_clientInstance != null)
             {
                 var deviceId = "0PVP50ZR16ST00CB";
                 ushort startRegister = 310;
-                ushort[] values = { 0, value, 1 }; 
+                ushort[] values = { 0, (ushort)value, 1 };
 
                 byte[] commandPayload = GrowattModbusMqttParser.BuildSetMultipleRegistersCommand(deviceId, startRegister, values);
 
@@ -173,14 +174,14 @@ namespace EnergyAutomate.Emulator
             }
         }
 
-        public void SetDefaultPower(ushort value)
+        public void SetDefaultPower(DeviceList device, int value)
         {
             if (_clientInstance != null)
             {
                 var deviceId = "0PVP50ZR16ST00CB";
                 ushort startRegister = 252;
 
-                byte[] commandPayload = GrowattModbusMqttParser.BuildSetRegisterCommand(deviceId, startRegister, value);
+                byte[] commandPayload = GrowattModbusMqttParser.BuildSetRegisterCommand(deviceId, startRegister, (ushort)value);
 
                 _clientInstance.send_msg($"s/33/{deviceId}", commandPayload, 0, 0);
             }
@@ -192,19 +193,11 @@ namespace EnergyAutomate.Emulator
         /// Sends two commands: PRESET_MULTIPLE_REGISTER for time/power data and PRESET_SINGLE_REGISTER for repeat pattern.
         /// </summary>
         /// <param name="query">The Noah time segment query object (DeviceNoahSetTimeSegmentQuery).</param>
-        public void SetNoahTimeSegment(object query)
+        public void SetNoahTimeSegment(DeviceNoahSetTimeSegmentQuery query)
         {
-            if (_clientInstance != null)
+            if (_clientInstance != null && query.DeviceSn != null)
             {
-                var deviceId = "0PVP50ZR16ST00CB";
-
-                // Extract properties from query object
-                var typeStr = GetQueryPropertyValue(query, "Type");
-                var enableStr = GetQueryPropertyValue(query, "Enable");
-                var startTimeStr = GetQueryPropertyValue(query, "StartTime");
-                var endTimeStr = GetQueryPropertyValue(query, "EndTime");
-                var powerStr = GetQueryPropertyValue(query, "Power");
-                var repeatStr = GetQueryPropertyValue(query, "Repeat");
+                var deviceId = query.DeviceSn;
 
                 // Build PRESET_MULTIPLE_REGISTER command (registers 254-260)
                 var values = new List<ushort>();
@@ -216,7 +209,7 @@ namespace EnergyAutomate.Emulator
                 values.Add(0x0102);
 
                 // Reg 256: Enable (0: off, 1: on)
-                if (ushort.TryParse(enableStr, out ushort enable))
+                if (ushort.TryParse(query.Enable, out ushort enable))
                 {
                     values.Add(enable);
                 }
@@ -227,10 +220,10 @@ namespace EnergyAutomate.Emulator
 
                 // Reg 257: Start time (HH:MM format encoded as HH * 256 + MM)
                 ushort startTimeValue = 0;
-                if (!string.IsNullOrEmpty(startTimeStr) && startTimeStr.Contains(':'))
+                if (!string.IsNullOrEmpty(query.StartTime) && query.StartTime.Contains(':'))
                 {
-                    var timeParts = startTimeStr.Split(':');
-                    if (ushort.TryParse(timeParts[0], out ushort startHour) && 
+                    var timeParts = query.StartTime.Split(':');
+                    if (ushort.TryParse(timeParts[0], out ushort startHour) &&
                         ushort.TryParse(timeParts[1], out ushort startMinute))
                     {
                         startTimeValue = (ushort)((startHour << 8) | startMinute);
@@ -240,10 +233,10 @@ namespace EnergyAutomate.Emulator
 
                 // Reg 258: End time (HH:MM format encoded as HH * 256 + MM)
                 ushort endTimeValue = 0;
-                if (!string.IsNullOrEmpty(endTimeStr) && endTimeStr.Contains(':'))
+                if (!string.IsNullOrEmpty(query.EndTime) && query.EndTime.Contains(':'))
                 {
-                    var timeParts = endTimeStr.Split(':');
-                    if (ushort.TryParse(timeParts[0], out ushort endHour) && 
+                    var timeParts = query.EndTime.Split(':');
+                    if (ushort.TryParse(timeParts[0], out ushort endHour) &&
                         ushort.TryParse(timeParts[1], out ushort endMinute))
                     {
                         endTimeValue = (ushort)((endHour << 8) | endMinute);
@@ -253,14 +246,14 @@ namespace EnergyAutomate.Emulator
 
                 // Reg 259: Power (0-800W)
                 ushort powerValue = 0;
-                if (ushort.TryParse(powerStr, out ushort power))
+                if (ushort.TryParse(query.Power, out ushort power))
                 {
                     powerValue = power;
                 }
                 values.Add(powerValue);
 
                 // Reg 260: Type (1-9: time period identifier)
-                if (ushort.TryParse(typeStr, out ushort type))
+                if (ushort.TryParse(query.Type, out ushort type))
                 {
                     values.Add(type);
                 }
@@ -272,8 +265,8 @@ namespace EnergyAutomate.Emulator
                 if (values.Count == 7)
                 {
                     byte[] multipleRegistersPayload = GrowattModbusMqttParser.BuildSetMultipleRegistersCommand(
-                        deviceId, 
-                        254, 
+                        deviceId,
+                        254,
                         values.ToArray()
                     );
 
@@ -281,7 +274,7 @@ namespace EnergyAutomate.Emulator
 
                     Logger.LogInformation(
                         "[TRACE] SetNoahTimeSegment PRESET_MULTIPLE_REGISTER: type={Type}, enable={Enable}, startTime={StartTime}, endTime={EndTime}, power={Power}",
-                        typeStr, enableStr, startTimeStr, endTimeStr, powerStr
+                        query.Type, query.Enable, query.StartTime, query.EndTime, query.Power
                     );
                 }
 
@@ -289,9 +282,9 @@ namespace EnergyAutomate.Emulator
                 // Slot 1 (Type=1): Register 342 (0x0156)
                 // Slot 2 (Type=2): Register 344 (0x0158)
                 // Slot 3 (Type=3): Register 346 (0x015A), etc.
-                ushort repeatBitmask = ConvertRepeatToBitmask(repeatStr);
+                ushort repeatBitmask = ConvertRepeatToBitmask(query.Repeat);
                 ushort repeatRegister = 342;
-                if (ushort.TryParse(typeStr, out ushort slot) && slot >= 1 && slot <= 9)
+                if (ushort.TryParse(query.Type, out ushort slot) && slot >= 1 && slot <= 9)
                 {
                     repeatRegister = (ushort)(342 + ((slot - 1) * 2));
                 }
@@ -305,7 +298,7 @@ namespace EnergyAutomate.Emulator
 
                 Logger.LogInformation(
                     "[TRACE] SetNoahTimeSegment PRESET_SINGLE_REGISTER: repeat={Repeat} -> bitmask=0x{Bitmask:X2}, register=0x{Register:X4}",
-                    repeatStr, repeatBitmask, repeatRegister
+                    query.Repeat, repeatBitmask, repeatRegister
                 );
             }
         }
@@ -345,19 +338,7 @@ namespace EnergyAutomate.Emulator
             return bitmask;
         }
 
-        private static string? GetQueryPropertyValue(object query, string propertyName)
-        {
-            var property = query.GetType().GetProperty(propertyName, BindingFlags.Public | BindingFlags.Instance);
-            if (property is null)
-            {
-                return null;
-            }
-
-            var value = property.GetValue(query);
-            return value?.ToString();
-        }
-
-        private Lock logLock = new();
+         private Lock logLock = new();
 
         public void LogFromPython(string message)
         {

@@ -418,9 +418,9 @@ namespace EnergyAutomate.Emulator.Growatt
                 Logger?.LogTrace("[GrowattModbusMessage.BuildMultiple] Building Modbus message for multiple registers.");
 
                 byte[] deviceIdBytes = Encoding.ASCII.GetBytes(DeviceId.PadRight(DEVICE_ID_LENGTH, '\0'));
-                ushort msgLen = (ushort)(DATA_HEADER_LENGTH + growattModbusBlock.Values.Length);
+                ushort msgLen = (ushort)(DEVICE_ID_LENGTH + 4 + growattModbusBlock.Values.Length);
 
-                byte[] result = new byte[DATA_HEADER_LENGTH + growattModbusBlock.Values.Length];
+                byte[] result = new byte[42 + growattModbusBlock.Values.Length];
                 result[0] = 0;
                 result[1] = 1; // unknown = 1
                 result[2] = 0;

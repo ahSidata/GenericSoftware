@@ -21,46 +21,6 @@
 
 </style>
 
-<Card Class="my-3">
-    <CardHeader>Mqtt Actions</CardHeader>
-    <CardBody>
-        <div class="row g-3 align-items-end">
-            <div class="col-md-3">
-                <label class="form-label">Smart Power</label>
-                <InputNumber TValue="ushort" class="form-control" @bind-Value="SmartPowerValue" />
-            </div>
-            <div class="col-md-3">
-                <Button Color="ButtonColor.Success" class="w-100" @onclick="SetSmartPowerAsync">
-                    Set Smart Power
-                </Button>
-            </div>
-
-            <div class="col-md-3">
-                <label class="form-label">Default Power</label>
-                <InputNumber TValue="ushort" class="form-control" @bind-Value="DefaultPowerValue" />
-            </div>
-            <div class="col-md-3">
-                <Button Color="ButtonColor.Secondary" class="w-100" @onclick="SetDefaultPowerAsync">
-                    Set Default Power
-                </Button>
-            </div>
-        </div>
-    </CardBody>
-</Card>
-
-<Card Class="my-3">
-    <CardHeader>Api Actions</CardHeader>
-    <CardBody>
-        <Button Color="ButtonColor.Primary" @onclick="ApiService.GrowattInvokeRefreshDeviceList">Refresh Device List</Button>
-        <Button Color="ButtonColor.Primary" @onclick="ApiService.GrowattInvokeClearDeviceNoahTimeSegments">Clear Device Noah Timesegments </Button>
-        <Button Color="ButtonColor.Primary" @onclick="ApiService.GrowattInvokeBattPriorityDeviceNoah">BattPriorityDeviceNoah</Button>
-        <Button Color="ButtonColor.Primary" @onclick="ApiService.GrowattInvokeLoadPriorityDeviceNoah">LoadPriorityDeviceNoah </Button>
-
-        <Button Color="ButtonColor.Primary" @onclick="async () => { await ApiService.GrowattInverterMaxSetPower(100); }">Inverter 100% </Button>
-        <Button Color="ButtonColor.Primary" @onclick="async () => { await ApiService.GrowattInverterMaxSetPower(50); }">Inverter 50% </Button>
-    </CardBody>
-</Card>
-
 @if (ApiService.GrowattGetDeviceLists() == null || !ApiService.GrowattGetDeviceLists().Any())
 {
     <p>Loading...</p>
@@ -72,6 +32,59 @@ else
         var deviceItem = ApiService.GrowattGetDeviceLists().FirstOrDefault(x => x.DeviceSn == device.DeviceSn);
         var lastInfoItem = ApiService.GrowattGetNoahInfoDataPerDevice(device.DeviceSn);
         var lastDataItem = ApiService.GrowattGetNoahLastDataPerDevice(device.DeviceSn);
+
+        <Card Class="my-3">
+            <CardHeader>Mqtt Actions</CardHeader>
+            <CardBody>
+                <div class="row g-3 align-items-end">
+                    <div class="col-md-3">
+                        <label class="form-label">Smart Power</label>
+                        <InputNumber TValue="int" class="form-control" @bind-Value="SmartPowerValue" />
+                    </div>
+                    <div class="col-md-3">
+                        <Button Color="ButtonColor.Success" class="w-100" @onclick="async () => await SetSmartPowerAsync(device)">
+                            Set Smart Power
+                        </Button>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label class="form-label">Default Power</label>
+                        <InputNumber TValue="int" class="form-control" @bind-Value="DefaultPowerValue" />
+                    </div>
+                    <div class="col-md-3">
+                        <Button Color="ButtonColor.Secondary" class="w-100" @onclick="async () => await SetDefaultPowerAsync(device)">
+                            Set Default Power
+                        </Button>
+                    </div>
+                </div>
+                <div class="row g-3 align-items-end">
+                    <div class="col-md-3">
+                        <Button Color="ButtonColor.Primary" @onclick="async () => await ClearDeviceNoahTimeSegmentsAsync(device)">Clear Device Noah Timesegments </Button>
+                    </div>
+                    <div class="col-md-3">
+                        <Button Color="ButtonColor.Primary" @onclick="async () => await BattPriorityDeviceNoahAsync(device)">BattPriorityDeviceNoah</Button>
+                    </div>
+                    <div class="col-md-3">
+                        <Button Color="ButtonColor.Primary" @onclick="async () => await LoadPriorityDeviceNoahAsync(device)">LoadPriorityDeviceNoah </Button>
+                    </div>
+
+                </div>
+            </CardBody>
+        </Card>
+
+        <Card Class="my-3">
+            <CardHeader>Api Actions</CardHeader>
+            <CardBody>
+                <Button Color="ButtonColor.Primary" @onclick="ApiService.GrowattInvokeRefreshDeviceList">Refresh Device List</Button>
+                <Button Color="ButtonColor.Primary" @onclick="ApiService.GrowattInvokeClearDeviceNoahTimeSegments">Clear Device Noah Timesegments </Button>
+                <Button Color="ButtonColor.Primary" @onclick="ApiService.GrowattInvokeBattPriorityDeviceNoah">BattPriorityDeviceNoah</Button>
+                <Button Color="ButtonColor.Primary" @onclick="ApiService.GrowattInvokeLoadPriorityDeviceNoah">LoadPriorityDeviceNoah </Button>
+
+                <Button Color="ButtonColor.Primary" @onclick="async () => { await ApiService.GrowattInverterMaxSetPower(100); }">Inverter 100% </Button>
+                <Button Color="ButtonColor.Primary" @onclick="async () => { await ApiService.GrowattInverterMaxSetPower(50); }">Inverter 50% </Button>
+            </CardBody>
+        </Card>
+
         <Card Class="col-12 my-1">
             <CardHeader>
                 <div>
