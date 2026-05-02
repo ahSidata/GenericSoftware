@@ -13,6 +13,7 @@ namespace EnergyAutomate.Emulator.Growatt
     {
         #region Constants
 
+        private const string DumpDirectoryEnvironmentVariable = "DUMP_DIR";
         private const int CRC_LENGTH = 2;
         private const int DATA_HEADER_LENGTH = 8;
         private const int DEVICE_ID_LENGTH = 30;
@@ -118,7 +119,7 @@ namespace EnergyAutomate.Emulator.Growatt
         {
             try
             {
-                string dumpDirectory = @"D:\Dump";
+                string dumpDirectory = Path.Combine(GetDumpRootDirectory(), "Dump", GetDumpTypeFolderName(), GetDumpTopicFolderName());
                 if (!Directory.Exists(dumpDirectory))
                 {
                     Directory.CreateDirectory(dumpDirectory);
@@ -150,6 +151,61 @@ namespace EnergyAutomate.Emulator.Growatt
             {
                 Logger?.LogError(ex, "[GrowattModbusMessage.Dump] Failed to dump message: {Message}", ex.Message);
             }
+        }
+
+        private static string GetDumpRootDirectory()
+        {
+            var configuredDirectory = Environment.GetEnvironmentVariable(DumpDirectoryEnvironmentVariable);
+            return string.IsNullOrWhiteSpace(configuredDirectory) ? AppContext.BaseDirectory : configuredDirectory;
+        }
+
+        private string GetDumpTypeFolderName()
+        {
+            var topicParts = Topic.Split('_', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            if (topicParts.Length == 0)
+            {
+                return "unknown";
+            }
+
+            if (topicParts.Length >= 2 && topicParts[0].Equals("c", StringComparison.OrdinalIgnoreCase) && topicParts[1].Equals("33", StringComparison.OrdinalIgnoreCase))
+            {
+                return "c33";
+            }
+
+            if (topicParts[0].Equals("s", StringComparison.OrdinalIgnoreCase))
+            {
+                return "s";
+            }
+
+            return SanitizeFolderName(topicParts[0]);
+        }
+
+        private string GetDumpTopicFolderName()
+        {
+            var topicParts = Topic.Split('_', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            if (topicParts.Length == 0)
+            {
+                return "unknown";
+            }
+
+            if (topicParts.Length >= 3 && topicParts[0].Equals("c", StringComparison.OrdinalIgnoreCase) && topicParts[1].Equals("33", StringComparison.OrdinalIgnoreCase))
+            {
+                return SanitizeFolderName(topicParts[2]);
+            }
+
+            if (topicParts.Length >= 2 && topicParts[0].Equals("s", StringComparison.OrdinalIgnoreCase))
+            {
+                return SanitizeFolderName(topicParts[1]);
+            }
+
+            return topicParts.Length > 1 ? SanitizeFolderName(topicParts[1]) : "unknown";
+        }
+
+        private static string SanitizeFolderName(string value)
+        {
+            var invalidChars = Path.GetInvalidFileNameChars();
+            var sanitized = new string(value.Select(ch => invalidChars.Contains(ch) ? '_' : ch).ToArray());
+            return string.IsNullOrWhiteSpace(sanitized) ? "unknown" : sanitized;
         }
 
         /// <summary>

@@ -1,5 +1,6 @@
 using ModelContextProtocol.Server;
 using System.ComponentModel;
+using System.Linq;
 
 /// <summary>
 /// MCP tools for reading Modbus trace logs from the local dump directory.
@@ -7,23 +8,25 @@ using System.ComponentModel;
 [McpServerToolType]
 internal class ModbusTraceLogTools
 {
+    private const string DumpDirectoryEnvironmentVariable = "DUMP_DIR";
+
     [McpServerTool]
-    [Description("Returns the latest Modbus trace log entries from the dump directory.")]
-    public string GetLatestModbusTraceLog(
-        [Description("Maximum number of log lines to return.")] int maxLines = 200)
+    [Description("Returns the latest Modbus trace files from the dump directory.")]
+    public string GetLatestModbusTraceLogs(
+        [Description("Maximum number of files to return.")] int maxFiles = 10)
     {
-        if (maxLines <= 0)
+        if (maxFiles <= 0)
         {
-            return "maxLines must be greater than zero.";
+            return "maxFiles must be greater than zero.";
         }
 
-        var dumpDirectory = @"D:\dump";
+        var dumpDirectory = GetDumpRootDirectory();
         if (!Directory.Exists(dumpDirectory))
         {
             return $"No Modbus trace folder found at {dumpDirectory}.";
         }
 
-        var files = Directory.GetFiles(dumpDirectory, "*_Messages.txt")
+        var files = Directory.GetFiles(dumpDirectory, "*_Messages.txt", SearchOption.AllDirectories)
             .OrderByDescending(File.GetLastWriteTimeUtc)
             .ToArray();
 
@@ -32,19 +35,33 @@ internal class ModbusTraceLogTools
             return $"No Modbus trace files found in {dumpDirectory}.";
         }
 
-        var latestFile = files[0];
-        var lines = File.ReadLines(latestFile).TakeLast(maxLines);
+        var latestFiles = files.Take(maxFiles)
+            .Select(filePath => GetDumpFileInfo(dumpDirectory, filePath))
+            .ToArray();
 
-        return $"File: {Path.GetFileName(latestFile)}{Environment.NewLine}{string.Join(Environment.NewLine, lines)}";
+        return string.Join(Environment.NewLine + Environment.NewLine, latestFiles.Select(fileInfo =>
+            $"TypeFolder: {fileInfo.TypeFolder}{Environment.NewLine}TopicFolder: {fileInfo.TopicFolder}{Environment.NewLine}FileName: {fileInfo.FileName}{Environment.NewLine}RelativePath: {fileInfo.RelativePath}"));
     }
 
     [McpServerTool]
     [Description("Returns a slice of a specific Modbus trace file from the dump directory.")]
     public string GetModbusTraceFile(
+        [Description("The type folder name under the dump directory.")] string typeFolder,
+        [Description("The topic folder name under the type folder.")] string topicFolder,
         [Description("The trace file name to read.")] string fileName,
         [Description("The number of lines to skip before reading.")] int skip = 0,
         [Description("The number of lines to return after skipping.")] int take = 200)
     {
+        if (string.IsNullOrWhiteSpace(typeFolder))
+        {
+            return "typeFolder must not be empty.";
+        }
+
+        if (string.IsNullOrWhiteSpace(topicFolder))
+        {
+            return "topicFolder must not be empty.";
+        }
+
         if (string.IsNullOrWhiteSpace(fileName))
         {
             return "fileName must not be empty.";
@@ -60,20 +77,53 @@ internal class ModbusTraceLogTools
             return "take must be greater than zero.";
         }
 
-        var dumpDirectory = @"D:\dump";
+        var dumpDirectory = GetDumpRootDirectory();
         if (!Directory.Exists(dumpDirectory))
         {
             return $"No Modbus trace folder found at {dumpDirectory}.";
         }
 
+        var safeTypeFolder = Path.GetFileName(typeFolder);
+        var safeTopicFolder = Path.GetFileName(topicFolder);
         var safeFileName = Path.GetFileName(fileName);
-        var filePath = Path.Combine(dumpDirectory, safeFileName);
+        var filePath = Path.GetFullPath(Path.Combine(dumpDirectory, safeTypeFolder, safeTopicFolder, safeFileName));
+        var dumpRoot = Path.GetFullPath(dumpDirectory) + Path.DirectorySeparatorChar;
+        if (!filePath.StartsWith(dumpRoot, StringComparison.OrdinalIgnoreCase))
+        {
+            return "The requested file path is invalid.";
+        }
+
         if (!File.Exists(filePath))
         {
             return $"No Modbus trace file found at {filePath}.";
         }
 
+        var fileInfo = GetDumpFileInfo(dumpDirectory, filePath);
         var lines = File.ReadLines(filePath).Skip(skip).Take(take);
-        return $"File: {Path.GetFileName(filePath)}{Environment.NewLine}{string.Join(Environment.NewLine, lines)}";
+        return $"TypeFolder: {fileInfo.TypeFolder}{Environment.NewLine}TopicFolder: {fileInfo.TopicFolder}{Environment.NewLine}FileName: {fileInfo.FileName}{Environment.NewLine}RelativePath: {fileInfo.RelativePath}{Environment.NewLine}{string.Join(Environment.NewLine, lines)}";
     }
+
+    private static DumpFileInfo GetDumpFileInfo(string dumpDirectory, string filePath)
+    {
+        var dumpRoot = Path.GetFullPath(dumpDirectory).TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
+        var fullPath = Path.GetFullPath(filePath);
+        var relativePath = fullPath.StartsWith(dumpRoot, StringComparison.OrdinalIgnoreCase)
+            ? fullPath[dumpRoot.Length..]
+            : Path.GetFileName(fullPath);
+
+        var relativeParts = relativePath.Split(Path.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        var fileName = relativeParts.Length > 0 ? relativeParts[^1] : Path.GetFileName(fullPath);
+        var topicFolder = relativeParts.Length > 2 ? relativeParts[^2] : string.Empty;
+        var typeFolder = relativeParts.Length > 2 ? relativeParts[^3] : string.Empty;
+
+        return new DumpFileInfo(typeFolder, topicFolder, fileName, relativePath);
+    }
+
+    private static string GetDumpRootDirectory()
+    {
+        var configuredDirectory = Environment.GetEnvironmentVariable(DumpDirectoryEnvironmentVariable);
+        return string.IsNullOrWhiteSpace(configuredDirectory) ? @"D:\Dump" : configuredDirectory;
+    }
+
+    private sealed record DumpFileInfo(string TypeFolder, string TopicFolder, string FileName, string RelativePath);
 }
