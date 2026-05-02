@@ -30,6 +30,11 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EnergyAutomate.CodeFactory"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EnergieAutomation.Mcp", "EnergieAutomation.Mcp\EnergieAutomation.Mcp.csproj", "{39AE4677-516F-49B3-89D8-097ED05F88D4}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Docs", "Docs", "{B037B751-2052-4675-B1BF-7A4E66711EDB}"
+	ProjectSection(SolutionItems) = preProject
+		docs\NOAH_REGISTER_MAP.md = docs\NOAH_REGISTER_MAP.md
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU

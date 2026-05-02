@@ -186,6 +186,177 @@ namespace EnergyAutomate.Emulator
             }
         }
 
+        /// <summary>
+        /// Forwards a Noah time segment configuration to the Python client.
+        /// Builds Modbus register values from the query properties and sends them via MQTT.
+        /// Sends two commands: PRESET_MULTIPLE_REGISTER for time/power data and PRESET_SINGLE_REGISTER for repeat pattern.
+        /// </summary>
+        /// <param name="query">The Noah time segment query object (DeviceNoahSetTimeSegmentQuery).</param>
+        public void SetNoahTimeSegment(object query)
+        {
+            if (_clientInstance != null)
+            {
+                var deviceId = "0PVP50ZR16ST00CB";
+
+                // Extract properties from query object
+                var typeStr = GetQueryPropertyValue(query, "Type");
+                var enableStr = GetQueryPropertyValue(query, "Enable");
+                var startTimeStr = GetQueryPropertyValue(query, "StartTime");
+                var endTimeStr = GetQueryPropertyValue(query, "EndTime");
+                var powerStr = GetQueryPropertyValue(query, "Power");
+                var repeatStr = GetQueryPropertyValue(query, "Repeat");
+
+                // Build PRESET_MULTIPLE_REGISTER command (registers 254-260)
+                var values = new List<ushort>();
+
+                // Reg 254: Padding
+                values.Add(0x00FE);
+
+                // Reg 255: Fixed value
+                values.Add(0x0102);
+
+                // Reg 256: Enable (0: off, 1: on)
+                if (ushort.TryParse(enableStr, out ushort enable))
+                {
+                    values.Add(enable);
+                }
+                else
+                {
+                    values.Add(0);
+                }
+
+                // Reg 257: Start time (HH:MM format encoded as HH * 256 + MM)
+                ushort startTimeValue = 0;
+                if (!string.IsNullOrEmpty(startTimeStr) && startTimeStr.Contains(':'))
+                {
+                    var timeParts = startTimeStr.Split(':');
+                    if (ushort.TryParse(timeParts[0], out ushort startHour) && 
+                        ushort.TryParse(timeParts[1], out ushort startMinute))
+                    {
+                        startTimeValue = (ushort)((startHour << 8) | startMinute);
+                    }
+                }
+                values.Add(startTimeValue);
+
+                // Reg 258: End time (HH:MM format encoded as HH * 256 + MM)
+                ushort endTimeValue = 0;
+                if (!string.IsNullOrEmpty(endTimeStr) && endTimeStr.Contains(':'))
+                {
+                    var timeParts = endTimeStr.Split(':');
+                    if (ushort.TryParse(timeParts[0], out ushort endHour) && 
+                        ushort.TryParse(timeParts[1], out ushort endMinute))
+                    {
+                        endTimeValue = (ushort)((endHour << 8) | endMinute);
+                    }
+                }
+                values.Add(endTimeValue);
+
+                // Reg 259: Power (0-800W)
+                ushort powerValue = 0;
+                if (ushort.TryParse(powerStr, out ushort power))
+                {
+                    powerValue = power;
+                }
+                values.Add(powerValue);
+
+                // Reg 260: Type (1-9: time period identifier)
+                if (ushort.TryParse(typeStr, out ushort type))
+                {
+                    values.Add(type);
+                }
+                else
+                {
+                    values.Add(0);
+                }
+
+                if (values.Count == 7)
+                {
+                    byte[] multipleRegistersPayload = GrowattModbusMqttParser.BuildSetMultipleRegistersCommand(
+                        deviceId, 
+                        254, 
+                        values.ToArray()
+                    );
+
+                    _clientInstance.send_msg($"s/33/{deviceId}", multipleRegistersPayload, 0, 0);
+
+                    Logger.LogInformation(
+                        "[TRACE] SetNoahTimeSegment PRESET_MULTIPLE_REGISTER: type={Type}, enable={Enable}, startTime={StartTime}, endTime={EndTime}, power={Power}",
+                        typeStr, enableStr, startTimeStr, endTimeStr, powerStr
+                    );
+                }
+
+                // Build PRESET_SINGLE_REGISTER command (register 342 + (slot * 2) for repeat pattern)
+                // Slot 1 (Type=1): Register 342 (0x0156)
+                // Slot 2 (Type=2): Register 344 (0x0158)
+                // Slot 3 (Type=3): Register 346 (0x015A), etc.
+                ushort repeatBitmask = ConvertRepeatToBitmask(repeatStr);
+                ushort repeatRegister = 342;
+                if (ushort.TryParse(typeStr, out ushort slot) && slot >= 1 && slot <= 9)
+                {
+                    repeatRegister = (ushort)(342 + ((slot - 1) * 2));
+                }
+                byte[] singleRegisterPayload = GrowattModbusMqttParser.BuildSetRegisterCommand(
+                    deviceId,
+                    repeatRegister,
+                    repeatBitmask
+                );
+
+                _clientInstance.send_msg($"s/33/{deviceId}", singleRegisterPayload, 0, 0);
+
+                Logger.LogInformation(
+                    "[TRACE] SetNoahTimeSegment PRESET_SINGLE_REGISTER: repeat={Repeat} -> bitmask=0x{Bitmask:X2}, register=0x{Register:X4}",
+                    repeatStr, repeatBitmask, repeatRegister
+                );
+            }
+        }
+
+        /// <summary>
+        /// Converts repeat day string (e.g., "1,2,3" or "4,5,6") to a bitmask for register 342.
+        /// Days: 1=Monday, 2=Tuesday, 3=Wednesday, 4=Thursday, 5=Friday, 6=Saturday, 7=Sunday
+        /// Bitmask: Bit N-1 represents day N (e.g., "1,2,3" = 0b00000111 = 0x07)
+        /// </summary>
+        private static ushort ConvertRepeatToBitmask(string? repeatStr)
+        {
+            if (string.IsNullOrWhiteSpace(repeatStr))
+            {
+                return 0;
+            }
+
+            ushort bitmask = 0;
+
+            // Handle comma-separated day numbers
+            if (repeatStr.Contains(','))
+            {
+                var dayStrings = repeatStr.Split(',');
+                foreach (var dayStr in dayStrings)
+                {
+                    if (ushort.TryParse(dayStr.Trim(), out ushort day) && day >= 1 && day <= 7)
+                    {
+                        bitmask |= (ushort)(1 << (day - 1));
+                    }
+                }
+            }
+            else if (ushort.TryParse(repeatStr, out ushort singleDay) && singleDay >= 1 && singleDay <= 7)
+            {
+                // Single day
+                bitmask = (ushort)(1 << (singleDay - 1));
+            }
+
+            return bitmask;
+        }
+
+        private static string? GetQueryPropertyValue(object query, string propertyName)
+        {
+            var property = query.GetType().GetProperty(propertyName, BindingFlags.Public | BindingFlags.Instance);
+            if (property is null)
+            {
+                return null;
+            }
+
+            var value = property.GetValue(query);
+            return value?.ToString();
+        }
+
         private Lock logLock = new();
 
         public void LogFromPython(string message)
@@ -208,9 +379,10 @@ namespace EnergyAutomate.Emulator
 
         public void DumpFromPython(string topic, byte[] payload, int qos, int retain, int state, int dup, int mid)
         {
-            _ = Task.Run(() => { 
-                lock(dumpLock)
-                { 
+            _ = Task.Run(() =>
+            {
+                lock (dumpLock)
+                {
                     try
                     {
                         PythonMqttMessage message = new PythonMqttMessage
