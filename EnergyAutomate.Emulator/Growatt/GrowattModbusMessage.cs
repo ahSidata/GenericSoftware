@@ -119,16 +119,17 @@ namespace EnergyAutomate.Emulator.Growatt
         {
             try
             {
-                string dumpDirectory = Path.Combine(GetDumpRootDirectory(), "Dump", GetDumpTypeFolderName(), GetDumpTopicFolderName());
+                string timestampPart = DateTime.UtcNow.ToString("yyyyMMdd_HHmmss_fffffff");
+                string topicPart = string.Join("_", Topic.Split(Path.GetInvalidFileNameChars(), StringSplitOptions.RemoveEmptyEntries));
+
+                string dumpDirectory = Path.Combine(GetDumpRootDirectory(), "Dump", topicPart, DataHeaderFunction.ToString());
                 if (!Directory.Exists(dumpDirectory))
                 {
                     Directory.CreateDirectory(dumpDirectory);
                     Logger?.LogInformation("[GrowattModbusMessage.Dump] Created dump directory at {DumpDirectory}", dumpDirectory);
                 }
 
-                string timestampPart = DateTime.UtcNow.ToString("yyyyMMdd_HHmmss_fffffff");
-                string topicPart = string.Join("_", Topic.Split(Path.GetInvalidFileNameChars(), StringSplitOptions.RemoveEmptyEntries));
-                string fileName = $"{timestampPart}_{topicPart}_{(int)DataHeaderFunction}_{Guid.NewGuid():N}_Messages.txt";
+                string fileName = $"{timestampPart}_{topicPart}_{DataHeaderFunction.ToString()}_{Guid.NewGuid():N}_Messages.txt";
                 string filePath = Path.Combine(dumpDirectory, fileName);
 
                 StringBuilder sb = new StringBuilder();
@@ -157,48 +158,6 @@ namespace EnergyAutomate.Emulator.Growatt
         {
             var configuredDirectory = Environment.GetEnvironmentVariable(DumpDirectoryEnvironmentVariable);
             return string.IsNullOrWhiteSpace(configuredDirectory) ? AppContext.BaseDirectory : configuredDirectory;
-        }
-
-        private string GetDumpTypeFolderName()
-        {
-            var topicParts = Topic.Split('_', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-            if (topicParts.Length == 0)
-            {
-                return "unknown";
-            }
-
-            if (topicParts.Length >= 2 && topicParts[0].Equals("c", StringComparison.OrdinalIgnoreCase) && topicParts[1].Equals("33", StringComparison.OrdinalIgnoreCase))
-            {
-                return "c33";
-            }
-
-            if (topicParts[0].Equals("s", StringComparison.OrdinalIgnoreCase))
-            {
-                return "s";
-            }
-
-            return SanitizeFolderName(topicParts[0]);
-        }
-
-        private string GetDumpTopicFolderName()
-        {
-            var topicParts = Topic.Split('_', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-            if (topicParts.Length == 0)
-            {
-                return "unknown";
-            }
-
-            if (topicParts.Length >= 3 && topicParts[0].Equals("c", StringComparison.OrdinalIgnoreCase) && topicParts[1].Equals("33", StringComparison.OrdinalIgnoreCase))
-            {
-                return SanitizeFolderName(topicParts[2]);
-            }
-
-            if (topicParts.Length >= 2 && topicParts[0].Equals("s", StringComparison.OrdinalIgnoreCase))
-            {
-                return SanitizeFolderName(topicParts[1]);
-            }
-
-            return topicParts.Length > 1 ? SanitizeFolderName(topicParts[1]) : "unknown";
         }
 
         private static string SanitizeFolderName(string value)

@@ -40,21 +40,21 @@ internal class ModbusTraceLogTools
             .ToArray();
 
         return string.Join(Environment.NewLine + Environment.NewLine, latestFiles.Select(fileInfo =>
-            $"TypeFolder: {fileInfo.TypeFolder}{Environment.NewLine}TopicFolder: {fileInfo.TopicFolder}{Environment.NewLine}FileName: {fileInfo.FileName}{Environment.NewLine}RelativePath: {fileInfo.RelativePath}"));
+            $"TopicFolder: {fileInfo.TopicFolder}{Environment.NewLine}FunctionFolder: {fileInfo.FunctionFolder}{Environment.NewLine}FileName: {fileInfo.FileName}{Environment.NewLine}RelativePath: {fileInfo.RelativePath}"));
     }
 
     [McpServerTool]
     [Description("Returns a slice of a specific Modbus trace file from the dump directory.")]
     public string GetModbusTraceFile(
-        [Description("The type folder name under the dump directory.")] string typeFolder,
-        [Description("The topic folder name under the type folder.")] string topicFolder,
+        [Description("The topic folder name under the dump directory.")] string topicFolder,
+        [Description("The function folder name under the topic folder.")] string functionFolder,
         [Description("The trace file name to read.")] string fileName,
         [Description("The number of lines to skip before reading.")] int skip = 0,
         [Description("The number of lines to return after skipping.")] int take = 200)
     {
-        if (string.IsNullOrWhiteSpace(typeFolder))
+        if (string.IsNullOrWhiteSpace(functionFolder))
         {
-            return "typeFolder must not be empty.";
+            return "functionFolder must not be empty.";
         }
 
         if (string.IsNullOrWhiteSpace(topicFolder))
@@ -83,10 +83,10 @@ internal class ModbusTraceLogTools
             return $"No Modbus trace folder found at {dumpDirectory}.";
         }
 
-        var safeTypeFolder = Path.GetFileName(typeFolder);
         var safeTopicFolder = Path.GetFileName(topicFolder);
+        var safeFunctionFolder = Path.GetFileName(functionFolder);
         var safeFileName = Path.GetFileName(fileName);
-        var filePath = Path.GetFullPath(Path.Combine(dumpDirectory, safeTypeFolder, safeTopicFolder, safeFileName));
+        var filePath = Path.GetFullPath(Path.Combine(dumpDirectory, safeTopicFolder, safeFunctionFolder, safeFileName));
         var dumpRoot = Path.GetFullPath(dumpDirectory) + Path.DirectorySeparatorChar;
         if (!filePath.StartsWith(dumpRoot, StringComparison.OrdinalIgnoreCase))
         {
@@ -100,7 +100,7 @@ internal class ModbusTraceLogTools
 
         var fileInfo = GetDumpFileInfo(dumpDirectory, filePath);
         var lines = File.ReadLines(filePath).Skip(skip).Take(take);
-        return $"TypeFolder: {fileInfo.TypeFolder}{Environment.NewLine}TopicFolder: {fileInfo.TopicFolder}{Environment.NewLine}FileName: {fileInfo.FileName}{Environment.NewLine}RelativePath: {fileInfo.RelativePath}{Environment.NewLine}{string.Join(Environment.NewLine, lines)}";
+        return $"TopicFolder: {fileInfo.TopicFolder}{Environment.NewLine}FunctionFolder: {fileInfo.FunctionFolder}{Environment.NewLine}FileName: {fileInfo.FileName}{Environment.NewLine}RelativePath: {fileInfo.RelativePath}{Environment.NewLine}{string.Join(Environment.NewLine, lines)}";
     }
 
     private static DumpFileInfo GetDumpFileInfo(string dumpDirectory, string filePath)
@@ -113,10 +113,10 @@ internal class ModbusTraceLogTools
 
         var relativeParts = relativePath.Split(Path.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
         var fileName = relativeParts.Length > 0 ? relativeParts[^1] : Path.GetFileName(fullPath);
-        var topicFolder = relativeParts.Length > 2 ? relativeParts[^2] : string.Empty;
-        var typeFolder = relativeParts.Length > 2 ? relativeParts[^3] : string.Empty;
+        var functionFolder = relativeParts.Length > 1 ? relativeParts[^2] : string.Empty;
+        var topicFolder = relativeParts.Length > 2 ? relativeParts[^3] : string.Empty;
 
-        return new DumpFileInfo(typeFolder, topicFolder, fileName, relativePath);
+        return new DumpFileInfo(topicFolder, functionFolder, fileName, relativePath);
     }
 
     private static string GetDumpRootDirectory()
@@ -125,5 +125,5 @@ internal class ModbusTraceLogTools
         return string.IsNullOrWhiteSpace(configuredDirectory) ? @"D:\Dump" : configuredDirectory;
     }
 
-    private sealed record DumpFileInfo(string TypeFolder, string TopicFolder, string FileName, string RelativePath);
+    private sealed record DumpFileInfo(string TopicFolder, string FunctionFolder, string FileName, string RelativePath);
 }
