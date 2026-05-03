@@ -1,60 +1,46 @@
-using Microsoft.Extensions.Logging;
+using EnergyAutomate.Emulator.Growatt.Models;
 
 namespace EnergyAutomate.Emulator.Growatt
 {
+    /// <summary>
+    /// Data Transfer Object (DTO) representing a Growatt ModbusCodec register block.
+    /// Contains frame header and payload information; all encoding/decoding logic is in GrowattModbusCodec.
+    /// </summary>
     public class GrowattModbusBlock
     {
+        /// <summary>
+        /// The ModbusCodec TCP transaction identifier.
+        /// </summary>
+        public ushort TransactionId { get; set; } = 0x0001;
+
+        /// <summary>
+        /// The Growatt-specific protocol identifier (standard ModbusCodec TCP uses 0x0000).
+        /// </summary>
+        public ushort ProtocolId { get; set; } = 0x0007;
+
+        /// <summary>
+        /// The ModbusCodec unit identifier.
+        /// </summary>
+        public byte UnitId { get; set; } = 0x01;
+
+        /// <summary>
+        /// The ModbusCodec function code.
+        /// </summary>
+        public GrowattModbusFunction Function { get; set; }
+
+        /// <summary>
+        /// The starting register address.
+        /// </summary>
         public ushort Start { get; set; }
+
+        /// <summary>
+        /// The ending register address.
+        /// </summary>
         public ushort End { get; set; }
+
+        /// <summary>
+        /// The register values as raw bytes.
+        /// </summary>
         public byte[] Values { get; set; } = Array.Empty<byte>();
-
-        public static GrowattModbusBlock? Parse(byte[] buffer, ILogger? logger = null)
-        {
-            try
-            {
-                if (buffer.Length < 4)
-                {
-                    logger?.LogWarning("[GrowattModbusBlock.Parse] Buffer too short. Length={Length}", buffer.Length);
-                    return null;
-                }
-                ushort start = (ushort)(buffer[0] << 8 | buffer[1]);
-                ushort end = (ushort)(buffer[2] << 8 | buffer[3]);
-                int numBlocks = end - start + 1;
-                int valuesLength = numBlocks * 2;
-                if (buffer.Length < 4 + valuesLength)
-                {
-                    logger?.LogWarning("[GrowattModbusBlock.Parse] Buffer too short for values. ExpectedLength={ExpectedLength}, ActualLength={ActualLength}", 4 + valuesLength, buffer.Length);
-                    return null;
-                }
-                var values = new byte[valuesLength];
-                Array.Copy(buffer, 4, values, 0, valuesLength);
-                if (values.Length != valuesLength)
-                {
-                    logger?.LogWarning("[GrowattModbusBlock.Parse] Values length mismatch. Expected={Expected}, Actual={Actual}", valuesLength, values.Length);
-                    return null;
-                }
-
-                logger?.LogTrace("[GrowattModbusBlock.Parse] Successfully parsed block. Start={Start}, End={End}, ValuesLength={ValuesLength}", start, end, values.Length);
-                return new GrowattModbusBlock { Start = start, End = end, Values = values };
-            }
-            catch (Exception ex)
-            {
-                logger?.LogError(ex, "[GrowattModbusBlock.Parse] Parsing failed: {Message}", ex.Message);
-                return null;
-            }
-        }
-
-        public byte[] Build()
-        {
-            var result = new byte[4 + Values.Length];
-            result[0] = (byte)(Start >> 8);
-            result[1] = (byte)(Start & 0xFF);
-            result[2] = (byte)(End >> 8);
-            result[3] = (byte)(End & 0xFF);
-            Array.Copy(Values, 0, result, 4, Values.Length);
-            return result;
-        }
-
-        public int Size() => 4 + Values.Length;
     }
 }

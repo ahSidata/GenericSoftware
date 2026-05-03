@@ -101,6 +101,7 @@ public class Program
         builder.Services.AddTransient(sp => new SmlParser(builder.Configuration["ApiSettings:TibberBridgeHost"] ?? string.Empty, builder.Configuration["ApiSettings:TibberBridgePassword"] ?? string.Empty));
 
         builder.Services.AddSingleton<PythonWrapper>();
+        builder.Services.AddSingleton<GrowattModbusCodec>();
         builder.Services.AddSingleton<ApiService>();
         builder.Services.AddSingleton<ApiRealTimeMeasurementWatchdog>();
         builder.Services.AddSingleton<ApiQueueWatchdog<IDeviceQuery>>();

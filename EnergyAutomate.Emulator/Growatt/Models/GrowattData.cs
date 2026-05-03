@@ -15,9 +15,9 @@ namespace EnergyAutomate.Emulator.Growatt.Models
         public GrowattEnumOptions? EnumOptions { get; set; }
 
         /// <summary>
-        /// Parses the raw Modbus data according to the register's data type and options.
+        /// Parses the raw ModbusCodec data according to the register's data type and options.
         /// </summary>
-        /// <param name="dataRaw">Raw bytes from Modbus register.</param>
+        /// <param name="dataRaw">Raw bytes from ModbusCodec register.</param>
         /// <returns>Parsed value as object, or null if parsing fails.</returns>
         public object? Parse(byte[] dataRaw)
         {

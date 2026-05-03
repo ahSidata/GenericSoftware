@@ -1,5 +1,6 @@
 ﻿using EnergyAutomate.Emulator.Growatt;
 using EnergyAutomate.Emulator.Growatt.Models;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -13,20 +14,16 @@ namespace EnergyAutomate.Emulator
         private ILogger<MqttProxyWorker> Logger => ServiceProvider.GetRequiredService<ILogger<MqttProxyWorker>>();
 
         private readonly PythonWrapper _pythonWrapper;
+        private readonly IConfiguration _configuration;
 
         public MqttProxyWorker(IServiceProvider serviceProvider)
         {
             ServiceProvider = serviceProvider;
+            _configuration = serviceProvider.GetRequiredService<IConfiguration>();
             _pythonWrapper = serviceProvider.GetRequiredService<PythonWrapper>();
 
-            _pythonWrapper.GrowattClientOptions = new GrowattClientOptions()
-            {
-                ClientId = "0PVP50ZR16ST00CB",
-                BrokerHost = "ah.azure.sidata.com",
-                BrokerPort = 7006,
-                GrowattHost = "mqtt.growatt.com",
-                GrowattPort = 7006
-            };
+            _pythonWrapper.GrowattClientOptions = _configuration.GetSection("GrowattClient").Get<GrowattClientOptions>()
+                ?? throw new InvalidOperationException("GrowattClient configuration section is missing or invalid in appsettings.");
         }
 
         protected override Task ExecuteAsync(CancellationToken stoppingToken)

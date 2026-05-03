@@ -68,7 +68,7 @@ if (result.Success)
 
     public const string SetPowerAsync = """
 // Set power for specific device
-await factory.SetPowerAsync("0PVP50ZR16ST00CB", 500);
+await factory.SetPowerAsync("0PXXXXXXXXXX00CB", 500);
 
 // Check result
 factory.LogInformation("Power set to 500W");
@@ -107,7 +107,7 @@ foreach (var device in devices)
 """;
 
     public const string GetSoc = """
-var soc = factory.GetSoc("0PVP50ZR16ST00CB");
+var soc = factory.GetSoc("0PXXXXXXXXXX00CB");
 factory.LogInformation($"State of Charge: {soc}%");
 
 if (soc < 20)

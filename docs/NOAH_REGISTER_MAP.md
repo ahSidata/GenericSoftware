@@ -22,9 +22,9 @@ Central documentation for all Noah functions, registers, and Modbus mappings for
 The Noah Battery Management System (BMS) uses **Modbus RTU over MQTT** for communication. The emulator (`PythonWrapper`) generates and sends Modbus payloads to the Python backend, which forwards them via MQTT to the `s/33/{deviceId}` topic.
 
 ### Device ID
-- Standard: `0PVP50ZR16ST00CB`
-- MQTT Send Topic: `s/33/0PVP50ZR16ST00CB`
-- MQTT Receive Topic: `c_33_0PVP50ZR16ST00CB`
+- Standard: `{DEVICE_ID}` (e.g., `0PXXXXXXXXXX00CB`)
+- MQTT Send Topic: `s/33/{DEVICE_ID}`
+- MQTT Receive Topic: `c_33_{DEVICE_ID}`
 
 ---
 
@@ -80,9 +80,27 @@ pythonWrapper.SetNoahTimeSegment(query);
 
 **Payload Example (Slot 1: 1-3, 06:00-14:00, 500W):**
 ```
-Header: 00-01-00-07-00-2E-01-10
-DeviceID: 30-50-56-50-35-30-5A-52-31-36-53-54-30-30-43-42
-Data: 00-FE-01-02-00-01-06-00-0E-00-01-F4-00-01
+MBAP Header:    00-01-00-07-00-2E-01-10
+  TransactionId: 0x0001
+  ProtocolId:    0x0007
+  MsgLength:     0x002E (46 bytes)
+  UnitId:        0x01
+  Function:      0x10 (PRESET_MULTIPLE_REGISTER)
+
+DeviceID:       XX-XX-XX-XX-XX-XX-XX-XX-XX-XX-XX-XX-XX-XX (anonymized)
+Padding:        00-00-00-00-00-00-00-00-00-00-00-00-00-00
+Data:           00-FE-01-02-00-01-06-00-0E-00-01-F4-00-01
+  Start:         0x00FE (254)
+  End:           0x0104 (260)
+  Register254:   0x00FE
+  Register255:   0x0102
+  Register256:   0x0001 (Enable=1)
+  Register257:   0x0600 (Start=06:00)
+  Register258:   0x0E00 (End=14:00)
+  Register259:   0x01F4 (Power=500W)
+  Register260:   0x0001 (Type/Slot=1)
+
+CRC16:          [calculated]
 ```
 
 ### Register Map: PRESET_SINGLE_REGISTER (342+)
@@ -125,10 +143,21 @@ Repeat "1-7"       → Bitmask 0x7F  (1111111 = Daily)
 
 **Payload Example (Slot 2: 4,5,6):**
 ```
-Header: 00-01-00-07-00-24-01-06
-DeviceID: 30-50-56-50-35-30-5A-52-31-36-53-54-30-30-43-42
-Register: 01-58 (0x0158 = Register 344 for Slot 2)
-Value: 00-38 (0x38 = 56 = Bitmask for 4,5,6)
+MBAP Header:    00-01-00-07-00-24-01-06
+  TransactionId: 0x0001
+  ProtocolId:    0x0007
+  MsgLength:     0x0024 (36 bytes)
+  UnitId:        0x01
+  Function:      0x06 (PRESET_SINGLE_REGISTER)
+
+DeviceID:       XX-XX-XX-XX-XX-XX-XX-XX-XX-XX-XX-XX-XX-XX (anonymized)
+Padding:        00-00-00-00-00-00-00-00-00-00-00-00-00-00
+Data:           01-58-00-38
+  Start:         0x0158 (344 = Register for Slot 2)
+  End:           0x0158 (same as Start for single register)
+  Value:         0x0038 (56 = Bitmask for 4,5,6)
+
+CRC16:          [calculated]
 ```
 
 **Implementation:**
@@ -185,9 +214,23 @@ pythonWrapper.SetSmartPower(500);  // 0-800W
 
 **Payload Example (500W):**
 ```
-Header: 00-01-00-07-00-2A-01-10
-DeviceID: 30-50-56-50-35-30-5A-52-31-36-53-54-30-30-43-42
-Data: 00-00-01-F4-00-01
+MBAP Header:    00-01-00-07-00-2A-01-10
+  TransactionId: 0x0001
+  ProtocolId:    0x0007
+  MsgLength:     0x002A (42 bytes)
+  UnitId:        0x01
+  Function:      0x10 (PRESET_MULTIPLE_REGISTER)
+
+DeviceID:       XX-XX-XX-XX-XX-XX-XX-XX-XX-XX-XX-XX-XX-XX (anonymized)
+Padding:        00-00-00-00-00-00-00-00-00-00-00-00-00-00
+Data:           00-00-01-F4-00-01
+  Start:         0x0136 (310)
+  End:           0x0138 (312)
+  Register310:   0x0000 (Padding)
+  Register311:   0x01F4 (Power=500W)
+  Register312:   0x0001 (Mode)
+
+CRC16:          [calculated]
 ```
 
 ---
@@ -212,10 +255,21 @@ pythonWrapper.SetDefaultPower(200);  // 0-800W
 
 **Payload Example (200W):**
 ```
-Header: 00-01-00-07-00-24-01-06
-DeviceID: 30-50-56-50-35-30-5A-52-31-36-53-54-30-30-43-42
-Register: 00-FC (252)
-Value: 00-C8 (200W)
+MBAP Header:    00-01-00-07-00-24-01-06
+  TransactionId: 0x0001
+  ProtocolId:    0x0007
+  MsgLength:     0x0024 (36 bytes)
+  UnitId:        0x01
+  Function:      0x06 (PRESET_SINGLE_REGISTER)
+
+DeviceID:       XX-XX-XX-XX-XX-XX-XX-XX-XX-XX-XX-XX-XX-XX (anonymized)
+Padding:        00-00-00-00-00-00-00-00-00-00-00-00-00-00
+Data:           00-FC-00-C8
+  Start:         0x00FC (252)
+  End:           0x00FC (same for single register)
+  Value:         0x00C8 (200W)
+
+CRC16:          [calculated]
 ```
 
 ---
@@ -242,10 +296,21 @@ pythonWrapper.SetLowLimitSoC(10);  // 0-100%
 
 **Payload Example (10%):**
 ```
-Header: 00-01-00-07-00-24-01-06
-DeviceID: 30-50-56-50-35-30-5A-52-31-36-53-54-30-30-43-42
-Register: 00-F8 (248)
-Value: 00-0A (10%)
+MBAP Header:    00-01-00-07-00-24-01-06
+  TransactionId: 0x0001
+  ProtocolId:    0x0007
+  MsgLength:     0x0024 (36 bytes)
+  UnitId:        0x01
+  Function:      0x06 (PRESET_SINGLE_REGISTER)
+
+DeviceID:       XX-XX-XX-XX-XX-XX-XX-XX-XX-XX-XX-XX-XX-XX (anonymized)
+Padding:        00-00-00-00-00-00-00-00-00-00-00-00-00-00
+Data:           00-F8-00-0A
+  Start:         0x00F8 (248)
+  End:           0x00F8 (same for single register)
+  Value:         0x000A (10%)
+
+CRC16:          [calculated]
 ```
 
 ---
@@ -296,30 +361,88 @@ These registers are read-only and show the current system state:
 
 ## Modbus Frame Format
 
+### GrowattModbusBlock Structure
+
+The `GrowattModbusBlock` class represents a complete Modbus TCP frame with all header and payload information:
+
+```csharp
+public class GrowattModbusBlock
+{
+    // MBAP Header (bytes 0-7)
+    public ushort TransactionId { get; set; } = 0x0001;           // Bytes 0-1: Transaction ID
+    public ushort ProtocolId { get; set; } = 0x0007;              // Bytes 2-3: Protocol ID (Growatt-specific)
+    public ushort MessageLength => (ushort)(4 + Values.Length);   // Bytes 4-5: Payload length
+    public byte UnitId { get; set; } = 0x01;                      // Byte 6: Unit ID
+    public GrowattModbusFunction Function { get; set; };          // Byte 7: Function Code
+
+    // Payload (bytes 8-15+)
+    public ushort Start { get; set; };                            // Bytes 8-9: Start register
+    public ushort End { get; set; };                              // Bytes 10-11: End register
+    public byte[] Values { get; set; } = Array.Empty<byte>();    // Bytes 12+: Register values
+}
+```
+
+### Frame Byte Layout
+
+```
+Offset  Bytes    Property              Meaning
+------  --------  --------------------- --------------------------------
+0-1     00-01    TransactionId         Always 0x0001
+2-3     00-07    ProtocolId            Growatt-specific (0x0007)
+4-5     00-XX    MessageLength         Calculated: 4 + Values.Length
+6       01       UnitId                Always 0x01
+7       XX       Function              Function code (0x04, 0x06, 0x10, etc.)
+8-9     XX-XX    Start                 Starting register address
+10-11   XX-XX    End                   Ending register address
+12+     ...      Values                Raw payload bytes
+```
+
 ### General MQTT Payload Structure
 
 ```
 [Header (8 Bytes)][DeviceID (14 Bytes)][Padding (14 Bytes)][Register Data][CRC16 (2 Bytes)]
 ```
 
-### Header Format
+Where:
+- **Header**: MBAP header from `GrowattModbusBlock.Build()` (bytes 0-7)
+- **DeviceID**: Device identifier string (ASCII encoded, 14 bytes)
+- **Padding**: Reserved/unused space (14 bytes)
+- **Register Data**: Start/End register + Values (from `GrowattModbusBlock`)
+- **CRC16**: CCITT-False checksum of entire payload
+
+### Header Format Detail
+
+The first 8 bytes (MBAP header) are constructed from `GrowattModbusBlock` properties:
 
 ```
-Offset  Bytes    Meaning
-0-1     00-01    Transaction ID (always 0x0001)
-2-3     00-07    Protocol ID (Modbus = 0x0007)
-4-5     00-XX    Payload Length (after Protocol ID)
-6       Function Code
+TransactionId  → Bytes 0-1  (Big-Endian ushort)
+ProtocolId     → Bytes 2-3  (Big-Endian ushort)
+MessageLength  → Bytes 4-5  (Big-Endian ushort, calculated as 4 + Values.Length)
+UnitId         → Byte 6     (Single byte)
+Function       → Byte 7     (GrowattModbusFunction enum cast to byte)
 ```
 
 ### Function Codes
 
-| Code | Name | Purpose |
-|------|------|---------|
-| 6 | Write Single Register | Write one register (e.g., DefaultPower) |
-| 16 | Write Multiple Registers | Write multiple registers (e.g., TimeSegment) |
-| 3 | Read Holding Registers | Read holding registers |
-| 4 | Read Input Registers | Read input registers |
+| Code | Name | Enum Value | Purpose | GrowattModbusFunction |
+|------|------|------------|---------|----------------------|
+| 3 | Read Holding Registers | 0x03 | Read holding registers | `READ_HOLDING_REGISTER` |
+| 4 | Read Input Registers | 0x04 | Read input registers | `READ_INPUT_REGISTER` |
+| 6 | Write Single Register | 0x06 | Write one register | `PRESET_SINGLE_REGISTER` |
+| 16 | Write Multiple Registers | 0x10 | Write multiple registers | `PRESET_MULTIPLE_REGISTER` |
+
+**Usage in GrowattModbusBlock:**
+```csharp
+var block = new GrowattModbusBlock
+{
+    Function = GrowattModbusFunction.PRESET_MULTIPLE_REGISTER,  // Sets Byte 7 to 0x10
+    Start = 254,
+    End = 260,
+    Values = new byte[] { /* payload */ }
+};
+
+byte[] frame = block.Build();  // Generates complete frame with all header fields
+```
 
 ### CRC16 Calculation
 
@@ -342,8 +465,8 @@ CRC(Payload) = 2 Bytes Checksum
    ├─ Registers 254-260 with 7 values
    ├─ Calculate CRC16
 
-3. Emulator → Python: send_msg("s/33/0PVP50ZR16ST00CB", payload)
-   └─ Topic: s/33/0PVP50ZR16ST00CB
+3. Emulator → Python: send_msg("s/33/{DEVICE_ID}", payload)
+   └─ Topic: s/33/{DEVICE_ID}
    └─ Payload: 46 Bytes (MsgLen: 46)
 
 4. Emulator → Parser: BuildSetRegisterCommand(...)
@@ -352,8 +475,8 @@ CRC(Payload) = 2 Bytes Checksum
    ├─ Value: Repeat Bitmask
    ├─ Calculate CRC16
 
-5. Emulator → Python: send_msg("s/33/0PVP50ZR16ST00CB", payload)
-   └─ Topic: s/33/0PVP50ZR16ST00CB
+5. Emulator → Python: send_msg("s/33/{DEVICE_ID}", payload)
+   └─ Topic: s/33/{DEVICE_ID}
    └─ Payload: 36 Bytes (MsgLen: 36)
 
 6. Logs (DumpFromPython):
@@ -365,35 +488,103 @@ CRC(Payload) = 2 Bytes Checksum
 
 ## Code Implementation Overview
 
-### PythonWrapper Main Methods
+### Architecture: GrowattModbusCodec (Central Authority)
+
+All Growatt/Modbus protocol operations are centralized in `GrowattModbusCodec`:
 
 ```csharp
-public void SetNoahTimeSegment(object query)
+public class GrowattModbusCodec
 {
-    // Extracts query properties
-    // Builds PRESET_MULTIPLE_REGISTER (254-260)
-    // Sends via MQTT
-    // Builds PRESET_SINGLE_REGISTER (342+Slot)
-    // Sends via MQTT
-    // Logs both commands
-}
+    // Frame Building (for commands)
+    public byte[] BuildFrame(GrowattModbusBlock block);
+    public byte[] BuildForMqtt(GrowattModbusBlock block);
 
-public void SetSmartPower(ushort value)
-{
-    // Builds PRESET_MULTIPLE_REGISTER (310-312)
-    // Sends via MQTT
-}
+    // High-Level Command Builders
+    public byte[] BuildSetMultipleRegistersCommand(string deviceId, ushort startRegister, ushort[] values);
+    public byte[] BuildSetSingleRegisterCommand(string deviceId, ushort registerAddress, ushort value);
 
-public void SetDefaultPower(ushort value)
-{
-    // Builds PRESET_SINGLE_REGISTER (252)
-    // Sends via MQTT
-}
+    // Payload Parsing
+    public GrowattModbusMessage? ParseModbusMessage(byte[] payload, string topic);
+    public GrowattModbusMessage? ParseModbusMessageFromMqtt(byte[] payload, string topic);
 
-public void SetLowLimitSoC(ushort value)
+    // Scrambling/Encryption
+    public byte[] Scramble(byte[] payload);
+    public byte[] Unscramble(byte[] payload);
+    public byte[] AppendCrc(byte[] payload);
+}
+```
+
+### PythonWrapper Integration
+
+```csharp
+public class PythonWrapper
 {
-    // Builds PRESET_SINGLE_REGISTER (248)
-    // Sends via MQTT
+    private GrowattModbusCodec _codec;  // Injected as singleton
+
+    public void SetNoahTimeSegment(object query)
+    {
+        // Extracts query properties
+        // Builds PRESET_MULTIPLE_REGISTER (254-260) via _codec
+        var multiplePayload = _codec.BuildSetMultipleRegistersCommand(deviceId, startRegister, values);
+        _clientInstance.send_msg($"s/33/{device.DeviceSn}", multiplePayload, 0, 0);
+
+        // Builds PRESET_SINGLE_REGISTER (342+Slot) via _codec
+        var singlePayload = _codec.BuildSetSingleRegisterCommand(deviceId, registerAddress, repeatBitmask);
+        _clientInstance.send_msg($"s/33/{device.DeviceSn}", singlePayload, 0, 0);
+    }
+
+    public void SetSmartPower(ushort value)
+    {
+        // Builds PRESET_MULTIPLE_REGISTER (310-312) via _codec
+        var payload = _codec.BuildSetMultipleRegistersCommand(deviceId, 310, new[] { 0, value, 1 });
+        _clientInstance.send_msg($"s/33/{device.DeviceSn}", payload, 0, 0);
+    }
+
+    public void SetDefaultPower(ushort value)
+    {
+        // Builds PRESET_SINGLE_REGISTER (252) via _codec
+        var payload = _codec.BuildSetSingleRegisterCommand(deviceId, 252, value);
+        _clientInstance.send_msg($"s/33/{device.DeviceSn}", payload, 0, 0);
+    }
+
+    public void SetLowLimitSoC(ushort value)
+    {
+        // Builds PRESET_SINGLE_REGISTER (248) via _codec
+        var payload = _codec.BuildSetSingleRegisterCommand(deviceId, 248, value);
+        _clientInstance.send_msg($"s/33/{device.DeviceSn}", payload, 0, 0);
+    }
+}
+```
+
+### Data Transfer Objects (DTOs)
+
+**GrowattModbusMessage** (Parsed message container):
+```csharp
+public class GrowattModbusMessage
+{
+    public ushort Crc { get; set; }
+    public byte[] DataHeader { get; set; }
+    public GrowattModbusFunction DataHeaderFunction { get; set; }
+    public int DataHeaderMsgLen { get; set; }
+    public byte[] DataRaw { get; set; }
+    public string DeviceId { get; set; }
+    public string Topic { get; set; }
+    public string RegisterStrings { get; set; }
+    public List<GrowattModbusBlock> RegisterBlocks { get; set; }
+}
+```
+
+**GrowattModbusBlock** (Frame/Register block DTO):
+```csharp
+public class GrowattModbusBlock
+{
+    public ushort TransactionId { get; set; } = 0x0001;
+    public ushort ProtocolId { get; set; } = 0x0007;
+    public byte UnitId { get; set; } = 0x01;
+    public GrowattModbusFunction Function { get; set; }
+    public ushort Start { get; set; }
+    public ushort End { get; set; }
+    public byte[] Values { get; set; } = [];
 }
 ```
 
@@ -583,10 +774,15 @@ This comprehensive table lists all Noah registers from 0-360, with documented va
 - Growatt Noah Documentation: `/grobro/model/growatt_noah_registers.json`
 - Python Client: `PythonGrowattClient` (MQTT Bridge)
 - Emulator: `EnergyAutomate.Emulator\Python\PythonWrapper.cs`
+- **Modbus Codec (Central):** `EnergyAutomate.Emulator\Growatt\GrowattModbusCodec.cs`
+- **Modbus Message DTO:** `EnergyAutomate.Emulator\Growatt\GrowattModbusMessage.cs`
+- **Modbus Block DTO:** `EnergyAutomate.Emulator\Growatt\GrowattModbusBlock.cs`
 
 ---
 
-**Last Updated:** 2026-05-02  
-**Version:** 1.1  
+**Last Updated:** 2026-05-03  
+**Version:** 1.3 (GrowattModbusCodec Centralization)
 **Status:** Production Ready  
-**Coverage:** ~27 documented registers out of 361 total (7.5%)
+**Coverage:** ~27 documented registers out of 361 total (7.5%)  
+**Frame Format:** MBAP Header (8 bytes) + DeviceID + Padding + Register Data + CRC16
+**Architecture:** Codec-Centric with DTO Message/Block models

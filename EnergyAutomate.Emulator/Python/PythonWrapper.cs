@@ -13,7 +13,7 @@ namespace EnergyAutomate.Emulator
 {
     public class PythonWrapper
     {
-        private GrowattMqttParser GrowattModbusMqttParser { get; set; }
+        private GrowattModbusCodec ModbusCodec { get; set; }
         private IServiceProvider ServiceProvider { get; set; }
         private ILogger<PythonWrapper> Logger => ServiceProvider.GetRequiredService<ILogger<PythonWrapper>>();
         public GrowattClientOptions? GrowattClientOptions { get; set; }
@@ -27,7 +27,7 @@ namespace EnergyAutomate.Emulator
         public PythonWrapper(IServiceProvider serviceProvider)
         {
             ServiceProvider = serviceProvider;
-            GrowattModbusMqttParser = new GrowattMqttParser(serviceProvider);
+            ModbusCodec = serviceProvider.GetRequiredService<GrowattModbusCodec>();
             RegisterSignalHandlers();
         }
 
@@ -162,34 +162,32 @@ namespace EnergyAutomate.Emulator
 
         public void SetSmartPower(DeviceList device, int value)
         {
-            if (_clientInstance != null)
+            if (_clientInstance != null && device.DeviceSn != null)
             {
-                var deviceId = "0PVP50ZR16ST00CB";
                 ushort startRegister = 310;
                 ushort[] values = { 0, (ushort)value, 1 };
 
-                byte[] commandPayload = GrowattModbusMqttParser.BuildSetMultipleRegistersCommand(deviceId, startRegister, values);
+                byte[] commandPayload = ModbusCodec.BuildSetMultipleRegistersCommand(startRegister, values);
 
-                _clientInstance.send_msg($"s/33/{deviceId}", commandPayload, 0, 0);
+                _clientInstance.send_msg($"s/33/{device.DeviceSn}", commandPayload, 0, 0);
             }
         }
 
         public void SetDefaultPower(DeviceList device, int value)
         {
-            if (_clientInstance != null)
+            if (_clientInstance != null && device.DeviceSn != null)
             {
-                var deviceId = "0PVP50ZR16ST00CB";
                 ushort startRegister = 252;
 
-                byte[] commandPayload = GrowattModbusMqttParser.BuildSetRegisterCommand(deviceId, startRegister, (ushort)value);
+                byte[] commandPayload = ModbusCodec.BuildSetSingleRegisterCommand(startRegister, (ushort)value);
 
-                _clientInstance.send_msg($"s/33/{deviceId}", commandPayload, 0, 0);
+                _clientInstance.send_msg($"s/33/{device.DeviceSn}", commandPayload, 0, 0);
             }
         }
 
         /// <summary>
         /// Forwards a Noah time segment configuration to the Python client.
-        /// Builds Modbus register values from the query properties and sends them via MQTT.
+        /// Builds ModbusCodec register values from the query properties and sends them via MQTT.
         /// Sends two commands: PRESET_MULTIPLE_REGISTER for time/power data and PRESET_SINGLE_REGISTER for repeat pattern.
         /// </summary>
         /// <param name="query">The Noah time segment query object (DeviceNoahSetTimeSegmentQuery).</param>
@@ -264,8 +262,7 @@ namespace EnergyAutomate.Emulator
 
                 if (values.Count == 7)
                 {
-                    byte[] multipleRegistersPayload = GrowattModbusMqttParser.BuildSetMultipleRegistersCommand(
-                        deviceId,
+                    byte[] multipleRegistersPayload = ModbusCodec.BuildSetMultipleRegistersCommand(
                         254,
                         values.ToArray()
                     );
@@ -288,8 +285,7 @@ namespace EnergyAutomate.Emulator
                 {
                     repeatRegister = (ushort)(342 + ((slot - 1) * 2));
                 }
-                byte[] singleRegisterPayload = GrowattModbusMqttParser.BuildSetRegisterCommand(
-                    deviceId,
+                byte[] singleRegisterPayload = ModbusCodec.BuildSetSingleRegisterCommand(
                     repeatRegister,
                     repeatBitmask
                 );
@@ -402,7 +398,7 @@ namespace EnergyAutomate.Emulator
                         sb.AppendLine($"State: {message.State}");
                         sb.AppendLine($"Dup: {message.Dup}");
 
-                        var modBusMessage = GrowattModbusMqttParser.ParseModbusMessage(message.Payload, message.Topic);
+                        var modBusMessage = ModbusCodec.ParseModbusMessageFromMqtt(message.Payload, message.Topic);
 
                         if (modBusMessage != null)
                         {
